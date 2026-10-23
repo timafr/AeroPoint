@@ -4,7 +4,7 @@
 //
 //  Dual-Engine Spatial Tracking: TrueDepth (Face ID IR) & LiDAR (dToF)
 //  Powered by Apple Neural Engine (Vision Framework) at 60 FPS
-//  Supports Dual-Hand Tracking & Auto-Orientation (Portrait & Landscape)
+//  Supports Dual-Hand Tracking, Dynamic Auto-Orientation & Inversion-Proof Rear LiDAR
 //
 
 import Foundation
@@ -27,6 +27,7 @@ class SpatialTrackingManager: NSObject, ObservableObject {
     @Published var allHandLandmarks: [[CGPoint]] = []
     @Published var isLandscape: Bool = false
     @Published var currentVideoOrientation: AVCaptureVideoOrientation = .portrait
+    @Published var mirrorRearCamera: Bool = true // Default ON: keeps hand movement matching PC cursor
     
     var captureSession: AVCaptureSession?
     var arSession: ARSession?
@@ -91,6 +92,27 @@ class SpatialTrackingManager: NSObject, ObservableObject {
                 }
             }
             return .portrait
+        }
+    }
+    
+    func currentVisionOrientation() -> CGImagePropertyOrientation {
+        if activeSensor == .frontTrueDepth {
+            // Front TrueDepth is rotated in hardware by AVCaptureConnection
+            return .up
+        } else {
+            // Rear camera ARKit capturedImage is in native sensor frame
+            switch resolveCaptureOrientation() {
+            case .portrait:
+                return .right
+            case .portraitUpsideDown:
+                return .left
+            case .landscapeRight:
+                return .up
+            case .landscapeLeft:
+                return .down
+            @unknown default:
+                return .right
+            }
         }
     }
     
@@ -215,8 +237,7 @@ class SpatialTrackingManager: NSObject, ObservableObject {
     
     // MARK: - Hand Pose Extraction & Physical Depth Fusion (Dual-Hand 60 FPS)
     private func processHandPose(on pixelBuffer: CVPixelBuffer, depthBuffer: CVPixelBuffer?) {
-        // When video connection has dynamic orientation applied, pixelBuffer is already upright
-        let visionOrientation: CGImagePropertyOrientation = (activeSensor == .frontTrueDepth) ? .up : .right
+        let visionOrientation = currentVisionOrientation()
         let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: visionOrientation, options: [:])
         do {
             try handler.perform([handPoseRequest])
@@ -242,6 +263,8 @@ class SpatialTrackingManager: NSObject, ObservableObject {
                 .littleMCP, .littlePIP, .littleDIP, .littleTip
             ]
             
+            let shouldFlipHorizontal = (activeSensor == .backLiDAR && mirrorRearCamera)
+            
             for obs in observations {
                 let recognizedPoints = try obs.recognizedPoints(.all)
                 var rawPointsNorm: [[Float]] = []
@@ -252,8 +275,13 @@ class SpatialTrackingManager: NSObject, ObservableObject {
                 
                 for key in jointKeys {
                     if let pt = recognizedPoints[key], pt.confidence > 0.15 {
-                        let nx = Float(pt.location.x)
+                        var nx = Float(pt.location.x)
                         let ny = Float(1.0 - pt.location.y)
+                        
+                        // Flip horizontally for rear LiDAR so pointing right moves cursor right on PC
+                        if shouldFlipHorizontal {
+                            nx = 1.0 - nx
+                        }
                         
                         // Extract physical millimeter depth from TrueDepth/LiDAR buffer
                         var zMetricMeters: Float = 0.42
@@ -278,7 +306,12 @@ class SpatialTrackingManager: NSObject, ObservableObject {
                     avgZ = samplesZ.reduce(0, +) / Float(samplesZ.count)
                 }
                 
-                let chirality: String = (obs.chirality == .left) ? "Left" : "Right"
+                // Adjust chirality when horizontal mirroring is active
+                var chirality: String = (obs.chirality == .left) ? "Left" : "Right"
+                if shouldFlipHorizontal {
+                    chirality = (obs.chirality == .left) ? "Right" : "Left"
+                }
+                
                 handsPayload.append([
                     "handedness": chirality,
                     "palm_size_mm": 85.0,
@@ -309,6 +342,7 @@ class SpatialTrackingManager: NSObject, ObservableObject {
                 "battery": Int(UIDevice.current.batteryLevel * 100),
                 "timestamp": now,
                 "is_landscape": self.isLandscape,
+                "is_mirrored": shouldFlipHorizontal || (activeSensor == .frontTrueDepth),
                 "hands": handsPayload
             ]
             

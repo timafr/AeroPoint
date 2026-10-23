@@ -100,6 +100,24 @@ struct ContentView: View {
                     .onChange(of: activeSensor) { newMode in
                         tracker.switchSensor(newMode == .trueDepth ? .frontTrueDepth : .backLiDAR)
                     }
+                    
+                    if activeSensor == .lidar {
+                        Button(action: {
+                            tracker.mirrorRearCamera.toggle()
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: tracker.mirrorRearCamera ? "arrow.left.and.right.righttriangle.left.righttriangle.right.fill" : "arrow.left.and.right")
+                                    .font(.system(size: 11))
+                                Text(tracker.mirrorRearCamera ? "ЗЕРКАЛЬНО (КУРСОР СОВПАДАЕТ)" : "ПРЯМО (ВИД ОТ 1-ГО ЛИЦА)")
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            }
+                            .foregroundColor(tracker.mirrorRearCamera ? .cyan : .white.opacity(0.85))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(tracker.mirrorRearCamera ? Color.cyan.opacity(0.18) : Color.white.opacity(0.1))
+                            .clipShape(Capsule())
+                        }
+                    }
                 }
 
                 // Spatial Viewport / Camera & Hologram Display
