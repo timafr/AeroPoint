@@ -34,6 +34,8 @@ class OneEuroFilter1D:
         return 1.0 / (1.0 + tau / dt)
 
     def filter(self, x: float, timestamp: Optional[float] = None) -> float:
+        if not math.isfinite(x):
+            return self.x_prev if self.x_prev is not None else 0.0
         t = timestamp if timestamp is not None else time.time()
         if self.t_prev is None or self.x_prev is None:
             self.x_prev = x
