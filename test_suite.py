@@ -261,6 +261,22 @@ class TestCyberHUD(unittest.TestCase):
         self.hud.draw_laser_pointer(frame, hand, is_clicking=True)
         self.assertGreater(len(self.hud.laser_trail), 0)
 
+    def test_render_with_hand_tilt_and_roll_compass(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        hand = HandData(
+            landmarks_norm=[(0.5, 0.5, 0.0) for _ in range(21)],
+            landmarks_px=[(320, 240, 0.0) for _ in range(21)],
+            landmarks_world=[(0.0, 0.0, 0.0) for _ in range(21)],
+            palm_size=0.15,
+            handedness="Right",
+            roll_deg=18.5,
+            pitch_deg=-4.2
+        )
+        self.hud.draw_skeleton(frame, hand, GestureType.NONE, is_action_hand=False)
+        self.hud.draw_skeleton(frame, hand, GestureType.NONE, is_action_hand=True)
+        self.assertEqual(hand.roll_deg, 18.5)
+        self.assertEqual(hand.pitch_deg, -4.2)
+
 
 class TestNightVisionBooster(unittest.TestCase):
     """Verifies low-light CLAHE and zero-latency LUT gamma boost."""

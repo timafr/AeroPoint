@@ -713,6 +713,7 @@ class CameraManager:
             "active_monitor": self.mouse.active_monitor_index,
             "monitors": self.mouse.monitors,
             "distance_cm": round(getattr(self.pointer_hand or (self.current_hands[0] if self.current_hands else None), 'estimated_distance_cm', 50.0), 1) if (self.pointer_hand or self.current_hands) else 0.0,
+            "roll_deg": round(getattr(self.pointer_hand or (self.current_hands[0] if self.current_hands else None), 'roll_deg', 0.0), 1) if (self.pointer_hand or self.current_hands) else 0.0,
             "radial_menu_open": self.radial_menu_open,
             "active_radial_sector": self.active_radial_sector,
             "active_tab": self.active_tab,

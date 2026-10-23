@@ -172,6 +172,23 @@ class CyberHUD:
         cv2.putText(frame, dist_tag, (max(10, w_pt[0] - 32), min(frame.shape[0] - 8, pts[WRIST][1] + 18)),
                     cv2.FONT_HERSHEY_PLAIN, 0.85, dist_col, 1, cv2.LINE_AA)
 
+        # Hand Roll & Tilt angle indicator below distance caliper
+        roll_angle = getattr(hand, 'roll_deg', 0.0)
+        roll_sign = "+" if roll_angle >= 0 else ""
+        tilt_tag = f"TILT: {roll_sign}{int(roll_angle)}deg"
+        cv2.putText(frame, tilt_tag, (max(10, w_pt[0] - 32), min(frame.shape[0] - 6, pts[WRIST][1] + 32)),
+                    cv2.FONT_HERSHEY_PLAIN, 0.75, (220, 220, 220), 1, cv2.LINE_AA)
+
+        # Miniature Artificial Horizon Leveler Bar
+        roll_rad = math.radians(roll_angle)
+        bar_len = 14
+        bx1 = int(w_pt[0] - bar_len * math.cos(roll_rad))
+        by1 = int(min(frame.shape[0] - 6, pts[WRIST][1] + 42) - bar_len * math.sin(roll_rad))
+        bx2 = int(w_pt[0] + bar_len * math.cos(roll_rad))
+        by2 = int(min(frame.shape[0] - 6, pts[WRIST][1] + 42) + bar_len * math.sin(roll_rad))
+        cv2.line(frame, (bx1, by1), (bx2, by2), dist_col, 1, cv2.LINE_AA)
+        cv2.circle(frame, (w_pt[0], min(frame.shape[0] - 6, pts[WRIST][1] + 42)), 2, (255, 255, 255), -1, cv2.LINE_AA)
+
         # Interactive Pinch Proximity Halo & Magnetic Snap Spark
         thumb_pt = (int(pts[THUMB_TIP][0]), int(pts[THUMB_TIP][1]))
         index_pt = (int(pts[INDEX_TIP][0]), int(pts[INDEX_TIP][1]))

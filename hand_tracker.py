@@ -71,6 +71,8 @@ class HandData:
     palm_size_px: float = 60.0                         # Projected 2D scale in pixels for scroll
     handedness: str = "Right"                          # "Left" or "Right"
     estimated_distance_cm: float = 50.0                # Physical estimated distance from camera in cm
+    roll_deg: float = 0.0                              # In-plane tilt angle of knuckle line in degrees
+    pitch_deg: float = 0.0                             # Palm pointing angle in degrees
 
 
 class HandTracker:
@@ -208,6 +210,12 @@ class HandTracker:
                 # Metric distance estimation: focal length ~550px for standard 640px webcam, adult palm ~8.5cm
                 dist_cm = round(max(15.0, min(300.0, 4700.0 / max(12.0, palm_size_px))), 1)
 
+                # 3D spatial roll and pitch tilt estimation
+                im_x, im_y, _ = landmarks_px[INDEX_MCP]
+                pm_x, pm_y, _ = landmarks_px[PINKY_MCP]
+                roll_deg = round(math.degrees(math.atan2(float(im_y - pm_y), float(im_x - pm_x))), 1)
+                pitch_deg = round(math.degrees(math.atan2(-float(m_y - w_y), float(m_x - w_x))), 1)
+
                 handedness = "Right"
                 if result.handedness and len(result.handedness) > hand_idx and len(result.handedness[hand_idx]) > 0:
                     handedness = result.handedness[hand_idx][0].category_name
@@ -219,7 +227,9 @@ class HandTracker:
                     palm_size=palm_size_3d,
                     palm_size_px=palm_size_px,
                     handedness=handedness,
-                    estimated_distance_cm=dist_cm
+                    estimated_distance_cm=dist_cm,
+                    roll_deg=roll_deg,
+                    pitch_deg=pitch_deg
                 )
                 all_hands.append(h_data)
 
