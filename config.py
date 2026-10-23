@@ -21,6 +21,8 @@ class GestureConfig:
     target_fps: int = 60
     flip_horizontal: bool = True
     use_clahe: bool = False  # Contrast Limited Adaptive Histogram Equalization
+    enable_power_saver: bool = True  # Drops frame rate to 15 FPS when idle (> 4s without hands) to save CPU/thermal load
+
 
     # --- MediaPipe Hand Tracking (Optimized for all-angle & perpendicular tracking) ---
     model_path: str = field(
@@ -124,6 +126,7 @@ class GestureConfig:
             "enable_distance_adaptation": self.enable_distance_adaptation,
             "enable_legacy_shortcuts": self.enable_legacy_shortcuts,
             "laser_pointer_mode": self.laser_pointer_mode,
+            "enable_power_saver": self.enable_power_saver,
             "sound_enabled": self.sound_enabled,
             "sound_theme": self.sound_theme,
             "sound_volume": self.sound_volume,

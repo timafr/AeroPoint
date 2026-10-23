@@ -199,6 +199,8 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.enable_legacy_shortcuts = bool(data["enable_legacy_shortcuts"])
             if "laser_pointer_mode" in data:
                 manager.config.laser_pointer_mode = bool(data["laser_pointer_mode"])
+            if "enable_power_saver" in data:
+                manager.config.enable_power_saver = bool(data["enable_power_saver"])
             if "sound_enabled" in data:
                 manager.config.sound_enabled = bool(data["sound_enabled"])
             if "sound_theme" in data:

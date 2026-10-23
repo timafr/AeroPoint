@@ -271,6 +271,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const badgeVelocity = document.getElementById('badge-velocity');
   const pillDistance = document.getElementById('pill-distance');
   const badgeDistance = document.getElementById('badge-distance');
+  const pillPowerMode = document.getElementById('pill-power-mode');
+  const badgePowerIcon = document.getElementById('badge-power-icon');
+  const badgePowerText = document.getElementById('badge-power-text');
   const trackingStatusBadge = document.getElementById('tracking-status-badge');
 
   // Gesture Banner & Pinch Gauge
@@ -1018,6 +1021,25 @@ document.addEventListener('DOMContentLoaded', () => {
         trackingStatusBadge.textContent = 'СКАНИРОВАНИЕ';
         trackingStatusBadge.style.color = 'var(--aero-cyan)';
         trackingStatusBadge.style.borderColor = 'rgba(0, 242, 254, 0.3)';
+      }
+    }
+
+    // Dynamic Power Saver Telemetry
+    if (badgePowerText) {
+      if (data.is_power_saver) {
+        if (badgePowerIcon) badgePowerIcon.textContent = '🌱';
+        badgePowerText.textContent = 'ECO 15';
+        if (pillPowerMode) {
+          pillPowerMode.style.borderColor = 'rgba(0, 230, 118, 0.45)';
+          pillPowerMode.style.background = 'rgba(0, 230, 118, 0.12)';
+        }
+      } else {
+        if (badgePowerIcon) badgePowerIcon.textContent = '⚡';
+        badgePowerText.textContent = '60 FPS';
+        if (pillPowerMode) {
+          pillPowerMode.style.borderColor = 'rgba(0, 242, 254, 0.35)';
+          pillPowerMode.style.background = 'rgba(255, 255, 255, 0.05)';
+        }
       }
     }
 

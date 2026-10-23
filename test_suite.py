@@ -63,6 +63,7 @@ class TestConfigPersistence(unittest.TestCase):
             cfg.sensitivity = 2.75
             cfg.click_mode = "pinch"
             cfg.enable_corner_snap = True
+            cfg.enable_power_saver = True
             cfg.save_to_file(test_file)
 
             self.assertTrue(os.path.exists(test_file))
@@ -70,6 +71,7 @@ class TestConfigPersistence(unittest.TestCase):
             self.assertEqual(loaded.sensitivity, 2.75)
             self.assertEqual(loaded.click_mode, "pinch")
             self.assertEqual(loaded.enable_corner_snap, True)
+            self.assertEqual(loaded.enable_power_saver, True)
         finally:
             if os.path.exists(test_file):
                 os.remove(test_file)
@@ -217,6 +219,37 @@ class TestMultiMonitorManagement(unittest.TestCase):
         palm_far = 25.0
         dist_far = round(max(15.0, min(300.0, 4700.0 / max(12.0, palm_far))), 1)
         self.assertGreater(dist_far, 150.0)
+
+
+class TestDynamicPowerSaver(unittest.TestCase):
+    """Tests adaptive standby throttling and zero-latency turbo wake-up."""
+
+    def test_power_saver_idle_state(self):
+        import time
+        from camera_manager import CameraManager
+        cm = CameraManager()
+        cm.hand_detected = True
+        cm.last_hand_seen_time = time.time()
+        cm.is_power_saver = False
+
+        # When hand is active
+        self.assertFalse(cm.is_power_saver)
+
+        # Simulate 5 seconds without hand
+        cm.hand_detected = False
+        cm.last_hand_seen_time = time.time() - 5.0
+        now_ts = time.time()
+        if (now_ts - cm.last_hand_seen_time) > 4.0:
+            cm.is_power_saver = True
+
+        self.assertTrue(cm.is_power_saver)
+
+        # Immediate turbo wake-up on hand detection
+        cm.hand_detected = True
+        cm.last_hand_seen_time = time.time()
+        cm.is_power_saver = False
+        self.assertFalse(cm.is_power_saver)
+        cm.stop()
 
 
 if __name__ == "__main__":

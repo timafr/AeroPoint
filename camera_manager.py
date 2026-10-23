@@ -97,6 +97,8 @@ class CameraManager:
         self.fps = 0.0
         self.latency_ms = 0.0
         self.cpu_percent = 0.0
+        self.is_power_saver = False
+        self.last_hand_seen_time = time.time()
 
         # Video capture handle & double-buffering
         self.cap: Optional[cv2.VideoCapture] = None
@@ -366,6 +368,17 @@ class CameraManager:
                 self.fps = self.tracker.fps
                 self.latency_ms = self.tracker.latency_ms
 
+            # Dynamic Power Saver State Check
+            now_ts = time.time()
+            if self.hand_detected:
+                self.last_hand_seen_time = now_ts
+                self.is_power_saver = False
+            else:
+                if getattr(self.config, 'enable_power_saver', True) and (now_ts - self.last_hand_seen_time) > 4.0:
+                    self.is_power_saver = True
+                else:
+                    self.is_power_saver = False
+
             # Gesture classification (Single-hand vs Dual-hand)
             pointer_hand = None
             action_hand = None
@@ -566,8 +579,11 @@ class CameraManager:
                     self.frame_id += 1
                     self.last_jpeg_time = loop_now
 
-            # Relinquish CPU slice to Windows scheduler to prevent high CPU consumption
-            time.sleep(0.001)
+            # Relinquish CPU slice to scheduler: dynamic power-saving pacing
+            if self.is_power_saver:
+                time.sleep(0.055)  # Throttled standby to ~15 FPS to conserve CPU and thermals
+            else:
+                time.sleep(0.001)  # Full unthrottled 60 FPS turbo
 
     def get_jpeg(self) -> Optional[bytes]:
         """Returns latest processed frame as JPEG bytes."""
@@ -605,6 +621,8 @@ class CameraManager:
             "active_camera_id": self.active_camera_id,
             "pinch_ratio": round(self.pinch_ratio, 2),
             "pinch_pct": round(self.pinch_pct, 1),
+            "is_power_saver": self.is_power_saver,
+            "enable_power_saver": getattr(self.config, 'enable_power_saver', True),
             "air_tap_pct": round(getattr(self, "latest_air_tap_pct", 0.0), 1),
             "velocity_px_s": round(getattr(self.hud, "smoothed_velocity", 0.0), 1),
             "click_mode": self.config.click_mode,
