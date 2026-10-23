@@ -825,6 +825,72 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshCameras();
 
   // =========================================================================
+  // 7.1 Multi-Monitor Management & Selector
+  // =========================================================================
+  const monitorContainer = document.getElementById('monitor-selector-container');
+  let currentActiveMonitorId = -1;
+
+  function loadMonitorsList() {
+    if (!monitorContainer) return;
+    fetch('/api/monitors')
+      .then(res => res.json())
+      .then(data => {
+        if (!data || !data.monitors) return;
+        currentActiveMonitorId = data.active_monitor !== undefined ? data.active_monitor : -1;
+        monitorContainer.innerHTML = '';
+
+        // All monitors button
+        const btnAll = document.createElement('button');
+        btnAll.className = `monitor-btn ${currentActiveMonitorId === -1 ? 'active' : ''}`;
+        btnAll.setAttribute('data-monitor', '-1');
+        btnAll.innerHTML = `
+          <span class="m-icon">🌌</span>
+          <span class="m-title">Весь рабочий стол</span>
+          <span class="m-res">Все мониторы (${data.monitors.length})</span>
+        `;
+        btnAll.addEventListener('click', () => selectMonitor(-1));
+        monitorContainer.appendChild(btnAll);
+
+        // Individual monitors
+        data.monitors.forEach(m => {
+          const btn = document.createElement('button');
+          btn.className = `monitor-btn ${currentActiveMonitorId === m.id ? 'active' : ''}`;
+          btn.setAttribute('data-monitor', m.id);
+          btn.innerHTML = `
+            <span class="m-icon">🖥️</span>
+            <span class="m-title">${m.name}</span>
+            <span class="m-res">${m.width}x${m.height}</span>
+          `;
+          btn.addEventListener('click', () => selectMonitor(m.id));
+          monitorContainer.appendChild(btn);
+        });
+      })
+      .catch(err => console.error('[!] Error loading monitors:', err));
+  }
+
+  function selectMonitor(monitorId) {
+    currentActiveMonitorId = monitorId;
+    fetch('/api/monitors/switch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ monitor_id: monitorId })
+    })
+    .then(res => res.json())
+    .then(data => {
+      soundSynth.playClick();
+      const label = monitorId === -1 ? 'Весь рабочий стол' : `Монитор #${monitorId + 1}`;
+      flashActionCapsule('🖥️', `Дисплей: ${label}`);
+      document.querySelectorAll('.monitor-btn').forEach(b => {
+        const id = parseInt(b.getAttribute('data-monitor'));
+        b.classList.toggle('active', id === monitorId);
+      });
+    })
+    .catch(err => console.error('[!] Error switching monitor:', err));
+  }
+
+  loadMonitorsList();
+
+  // =========================================================================
   // 8. 25-60 Hz Real-Time Telemetry Stream (SSE with Polling Fallback)
   // =========================================================================
   function handleStatusData(data) {
@@ -856,6 +922,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Store live landmarks for 3D Holographic Visualizer
     window._latestLandmarks3D = data.landmarks_3d || null;
+
+    // Multi-Monitor sync from telemetry / hotkey cycle
+    if (typeof data.active_monitor === 'number' && data.active_monitor !== currentActiveMonitorId) {
+      currentActiveMonitorId = data.active_monitor;
+      document.querySelectorAll('.monitor-btn').forEach(b => {
+        const id = parseInt(b.getAttribute('data-monitor'));
+        b.classList.toggle('active', id === currentActiveMonitorId);
+      });
+    }
 
     // Telemetry top badges
     badgeFps.textContent = `${data.fps || 0} FPS`;
