@@ -65,6 +65,7 @@ class GestureConfig:
     enable_window_snap_zones: bool = True  # Holographic Window Snap Previews (Drop target on edge drag)
     enable_distance_adaptation: bool = True  # Dynamic reach normalization based on user distance from camera
     precision_profile: str = "desktop"       # "cad", "desktop", "gaming"
+    acceleration_curve: str = "exponential"  # "linear", "sigmoid", "exponential"
 
     # --- Jitter Reduction & Smoothing ---
     # Filter types: 'ema', 'adaptive_ema', 'one_euro'
@@ -164,6 +165,7 @@ class GestureConfig:
             "enable_window_snap_zones": self.enable_window_snap_zones,
             "enable_distance_adaptation": self.enable_distance_adaptation,
             "precision_profile": self.precision_profile,
+            "acceleration_curve": self.acceleration_curve,
             "enable_legacy_shortcuts": self.enable_legacy_shortcuts,
             "laser_pointer_mode": self.laser_pointer_mode,
             "presentation_spotlight_mode": self.presentation_spotlight_mode,

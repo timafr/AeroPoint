@@ -171,6 +171,33 @@ class TestAeroPrecisionEngine(unittest.TestCase):
         engine_linear.process(650, 500, pinch_ratio=0.8, is_clicking=False, timestamp=1.05)
         self.assertEqual(engine_linear.current_gain, 1.0)
 
+    def test_acceleration_curve_profiles(self):
+        engine = AeroPrecisionEngine(enable_acceleration=True)
+
+        # 1. Linear curve
+        engine.set_acceleration_curve("linear")
+        self.assertEqual(engine.acceleration_curve, "linear")
+        self.assertEqual(engine.compute_acceleration_gain(20.0), 1.0)
+        self.assertEqual(engine.compute_acceleration_gain(500.0), 1.0)
+
+        # 2. Sigmoid curve: monotonic S-curve
+        engine.set_acceleration_curve("sigmoid")
+        self.assertEqual(engine.acceleration_curve, "sigmoid")
+        gain_slow = engine.compute_acceleration_gain(10.0)
+        gain_mid = engine.compute_acceleration_gain(140.0)
+        gain_fast = engine.compute_acceleration_gain(400.0)
+        self.assertLess(gain_slow, 0.85)
+        self.assertGreater(gain_mid, gain_slow)
+        self.assertGreater(gain_fast, gain_mid)
+        self.assertLessEqual(gain_fast, 1.55)
+
+        # 3. Exponential curve
+        engine.set_acceleration_curve("exponential")
+        self.assertEqual(engine.acceleration_curve, "exponential")
+        self.assertEqual(engine.compute_acceleration_gain(0.0), 0.75)
+        self.assertEqual(engine.compute_acceleration_gain(120.0), 1.0)
+        self.assertGreater(engine.compute_acceleration_gain(300.0), 1.0)
+
 
 class TestInertialScrollEngine(unittest.TestCase):
     """Tests inertial decay and flick boost."""

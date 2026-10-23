@@ -104,12 +104,14 @@ class AeroPrecisionEngine:
         beta: float = 0.015,
         deadzone_radius: float = 3.5,
         enable_acceleration: bool = True,
-        enable_click_anchor: bool = True
+        enable_click_anchor: bool = True,
+        acceleration_curve: str = "exponential"
     ):
         self.one_euro = OneEuroFilter2D(min_cutoff=min_cutoff, beta=beta)
         self.deadzone_radius = deadzone_radius
         self.enable_acceleration = enable_acceleration
         self.enable_click_anchor = enable_click_anchor
+        self.acceleration_curve = str(acceleration_curve).lower()
         self.profile = "desktop"
 
         # State memory
@@ -164,6 +166,41 @@ class AeroPrecisionEngine:
             self.profile = "desktop"
             self.set_parameters(min_cutoff=0.85, beta=0.015, deadzone=3.5)
         return self.profile
+
+    def set_acceleration_curve(self, curve_type: str):
+        """Sets active acceleration response curve ('linear', 'sigmoid', or 'exponential')."""
+        c = str(curve_type).strip().lower()
+        if c in ("linear", "sigmoid", "exponential"):
+            self.acceleration_curve = c
+        else:
+            self.acceleration_curve = "exponential"
+
+    def compute_acceleration_gain(self, velocity: float, curve_type: Optional[str] = None) -> float:
+        """
+        Computes kinetic pointer gain multiplier based on velocity and response curve:
+        - 'linear': 1.0 constant (1:1 direct tracking)
+        - 'sigmoid': Smooth S-curve (ultra-stable slow, silky midpoint, clamped high)
+        - 'exponential': Power curve for expansive multi-monitor coverage
+        """
+        if not self.enable_acceleration:
+            return 1.0
+
+        c = (curve_type or self.acceleration_curve).lower()
+        if c == "linear":
+            return 1.0
+
+        if c == "sigmoid":
+            # Midpoint at 140 px/s, width factor 45.0, range 0.70 to 1.55
+            z = max(-10.0, min(10.0, (velocity - 140.0) / 45.0))
+            return 0.70 + 0.85 / (1.0 + math.exp(-z))
+
+        # Default: "exponential" (piecewise smooth with subpixel suppression & high-speed boost)
+        if velocity < 80.0:
+            return 0.75 + 0.25 * (velocity / 80.0)
+        elif velocity > 180.0:
+            return min(1.60, 1.0 + 0.60 * ((velocity - 180.0) / 400.0))
+        else:
+            return 1.0
 
     def lock_cursor(self, duration: float = 0.35):
         """Temporarily pins cursor to current position to allow effortless double-clicking."""
@@ -279,15 +316,7 @@ class AeroPrecisionEngine:
 
         # --- 4. Precision Positioning & Kinetic Non-Linear Acceleration ---
         if self.enable_acceleration:
-            # Sub-pixel precision at slow speed (<80 px/s), energetic traverse at high speed (>180 px/s)
-            if self.current_velocity < 80.0:
-                self.current_gain = 0.75 + 0.25 * (self.current_velocity / 80.0)
-            elif self.current_velocity > 180.0:
-                boost = min(1.48, 1.0 + 0.48 * ((self.current_velocity - 180.0) / 400.0))
-                self.current_gain = boost
-            else:
-                self.current_gain = 1.0
-
+            self.current_gain = self.compute_acceleration_gain(self.current_velocity)
             out_x = self.prev_out_x + dx * self.current_gain
             out_y = self.prev_out_y + dy * self.current_gain
         else:

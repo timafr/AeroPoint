@@ -69,7 +69,8 @@ class CameraManager:
             beta=0.007,
             deadzone_radius=self.config.deadzone_radius,
             enable_acceleration=True,
-            enable_click_anchor=True
+            enable_click_anchor=True,
+            acceleration_curve=getattr(self.config, 'acceleration_curve', 'exponential')
         )
         if hasattr(self.config, 'precision_profile'):
             self.precision_engine.apply_profile(self.config.precision_profile)
@@ -867,6 +868,7 @@ class CameraManager:
             "is_anchored": self.precision_engine.is_anchor_active,
             "precision_profile": getattr(self.precision_engine, 'profile', 'desktop'),
             "gain": round(self.precision_engine.current_gain, 2),
+            "acceleration_curve": getattr(self.config, 'acceleration_curve', 'exponential'),
             "luminance": round(getattr(self.tracker, 'current_luminance', 120.0), 1),
             "is_night_mode": getattr(self.tracker, 'is_night_mode', False),
             "use_clahe": self.config.use_clahe,

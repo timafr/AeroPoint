@@ -205,6 +205,10 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 prof = str(data["precision_profile"])
                 manager.config.precision_profile = prof
                 manager.precision_engine.apply_profile(prof)
+            if "acceleration_curve" in data:
+                curve = str(data["acceleration_curve"]).lower()
+                manager.config.acceleration_curve = curve
+                manager.precision_engine.set_acceleration_curve(curve)
             if "sound_enabled" in data:
                 manager.config.sound_enabled = bool(data["sound_enabled"])
             if "sound_theme" in data:

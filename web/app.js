@@ -775,6 +775,126 @@ document.addEventListener('DOMContentLoaded', () => {
     postSettings({ precision_profile: 'gaming', sensitivity: 2.6, deadzone_radius: 1.8 });
   });
 
+  // Kinetic Acceleration Curve Selector & Live Canvas
+  const curveSelectorPill = document.querySelector('.curve-selector-pill');
+  const badgeActiveCurve = document.getElementById('badge-active-curve');
+  const accelCanvas = document.getElementById('accel-curve-canvas');
+  let currentActiveCurve = 'exponential';
+  let currentLiveVelocity = 0.0;
+  let currentLiveGain = 1.0;
+
+  function updateCurveButtons(curve) {
+    currentActiveCurve = curve;
+    document.querySelectorAll('.curve-selector-pill .seg-btn').forEach(btn => {
+      if (btn.getAttribute('data-curve') === curve) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+    if (badgeActiveCurve) {
+      if (curve === 'sigmoid') badgeActiveCurve.textContent = 'SIGMOID S';
+      else if (curve === 'linear') badgeActiveCurve.textContent = 'LINEAR 1:1';
+      else badgeActiveCurve.textContent = 'POWER EXP';
+    }
+    drawAccelCurve();
+  }
+
+  document.querySelectorAll('.curve-selector-pill .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const curve = btn.getAttribute('data-curve') || 'exponential';
+      window._curveUserInteracted = true;
+      updateCurveButtons(curve);
+      soundSynth.playRadialChime();
+      flashActionCapsule('📈', `Кривая: ${curve.toUpperCase()}`);
+      postSettings({ acceleration_curve: curve });
+    });
+  });
+
+  function drawAccelCurve() {
+    if (!accelCanvas) return;
+    const ctx = accelCanvas.getContext('2d');
+    if (!ctx) return;
+    const w = accelCanvas.width;
+    const h = accelCanvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.lineWidth = 1;
+    for (let x = 40; x < w; x += 60) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (let y = 20; y < h; y += 30) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+
+    // Baseline Gain 1.0 line
+    const baselineY = h - (1.0 / 2.0) * (h - 24) - 12;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.20)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(35, baselineY);
+    ctx.lineTo(w - 10, baselineY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillText('1.0x', 8, baselineY + 3);
+
+    // Compute gain function
+    function evalGain(v) {
+      if (currentActiveCurve === 'linear') return 1.0;
+      if (currentActiveCurve === 'sigmoid') {
+        const z = Math.max(-10.0, Math.min(10.0, (v - 140.0) / 45.0));
+        return 0.70 + 0.85 / (1.0 + Math.exp(-z));
+      }
+      if (v < 80.0) return 0.75 + 0.25 * (v / 80.0);
+      if (v > 180.0) return Math.min(1.60, 1.0 + 0.60 * ((v - 180.0) / 400.0));
+      return 1.0;
+    }
+
+    // Plot Curve
+    ctx.beginPath();
+    ctx.strokeStyle = '#00f2fe';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(0, 242, 254, 0.6)';
+    ctx.shadowBlur = 8;
+    const maxV = 600.0;
+    const maxGain = 1.8;
+    for (let px = 35; px <= w - 10; px++) {
+      const v = ((px - 35) / (w - 45)) * maxV;
+      const g = evalGain(v);
+      const py = h - 12 - (g / maxGain) * (h - 24);
+      if (px === 35) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Live Velocity Pulse Dot
+    const liveV = Math.max(0.0, Math.min(maxV, currentLiveVelocity));
+    const dotX = 35 + (liveV / maxV) * (w - 45);
+    const dotG = evalGain(liveV);
+    const dotY = h - 12 - (dotG / maxGain) * (h - 24);
+
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#00f2fe';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, 8.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Live readout text
+    ctx.fillStyle = '#00f2fe';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillText(`${Math.round(liveV)} px/s (${dotG.toFixed(2)}x)`, Math.min(w - 95, Math.max(35, dotX - 25)), Math.max(16, dotY - 12));
+  }
+
   // Master Switch & Pause
   masterControlSwitch?.addEventListener('change', (e) => {
     const isChecked = e.target.checked;
@@ -1200,6 +1320,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     }
+
+    if (typeof data.velocity_px_s === 'number') {
+      currentLiveVelocity = data.velocity_px_s;
+    }
+    if (typeof data.gain === 'number') {
+      currentLiveGain = data.gain;
+    }
+    if (typeof data.acceleration_curve === 'string' && data.acceleration_curve !== currentActiveCurve && !window._curveUserInteracted) {
+      updateCurveButtons(data.acceleration_curve);
+    }
+    drawAccelCurve();
 
     // Distance Caliper telemetry
     if (badgeDistance && typeof data.distance_cm === 'number' && data.distance_cm > 0) {

@@ -742,6 +742,26 @@
                     <span>⚡ Экшен & Презентации</span>
                   </button>
                 </div>
+
+                <!-- Kinetic Curve Selector & Live Canvas -->
+                <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 0.88rem; font-weight: 700; color: #fff;">📈 Кинетическая кривая ускорения</span>
+                    <span id="badge-active-curve" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 6px; background: rgba(0, 242, 254, 0.15); color: var(--aero-cyan); border: 1px solid rgba(0, 242, 254, 0.3); font-weight: 700;">POWER EXP</span>
+                  </div>
+                  <div class="segmented-pill curve-selector-pill" style="margin-bottom: 10px;">
+                    <button class="seg-btn active" id="btn-curve-exp" data-curve="exponential">
+                      <span>Экспонента</span>
+                    </button>
+                    <button class="seg-btn" id="btn-curve-sig" data-curve="sigmoid">
+                      <span>S-Кривая (Sigmoid)</span>
+                    </button>
+                    <button class="seg-btn" id="btn-curve-lin" data-curve="linear">
+                      <span>Линейная 1:1</span>
+                    </button>
+                  </div>
+                  <canvas id="accel-curve-canvas" width="380" height="110" style="width: 100%; height: 110px; border-radius: 10px; background: rgba(10, 12, 18, 0.7); border: 1px solid rgba(255, 255, 255, 0.08);"></canvas>
+                </div>
               </div>
 
               <!-- Sliders Card -->
