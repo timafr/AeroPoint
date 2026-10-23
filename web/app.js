@@ -393,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchAnchor = document.getElementById('switch-anchor');
   const switchAcceleration = document.getElementById('switch-acceleration');
   const switchCornerSnap = document.getElementById('switch-corner-snap');
+  const switchWindowSnap = document.getElementById('switch-window-snap');
   const switchDistanceAdaptation = document.getElementById('switch-distance-adaptation');
   const switchLaser = document.getElementById('switch-laser');
   const switchClahe = document.getElementById('switch-clahe');
@@ -715,6 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
   switchAnchor?.addEventListener('change', (e) => postSettings({ enable_anchor: e.target.checked }));
   switchAcceleration?.addEventListener('change', (e) => postSettings({ enable_acceleration: e.target.checked }));
   switchCornerSnap?.addEventListener('change', (e) => postSettings({ enable_corner_snap: e.target.checked }));
+  switchWindowSnap?.addEventListener('change', (e) => postSettings({ enable_window_snap_zones: e.target.checked }));
   switchDistanceAdaptation?.addEventListener('change', (e) => postSettings({ enable_distance_adaptation: e.target.checked }));
   switchClahe?.addEventListener('change', (e) => postSettings({ use_clahe: e.target.checked }));
   switchLegacyGestures?.addEventListener('change', (e) => postSettings({ enable_legacy_shortcuts: e.target.checked }));
@@ -1087,6 +1089,9 @@ document.addEventListener('DOMContentLoaded', () => {
       window._initialSettingsLoaded = true;
       if (switchCornerSnap && typeof data.enable_corner_snap === 'boolean') {
         switchCornerSnap.checked = data.enable_corner_snap;
+      }
+      if (switchWindowSnap && typeof data.enable_window_snap_zones === 'boolean') {
+        switchWindowSnap.checked = data.enable_window_snap_zones;
       }
       if (switchDistanceAdaptation && typeof data.enable_distance_adaptation === 'boolean') {
         switchDistanceAdaptation.checked = data.enable_distance_adaptation;

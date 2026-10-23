@@ -124,6 +124,9 @@ class CameraManager:
         self.last_rotary_step_time: float = 0.0
         self.is_rotary_tuning: bool = False
 
+        # Spatial Window Snap Drop Zone state
+        self.active_snap_zone: Optional[str] = None
+
         # Video capture handle & double-buffering
         self.cap: Optional[cv2.VideoCapture] = None
         self.worker_thread: Optional[threading.Thread] = None
@@ -573,13 +576,41 @@ class CameraManager:
                 if self.is_rotary_tuning and self.mouse.is_dragging:
                     self.mouse.mouse_up("left")
 
-                # 1. Drag & Drop handling (✊ Fist)
+                # 1. Drag & Drop handling (✊ Fist or Pinch-Hold)
                 if events.get("drag_active") and not self.is_rotary_tuning:
                     if not self.mouse.is_dragging:
                         self.mouse.mouse_down("left")
+                    # Spatial Window Snap drop zone preview when dragging near display borders
+                    if getattr(self.config, 'enable_window_snap_zones', True) and target_x is not None and target_y is not None:
+                        sw = max(1.0, float(self.mouse.current_screen_w))
+                        sh = max(1.0, float(self.mouse.current_screen_h))
+                        norm_x = (target_x - self.mouse.current_x_origin) / sw
+                        norm_y = (target_y - self.mouse.current_y_origin) / sh
+                        if norm_x < 0.04:
+                            self.active_snap_zone = 'left'
+                        elif norm_x > 0.96:
+                            self.active_snap_zone = 'right'
+                        elif norm_y < 0.04:
+                            self.active_snap_zone = 'top'
+                        elif norm_y > 0.96:
+                            self.active_snap_zone = 'bottom'
+                        else:
+                            self.active_snap_zone = None
+                    else:
+                        self.active_snap_zone = None
                 else:
                     if self.mouse.is_dragging:
                         self.mouse.mouse_up("left")
+                        if getattr(self.config, 'enable_window_snap_zones', True) and self.active_snap_zone:
+                            if self.active_snap_zone == 'left':
+                                self.mouse.snap_window_left()
+                            elif self.active_snap_zone == 'right':
+                                self.mouse.snap_window_right()
+                            elif self.active_snap_zone == 'top':
+                                self.mouse.snap_window_maximize()
+                            elif self.active_snap_zone == 'bottom':
+                                self.mouse.snap_window_minimize()
+                        self.active_snap_zone = None
 
                 # 2. Discrete clicks are ONLY evaluated if NOT dragging and NOT holding a fist
                 if not events.get("drag_active") and not self.mouse.is_dragging:
@@ -773,7 +804,8 @@ class CameraManager:
                         active_radial_sector=self.active_radial_sector,
                         scroll_velocity=getattr(self.scroll_engine, 'velocity', 0.0),
                         edge_snap_flags=edge_flags,
-                        ergonomic_minutes=ergo_min
+                        ergonomic_minutes=ergo_min,
+                        snap_zone=self.active_snap_zone
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)

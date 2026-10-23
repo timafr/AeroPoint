@@ -360,6 +360,64 @@ class CyberHUD:
                 cv2.line(frame, (cx - 16, cy), (cx + 16, cy), (255, 255, 255), 1, cv2.LINE_AA)
                 cv2.line(frame, (cx, cy - 16), (cx, cy + 16), (255, 255, 255), 1, cv2.LINE_AA)
 
+    def draw_window_snap_preview(
+        self,
+        frame: np.ndarray,
+        snap_zone: Optional[str]
+    ):
+        """
+        Renders futuristic translucent visionOS holographic window snap preview drop zone
+        when dragging an active window towards screen borders.
+        snap_zone: 'left', 'right', 'top', 'bottom', or None
+        """
+        if not snap_zone:
+            return
+        h, w, _ = frame.shape
+        overlay = frame.copy()
+
+        # Zone geometry and labels
+        if snap_zone == 'left':
+            x1, y1, x2, y2 = 8, 8, int(w * 0.48), h - 8
+            title = "SNAP LEFT (50%)"
+            color = (255, 180, 0) # Electric cyan/blue
+        elif snap_zone == 'right':
+            x1, y1, x2, y2 = int(w * 0.52), 8, w - 8, h - 8
+            title = "SNAP RIGHT (50%)"
+            color = (255, 180, 0) # Electric cyan/blue
+        elif snap_zone == 'top':
+            x1, y1, x2, y2 = 8, 8, w - 8, h - 8
+            title = "SNAP MAXIMIZE (100%)"
+            color = (0, 242, 254) # Radiant teal
+        elif snap_zone == 'bottom':
+            x1, y1, x2, y2 = int(w * 0.25), int(h * 0.65), int(w * 0.75), h - 8
+            title = "SNAP MINIMIZE"
+            color = (200, 100, 255) # Lavender
+        else:
+            return
+
+        # Semi-transparent frosted fill
+        cv2.rectangle(overlay, (x1, y1), (x2, y2), color, -1)
+        cv2.addWeighted(overlay, 0.22, frame, 0.78, 0, frame)
+
+        # Crisp glowing perimeter border with inner highlight
+        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2, cv2.LINE_AA)
+        cv2.rectangle(frame, (x1 + 3, y1 + 3), (x2 - 3, y2 - 3), (255, 255, 255), 1, cv2.LINE_AA)
+
+        # Holographic Glass Badge in center of preview
+        cx = (x1 + x2) // 2
+        cy = (y1 + y2) // 2
+        bw, bh = 170, 32
+        bx1, by1 = max(0, cx - bw // 2), max(0, cy - bh // 2)
+        bx2, by2 = min(w, cx + bw // 2), min(h, cy + bh // 2)
+
+        badge_overlay = frame.copy()
+        cv2.rectangle(badge_overlay, (bx1, by1), (bx2, by2), (20, 22, 28), -1)
+        cv2.addWeighted(badge_overlay, 0.80, frame, 0.20, 0, frame)
+        cv2.rectangle(frame, (bx1, by1), (bx2, by2), color, 1, cv2.LINE_AA)
+
+        # Badge text
+        cv2.putText(frame, title, (bx1 + 12, by1 + 21), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (255, 255, 255), 1, cv2.LINE_AA)
+
     def draw_skeleton(
         self,
         frame: np.ndarray,
@@ -1100,7 +1158,8 @@ class CyberHUD:
         active_radial_sector: Optional[int] = None,
         scroll_velocity: float = 0.0,
         edge_snap_flags: Optional[Tuple[bool, bool, bool, bool]] = None,
-        ergonomic_minutes: Optional[int] = None
+        ergonomic_minutes: Optional[int] = None,
+        snap_zone: Optional[str] = None
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
         if show_skeleton:
@@ -1156,6 +1215,7 @@ class CyberHUD:
             self.draw_jitter_chart(frame)
 
         self.draw_air_canvas(frame)
+        self.draw_window_snap_preview(frame, snap_zone)
         self.draw_ripples(frame)
         self.draw_slide_chevrons(frame)
         self.draw_rotary_dials(frame)

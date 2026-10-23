@@ -60,6 +60,7 @@ class GestureConfig:
     sensitivity: float = 1.8  # Cursor speed & reach multiplier (1.0 = standard, 2.0 = fast, 3.0+ = ultra-fast)
     deadzone_radius: float = 3.5  # Pixel threshold to lock cursor (Slide 16)
     enable_corner_snap: bool = True  # AeroMagnet: magnetic attraction to screen corners & window buttons
+    enable_window_snap_zones: bool = True  # Holographic Window Snap Previews (Drop target on edge drag)
     enable_distance_adaptation: bool = True  # Dynamic reach normalization based on user distance from camera
     precision_profile: str = "desktop"       # "cad", "desktop", "gaming"
 
@@ -158,6 +159,7 @@ class GestureConfig:
             "sensitivity": self.sensitivity,
             "deadzone_radius": self.deadzone_radius,
             "enable_corner_snap": self.enable_corner_snap,
+            "enable_window_snap_zones": self.enable_window_snap_zones,
             "enable_distance_adaptation": self.enable_distance_adaptation,
             "precision_profile": self.precision_profile,
             "enable_legacy_shortcuts": self.enable_legacy_shortcuts,
