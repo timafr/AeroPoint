@@ -59,6 +59,8 @@ if IS_WINDOWS:
     ID_TRAY_TOGGLE_PAUSE = 1002
     ID_TRAY_CALIBRATE = 1003
     ID_TRAY_EXIT = 1004
+    ID_TRAY_RADIAL = 1005
+    ID_TRAY_CYCLE_MONITOR = 1006
 
     WNDPROC = ctypes.WINFUNCTYPE(ctypes.c_long, w.HWND, w.UINT, w.WPARAM, w.LPARAM)
     HCURSOR = w.HANDLE
@@ -149,6 +151,12 @@ class WindowsTrayService:
                 if self.manager and hasattr(self.manager, 'precision_engine'):
                     self.manager.trigger_calibration(3.0) if hasattr(self.manager, 'trigger_calibration') else self.manager.precision_engine.reset()
                     print("[*] Tray menu: Calibration triggered")
+            elif cmd_id == ID_TRAY_RADIAL:
+                if self.manager and hasattr(self.manager, 'toggle_radial_menu'):
+                    self.manager.toggle_radial_menu()
+            elif cmd_id == ID_TRAY_CYCLE_MONITOR:
+                if self.manager and hasattr(self.manager, 'cycle_monitor'):
+                    self.manager.cycle_monitor()
             elif cmd_id == ID_TRAY_EXIT:
                 if self.manager:
                     self.manager.stop()
@@ -165,6 +173,8 @@ class WindowsTrayService:
         pause_text = "▶️ Возобновить управление" if (self.manager and self.manager.manual_pause) else "⏸️ Приостановить управление"
         user32.AppendMenuW(hmenu, MF_STRING, ID_TRAY_TOGGLE_PAUSE, pause_text)
         user32.AppendMenuW(hmenu, MF_STRING, ID_TRAY_CALIBRATE, "🎯 Авто-калибровка фильтров")
+        user32.AppendMenuW(hmenu, MF_STRING, ID_TRAY_RADIAL, "⭕ Quick-Dial диск в воздухе")
+        user32.AppendMenuW(hmenu, MF_STRING, ID_TRAY_CYCLE_MONITOR, "🖥️ Переключить монитор (Ctrl+Alt+M)")
         user32.AppendMenuW(hmenu, MF_SEPARATOR, 0, None)
         user32.AppendMenuW(hmenu, MF_STRING, ID_TRAY_EXIT, "❌ Завершить AeroPoint")
 
