@@ -240,6 +240,54 @@ document.addEventListener('DOMContentLoaded', () => {
       osc.stop(now + 0.11);
     }
 
+    playAirClap() {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(340, now);
+      osc.frequency.exponentialRampToValueAtTime(75, now + 0.08);
+
+      gain.gain.setValueAtTime(this.volume * 0.75, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.095);
+    }
+
+    playZoom(isZoomIn = true) {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      const f1 = isZoomIn ? 320 : 640;
+      const f2 = isZoomIn ? 640 : 320;
+      osc.frequency.setValueAtTime(f1, now);
+      osc.frequency.exponentialRampToValueAtTime(f2, now + 0.07);
+
+      gain.gain.setValueAtTime(this.volume * 0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.085);
+    }
+
     playPitchGliss(isUp = true) {
       if (!this.enabled) return;
       this.init();
@@ -1199,6 +1247,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof updateAirDrawFromTelemetry === 'function') {
       updateAirDrawFromTelemetry(data);
     }
+
+    // Bimanual Air-Clap Audio Trigger
+    if (data.action_gesture === 'AIR CLAP' && window._lastActionGesture !== 'AIR CLAP') {
+      soundSynth.playAirClap();
+    }
+    window._lastActionGesture = data.action_gesture;
 
     // iPhone Sensor telemetry
     const iph = data.iphone_status;
