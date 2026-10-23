@@ -378,6 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       soundSynth.playRadialChime();
     }
+    flashActionCapsule('✨', `Диск: ${actionName}`);
     fetch('/api/radial/action', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
