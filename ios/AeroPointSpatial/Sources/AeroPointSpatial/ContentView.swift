@@ -208,12 +208,14 @@ struct ContentView: View {
             SettingsSheetView(serverIP: $serverIP, serverPort: $serverPort)
         }
         .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
             tracker.startTracking()
             tracker.onHandPoseDetected = { payload in
                 broadcaster.sendSpatialData(payload)
             }
         }
         .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
             tracker.stopTracking()
             broadcaster.stopStreaming()
         }

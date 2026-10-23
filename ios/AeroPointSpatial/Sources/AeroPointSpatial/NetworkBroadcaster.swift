@@ -8,6 +8,7 @@
 import Foundation
 import Network
 import Combine
+import UIKit
 
 class NetworkBroadcaster: ObservableObject {
     @Published var isStreaming: Bool = false
@@ -20,6 +21,9 @@ class NetworkBroadcaster: ObservableObject {
     
     func startStreaming(host: String, port: UInt16) {
         stopStreaming()
+        DispatchQueue.main.async {
+            UIApplication.shared.isIdleTimerDisabled = true
+        }
         
         let nwHost = NWEndpoint.Host(host)
         guard let nwPort = NWEndpoint.Port(rawValue: port) else { return }
@@ -57,6 +61,9 @@ class NetworkBroadcaster: ObservableObject {
         connection = nil
         isStreaming = false
         isConnected = false
+        DispatchQueue.main.async {
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
     }
     
     func sendSpatialData(_ dict: [String: Any]) {

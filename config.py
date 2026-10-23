@@ -68,7 +68,7 @@ class GestureConfig:
     right_click_release_ratio: float = 0.40
 
     # Debounce timers (Slide 16)
-    click_debounce_sec: float = 0.12     # Fast response & double-click support (120 ms)
+    click_debounce_sec: float = 0.25     # Crisp click response with anti-stutter protection (250 ms)
     scroll_cooldown_sec: float = 0.04    # Smooth scrolling interval
 
     # Scroll sensitivity

@@ -418,11 +418,16 @@ class GestureRecognizer:
                 return self.current_gesture, events
 
         elif self.config.click_mode == "pinch":
+            # True 3D depth alignment check between thumb tip and index tip
+            z_diff = abs(pts_3d[THUMB_TIP][2] - pts_3d[INDEX_TIP][2]) if len(pts_3d[THUMB_TIP]) > 2 else 0.0
+            # If in 3D metric space, depth difference must be < 40mm (0.040m) to register physical touch
+            z_depth_ok = (z_diff < 0.040) if (hasattr(hand, "landmarks_world") and hand.landmarks_world) else True
+
             if self.is_pinch_active:
-                if thumb_idx_dist > self.config.pinch_release_ratio or not finger_states["index"]:
+                if thumb_idx_dist > self.config.pinch_release_ratio or not finger_states["index"] or not z_depth_ok:
                     self.is_pinch_active = False
             else:
-                if thumb_idx_dist < self.config.pinch_activate_ratio and finger_states["index"] and not finger_states["ring"]:
+                if thumb_idx_dist < self.config.pinch_activate_ratio and finger_states["index"] and not finger_states["ring"] and z_depth_ok:
                     time_since_last = now - self.last_left_click_time
                     if time_since_last > self.config.click_debounce_sec:
                         self.is_pinch_active = True
@@ -629,11 +634,14 @@ class GestureRecognizer:
                             effective_gesture = GestureType.THUMB_CLICK
 
             elif self.config.click_mode == "pinch":
+                act_z_diff = abs(act_pts_3d[THUMB_TIP][2] - act_pts_3d[INDEX_TIP][2]) if len(act_pts_3d[THUMB_TIP]) > 2 else 0.0
+                act_z_depth_ok = (act_z_diff < 0.040) if (hasattr(action_hand, "landmarks_world") and action_hand.landmarks_world) else True
+
                 if self.is_action_pinch_active:
-                    if act_thumb_idx_dist > self.config.pinch_release_ratio:
+                    if act_thumb_idx_dist > self.config.pinch_release_ratio or not act_z_depth_ok:
                         self.is_action_pinch_active = False
                 else:
-                    if act_thumb_idx_dist < self.config.pinch_activate_ratio:
+                    if act_thumb_idx_dist < self.config.pinch_activate_ratio and act_z_depth_ok:
                         time_since_last = now - self.last_left_click_time
                         if time_since_last > self.config.click_debounce_sec:
                             self.is_action_pinch_active = True

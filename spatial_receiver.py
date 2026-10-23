@@ -144,10 +144,20 @@ class SpatialReceiver:
                     px_x = int(nx * cam_w)
                     px_y = int(ny * cam_h)
                     lms_px.append((px_x, px_y, nz * 1000.0))
-                    # Metric 3D invariant coordinate from LiDAR/TrueDepth point cloud
-                    lms_world.append((nx * 0.2, ny * 0.2, nz))
+                    
+                    # True metric 3D perspective backprojection (in meters)
+                    fov_scale = max(0.25, nz * 0.85)
+                    X_m = (nx - 0.5) * fov_scale
+                    Y_m = (ny - 0.5) * fov_scale
+                    Z_m = nz
+                    lms_world.append((X_m, Y_m, Z_m))
 
-                palm_metric = palm_mm / 1000.0 if palm_mm > 0 else 0.085
+                # Dynamic 3D palm size: distance from wrist to middle MCP in true 3D metric space
+                w0 = lms_world[WRIST]
+                m9 = lms_world[MIDDLE_MCP]
+                calc_palm = math.sqrt((m9[0] - w0[0]) ** 2 + (m9[1] - w0[1]) ** 2 + (m9[2] - w0[2]) ** 2)
+                palm_metric = max(0.05, min(0.14, calc_palm))
+
                 h_data = HandData(
                     landmarks_norm=lms_norm,
                     landmarks_px=lms_px,

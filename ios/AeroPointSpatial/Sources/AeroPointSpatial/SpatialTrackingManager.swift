@@ -11,6 +11,7 @@ import AVFoundation
 import Vision
 import ARKit
 import Combine
+import UIKit
 
 enum SensorType {
     case frontTrueDepth
@@ -46,10 +47,16 @@ class SpatialTrackingManager: NSObject, ObservableObject {
     }
     
     func startTracking() {
+        DispatchQueue.main.async {
+            UIApplication.shared.isIdleTimerDisabled = true
+        }
         switchSensor(activeSensor)
     }
     
     func stopTracking() {
+        DispatchQueue.main.async {
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
         captureSession?.stopRunning()
         captureSession = nil
         arSession?.pause()
