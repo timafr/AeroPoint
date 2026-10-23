@@ -1094,6 +1094,8 @@ document.addEventListener('DOMContentLoaded', () => {
     cwStatusBadge.style.color = '#ffaa00';
     cwDescText.innerHTML = '🎯 <strong>Анализ тремора:</strong> Зафиксируйте руку в воздухе на 3 секунды...';
     soundSynth.playChord();
+    flashActionCapsule('🎯', 'Авто-калибровка: 3 сек...');
+    fetch('/api/calibration/start', { method: 'POST' }).catch(() => {});
 
     let progress = 0;
     const interval = setInterval(() => {

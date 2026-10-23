@@ -277,6 +277,15 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}
 
+    @app.route('/api/calibration/start', method='POST')
+    def start_calibration():
+        try:
+            manager.trigger_calibration(duration=3.0)
+            return {"status": "ok", "duration": 3.0}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
     @app.route('/api/switch_tab', method='POST')
     def switch_tab():
         try:

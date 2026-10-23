@@ -177,7 +177,10 @@ class GlobalHotkeyService:
 
     def _calibrate(self):
         if self.manager:
-            self.manager.precision_engine.reset()
+            if hasattr(self.manager, 'trigger_calibration'):
+                self.manager.trigger_calibration(3.0)
+            elif hasattr(self.manager, 'precision_engine'):
+                self.manager.precision_engine.reset()
             print("[*] Hotkey [Ctrl+Alt+C]: Precision filters re-centered & calibrated")
 
     def _quick_dial(self):

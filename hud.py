@@ -383,6 +383,52 @@ class CyberHUD:
         tag = f"L-AIM [{tx},{ty}]"
         cv2.putText(frame, tag, (tx + 12, ty - 6), cv2.FONT_HERSHEY_PLAIN, 0.75, beam_color, 1, cv2.LINE_AA)
 
+    def draw_calibration_target(
+        self,
+        frame: np.ndarray,
+        progress_pct: float = 1.0,
+        stage_label: str = "АВТО-КАЛИБРОВКА..."
+    ):
+        """Draws glowing holographic calibration target with animated rotating arcs and countdown ring."""
+        h, w, _ = frame.shape
+        cx, cy = w // 2, h // 2
+        now = time.time()
+
+        # Rotating outer reticle
+        r_outer = 64
+        angle = (now * 180.0) % 360.0
+        overlay = frame.copy()
+
+        # Neon circular arcs
+        for offset in [0, 90, 180, 270]:
+            start_a = int(angle + offset)
+            end_a = int(angle + offset + 55)
+            cv2.ellipse(overlay, (cx, cy), (r_outer, r_outer), 0, start_a, end_a, (0, 242, 254), 2, cv2.LINE_AA)
+
+        # Inner progress gauge ring
+        r_inner = 50
+        prog_end = int(-90 + (progress_pct * 360.0))
+        cv2.ellipse(overlay, (cx, cy), (r_inner, r_inner), 0, -90, prog_end, (0, 230, 118), 3, cv2.LINE_AA)
+
+        cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
+
+        # Center target dot
+        cv2.circle(frame, (cx, cy), 5, (255, 255, 255), -1, cv2.LINE_AA)
+        cv2.circle(frame, (cx, cy), 12, (0, 242, 254), 1, cv2.LINE_AA)
+
+        # Crosshairs
+        cv2.line(frame, (cx - 24, cy), (cx - 14, cy), (0, 242, 254), 1, cv2.LINE_AA)
+        cv2.line(frame, (cx + 14, cy), (cx + 24, cy), (0, 242, 254), 1, cv2.LINE_AA)
+        cv2.line(frame, (cx, cy - 24), (cx, cy - 14), (0, 242, 254), 1, cv2.LINE_AA)
+        cv2.line(frame, (cx, cy + 14), (cx, cy + 24), (0, 242, 254), 1, cv2.LINE_AA)
+
+        # Floating Calibration Labels
+        cv2.putText(frame, stage_label, (cx - 75, cy - r_outer - 12),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.48, (0, 242, 254), 1, cv2.LINE_AA)
+        pct_text = f"{int(progress_pct * 100)}%"
+        cv2.putText(frame, pct_text, (cx - 16, cy + r_outer + 24),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.52, (0, 230, 118), 1, cv2.LINE_AA)
+
     def render_clean(
         self,
         frame: np.ndarray,
@@ -393,7 +439,8 @@ class CyberHUD:
         pointer_hand: Optional[HandData] = None,
         action_hand: Optional[HandData] = None,
         show_skeleton: bool = True,
-        laser_pointer_mode: bool = False
+        laser_pointer_mode: bool = False,
+        calibration_progress: Optional[float] = None
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
         if show_skeleton:
@@ -412,6 +459,10 @@ class CyberHUD:
             if target_h:
                 is_click = gesture in (GestureType.THUMB_CLICK, GestureType.PINCH_CLICK, GestureType.AIR_TAP)
                 self.draw_laser_pointer(frame, target_h, is_clicking=is_click)
+
+        # Holographic Auto-Calibration Countdown
+        if calibration_progress is not None:
+            self.draw_calibration_target(frame, progress_pct=calibration_progress)
 
         self.draw_ripples(frame)
         return frame

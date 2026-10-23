@@ -105,6 +105,10 @@ class CameraManager:
         self.latest_raw_frame: Optional[np.ndarray] = None
         self.frame_available_event = threading.Event()
 
+        # Visual calibration overlay state
+        self.calibration_active_until: float = 0.0
+        self.calibration_start_time: float = 0.0
+
         # Camera discovery
         self.discovered_cameras: List[Dict[str, any]] = self.discover_cameras()
 
@@ -222,6 +226,14 @@ class CameraManager:
             self.cap = self._open_capture(old_id)
             self.active_camera_id = old_id
             return False
+
+    def trigger_calibration(self, duration: float = 3.0):
+        """Starts animated visual calibration countdown and resets precision filters upon completion."""
+        now = time.time()
+        self.calibration_start_time = now
+        self.calibration_active_until = now + duration
+        self.precision_engine.reset()
+        print(f"[*] Calibration triggered: active for {duration}s")
 
     def start(self):
         """Starts background capture and processing threads."""
@@ -502,6 +514,12 @@ class CameraManager:
                 if self.active_tab == "iphone":
                     rendered = frame
                 else:
+                    calibration_prog = None
+                    if loop_now < self.calibration_active_until:
+                        elapsed = loop_now - self.calibration_start_time
+                        total = max(0.1, self.calibration_active_until - self.calibration_start_time)
+                        calibration_prog = min(1.0, elapsed / total)
+
                     rendered = self.hud.render_clean(
                         frame=frame,
                         hands=all_hands,
@@ -510,7 +528,8 @@ class CameraManager:
                         gesture=effective_gesture,
                         action_gesture=self.action_gesture,
                         show_skeleton=self.config.show_skeleton,
-                        laser_pointer_mode=getattr(self.config, 'laser_pointer_mode', False)
+                        laser_pointer_mode=getattr(self.config, 'laser_pointer_mode', False),
+                        calibration_progress=calibration_prog
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)

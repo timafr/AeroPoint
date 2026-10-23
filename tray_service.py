@@ -147,7 +147,7 @@ class WindowsTrayService:
                     print(f"[*] Tray menu: Manual pause is now {self.manager.manual_pause}")
             elif cmd_id == ID_TRAY_CALIBRATE:
                 if self.manager and hasattr(self.manager, 'precision_engine'):
-                    self.manager.precision_engine.reset()
+                    self.manager.trigger_calibration(3.0) if hasattr(self.manager, 'trigger_calibration') else self.manager.precision_engine.reset()
                     print("[*] Tray menu: Calibration triggered")
             elif cmd_id == ID_TRAY_EXIT:
                 if self.manager:
