@@ -78,6 +78,14 @@ class OneEuroFilter2D:
         self.fx.reset()
         self.fy.reset()
 
+    def set_parameters(self, min_cutoff: float, beta: float):
+        self.min_cutoff = min_cutoff
+        self.beta = beta
+        self.fx.min_cutoff = min_cutoff
+        self.fx.beta = beta
+        self.fy.min_cutoff = min_cutoff
+        self.fy.beta = beta
+
     def filter(self, x: float, y: float, timestamp: Optional[float] = None) -> Tuple[float, float]:
         now = timestamp if timestamp is not None else time.time()
         return self.fx.filter(x, now), self.fy.filter(y, now)
@@ -102,6 +110,7 @@ class AeroPrecisionEngine:
         self.deadzone_radius = deadzone_radius
         self.enable_acceleration = enable_acceleration
         self.enable_click_anchor = enable_click_anchor
+        self.profile = "desktop"
 
         # State memory
         self.prev_out_x: Optional[float] = None
@@ -130,6 +139,31 @@ class AeroPrecisionEngine:
         self.anchor_y = None
         self.lock_until_time = 0.0
         self.is_anchor_active = False
+
+    def set_parameters(self, min_cutoff: float, beta: float, deadzone: Optional[float] = None):
+        """Dynamically tunes 1-Euro and deadzone parameters without resetting state."""
+        self.one_euro.set_parameters(min_cutoff, beta)
+        if deadzone is not None:
+            self.deadzone_radius = deadzone
+
+    def apply_profile(self, profile: str) -> str:
+        """
+        Applies hand-tuned precision profiles:
+        - 'cad' / 'precision': Sub-pixel stabilization for design, Figma, Blender
+        - 'desktop' / 'balanced': Everyday responsive fluid browsing
+        - 'gaming' / 'fast': Ultra-low latency flick aiming for presentations/games
+        """
+        p = profile.strip().lower()
+        if p in ("cad", "precision", "design"):
+            self.profile = "cad"
+            self.set_parameters(min_cutoff=0.45, beta=0.007, deadzone=4.2)
+        elif p in ("gaming", "fast", "action"):
+            self.profile = "gaming"
+            self.set_parameters(min_cutoff=1.65, beta=0.038, deadzone=1.8)
+        else:
+            self.profile = "desktop"
+            self.set_parameters(min_cutoff=0.85, beta=0.015, deadzone=3.5)
+        return self.profile
 
     def lock_cursor(self, duration: float = 0.35):
         """Temporarily pins cursor to current position to allow effortless double-clicking."""

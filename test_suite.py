@@ -112,6 +112,24 @@ class TestAeroPrecisionEngine(unittest.TestCase):
         )
         self.assertEqual((sx, sy), (1920.0, 1080.0))
 
+    def test_precision_profiles(self):
+        # Default profile
+        self.assertEqual(self.engine.profile, "desktop")
+        self.assertEqual(self.engine.deadzone_radius, 3.5)
+        self.assertAlmostEqual(self.engine.one_euro.min_cutoff, 0.85)
+
+        # CAD profile
+        self.engine.apply_profile("cad")
+        self.assertEqual(self.engine.profile, "cad")
+        self.assertEqual(self.engine.deadzone_radius, 4.2)
+        self.assertAlmostEqual(self.engine.one_euro.min_cutoff, 0.45)
+
+        # Gaming profile
+        self.engine.apply_profile("gaming")
+        self.assertEqual(self.engine.profile, "gaming")
+        self.assertEqual(self.engine.deadzone_radius, 1.8)
+        self.assertAlmostEqual(self.engine.one_euro.min_cutoff, 1.65)
+
 
 class TestInertialScrollEngine(unittest.TestCase):
     """Tests inertial decay and flick boost."""
@@ -226,30 +244,33 @@ class TestDynamicPowerSaver(unittest.TestCase):
 
     def test_power_saver_idle_state(self):
         import time
+        from unittest.mock import patch
         from camera_manager import CameraManager
-        cm = CameraManager()
-        cm.hand_detected = True
-        cm.last_hand_seen_time = time.time()
-        cm.is_power_saver = False
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('spatial_receiver.SpatialReceiver.start'):
+                cm = CameraManager()
+                cm.hand_detected = True
+                cm.last_hand_seen_time = time.time()
+                cm.is_power_saver = False
 
-        # When hand is active
-        self.assertFalse(cm.is_power_saver)
+                # When hand is active
+                self.assertFalse(cm.is_power_saver)
 
-        # Simulate 5 seconds without hand
-        cm.hand_detected = False
-        cm.last_hand_seen_time = time.time() - 5.0
-        now_ts = time.time()
-        if (now_ts - cm.last_hand_seen_time) > 4.0:
-            cm.is_power_saver = True
+                # Simulate 5 seconds without hand
+                cm.hand_detected = False
+                cm.last_hand_seen_time = time.time() - 5.0
+                now_ts = time.time()
+                if (now_ts - cm.last_hand_seen_time) > 4.0:
+                    cm.is_power_saver = True
 
-        self.assertTrue(cm.is_power_saver)
+                self.assertTrue(cm.is_power_saver)
 
-        # Immediate turbo wake-up on hand detection
-        cm.hand_detected = True
-        cm.last_hand_seen_time = time.time()
-        cm.is_power_saver = False
-        self.assertFalse(cm.is_power_saver)
-        cm.stop()
+                # Immediate turbo wake-up on hand detection
+                cm.hand_detected = True
+                cm.last_hand_seen_time = time.time()
+                cm.is_power_saver = False
+                self.assertFalse(cm.is_power_saver)
+                cm.stop()
 
 
 if __name__ == "__main__":

@@ -59,6 +59,8 @@ class CameraManager:
             enable_acceleration=True,
             enable_click_anchor=True
         )
+        if hasattr(self.config, 'precision_profile'):
+            self.precision_engine.apply_profile(self.config.precision_profile)
         self.scroll_engine = InertialScrollEngine()
 
         # Hand tracking & recognition
@@ -627,6 +629,7 @@ class CameraManager:
             "velocity_px_s": round(getattr(self.hud, "smoothed_velocity", 0.0), 1),
             "click_mode": self.config.click_mode,
             "is_anchored": self.precision_engine.is_anchor_active,
+            "precision_profile": getattr(self.precision_engine, 'profile', 'desktop'),
             "gain": round(self.precision_engine.current_gain, 2),
             "luminance": round(getattr(self.tracker, 'current_luminance', 120.0), 1),
             "is_night_mode": getattr(self.tracker, 'is_night_mode', False),

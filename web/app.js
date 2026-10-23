@@ -300,6 +300,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchLaser = document.getElementById('switch-laser');
   const switchClahe = document.getElementById('switch-clahe');
   const valLaserStatus = document.getElementById('val-laser-status');
+  const btnProfCad = document.getElementById('btn-prof-cad');
+  const btnProfDesktop = document.getElementById('btn-prof-desktop');
+  const btnProfGaming = document.getElementById('btn-prof-gaming');
+  const badgeActiveProfile = document.getElementById('badge-active-profile');
 
   // Bimanual Controls
   const switchTwoHands = document.getElementById('switch-two-hands');
@@ -618,6 +622,51 @@ document.addEventListener('DOMContentLoaded', () => {
     postSettings({ laser_pointer_mode: e.target.checked });
   });
 
+  // Precision Profile Presets (CAD / Desktop / Gaming)
+  function updateProfileButtons(profile) {
+    [btnProfCad, btnProfDesktop, btnProfGaming].forEach(btn => btn?.classList.remove('active'));
+    if (profile === 'cad') {
+      btnProfCad?.classList.add('active');
+      if (badgeActiveProfile) badgeActiveProfile.textContent = 'CAD СВЕРХТОЧНОСТЬ';
+      if (sliderSensitivity && valSensitivity) { sliderSensitivity.value = "1.3"; valSensitivity.textContent = "1.3x"; }
+      if (sliderSmooth && valSmooth) { sliderSmooth.value = "0.15"; valSmooth.textContent = "0.15"; }
+      if (sliderDeadzone && valDeadzone) { sliderDeadzone.value = "4.2"; valDeadzone.textContent = "4.2 px"; }
+    } else if (profile === 'gaming') {
+      btnProfGaming?.classList.add('active');
+      if (badgeActiveProfile) badgeActiveProfile.textContent = 'ЭКШЕН ТУРБО';
+      if (sliderSensitivity && valSensitivity) { sliderSensitivity.value = "2.6"; valSensitivity.textContent = "2.6x"; }
+      if (sliderSmooth && valSmooth) { sliderSmooth.value = "0.70"; valSmooth.textContent = "0.70"; }
+      if (sliderDeadzone && valDeadzone) { sliderDeadzone.value = "1.8"; valDeadzone.textContent = "1.8 px"; }
+    } else {
+      btnProfDesktop?.classList.add('active');
+      if (badgeActiveProfile) badgeActiveProfile.textContent = 'БАЛАНС';
+      if (sliderSensitivity && valSensitivity) { sliderSensitivity.value = "1.8"; valSensitivity.textContent = "1.8x"; }
+      if (sliderSmooth && valSmooth) { sliderSmooth.value = "0.30"; valSmooth.textContent = "0.30"; }
+      if (sliderDeadzone && valDeadzone) { sliderDeadzone.value = "3.5"; valDeadzone.textContent = "3.5 px"; }
+    }
+  }
+
+  btnProfCad?.addEventListener('click', () => {
+    updateProfileButtons('cad');
+    soundSynth.playClick();
+    flashActionCapsule('🎯', 'Пресет: CAD / Дизайн (Сверхточность)');
+    postSettings({ precision_profile: 'cad', sensitivity: 1.3, deadzone_radius: 4.2 });
+  });
+
+  btnProfDesktop?.addEventListener('click', () => {
+    updateProfileButtons('desktop');
+    soundSynth.playClick();
+    flashActionCapsule('🌐', 'Пресет: Базовый десктоп');
+    postSettings({ precision_profile: 'desktop', sensitivity: 1.8, deadzone_radius: 3.5 });
+  });
+
+  btnProfGaming?.addEventListener('click', () => {
+    updateProfileButtons('gaming');
+    soundSynth.playClick();
+    flashActionCapsule('⚡', 'Пресет: Экшен & Презентации (Турбо)');
+    postSettings({ precision_profile: 'gaming', sensitivity: 2.6, deadzone_radius: 1.8 });
+  });
+
   // Master Switch & Pause
   masterControlSwitch?.addEventListener('change', (e) => {
     const isChecked = e.target.checked;
@@ -922,6 +971,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (switchClahe && typeof data.use_clahe === 'boolean') {
         switchClahe.checked = data.use_clahe;
+      }
+      if (data.precision_profile) {
+        updateProfileButtons(data.precision_profile);
       }
     }
 

@@ -57,6 +57,7 @@ class GestureConfig:
     deadzone_radius: float = 3.5  # Pixel threshold to lock cursor (Slide 16)
     enable_corner_snap: bool = True  # AeroMagnet: magnetic attraction to screen corners & window buttons
     enable_distance_adaptation: bool = True  # Dynamic reach normalization based on user distance from camera
+    precision_profile: str = "desktop"       # "cad", "desktop", "gaming"
 
     # --- Jitter Reduction & Smoothing ---
     # Filter types: 'ema', 'adaptive_ema', 'one_euro'
@@ -124,6 +125,7 @@ class GestureConfig:
             "deadzone_radius": self.deadzone_radius,
             "enable_corner_snap": self.enable_corner_snap,
             "enable_distance_adaptation": self.enable_distance_adaptation,
+            "precision_profile": self.precision_profile,
             "enable_legacy_shortcuts": self.enable_legacy_shortcuts,
             "laser_pointer_mode": self.laser_pointer_mode,
             "enable_power_saver": self.enable_power_saver,
