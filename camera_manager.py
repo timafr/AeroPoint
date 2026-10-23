@@ -106,6 +106,11 @@ class CameraManager:
         self.active_radial_sector: Optional[int] = None
         self.last_radial_action_time: float = 0.0
 
+        # Spatial Rotary Volume Knob state
+        self.rotary_anchor_roll: Optional[float] = None
+        self.last_rotary_step_time: float = 0.0
+        self.is_rotary_tuning: bool = False
+
         # Video capture handle & double-buffering
         self.cap: Optional[cv2.VideoCapture] = None
         self.worker_thread: Optional[threading.Thread] = None
@@ -522,8 +527,11 @@ class CameraManager:
 
                 self.latest_air_tap_pct = events.get("air_tap_pct", 0.0)
 
+                if self.is_rotary_tuning and self.mouse.is_dragging:
+                    self.mouse.mouse_up("left")
+
                 # 1. Drag & Drop handling (✊ Fist)
-                if events.get("drag_active"):
+                if events.get("drag_active") and not self.is_rotary_tuning:
                     if not self.mouse.is_dragging:
                         self.mouse.mouse_down("left")
                 else:
@@ -576,12 +584,42 @@ class CameraManager:
                     if events.get("trigger_next_slide"):
                         self.scroll_engine.brake()
                         self.mouse.next_slide()
+                        self.hud.trigger_slide_chevron(is_next=True)
                         self.hud.trigger_click_ripple(ripple_hand.landmarks_px[INDEX_TIP], is_right=False)
 
                     if events.get("trigger_prev_slide"):
                         self.scroll_engine.brake()
                         self.mouse.prev_slide()
+                        self.hud.trigger_slide_chevron(is_next=False)
                         self.hud.trigger_click_ripple(ripple_hand.landmarks_px[INDEX_TIP], is_right=False)
+
+                # 3. Spatial Rotary Volume Dial (twist wrist while holding pinch or fist)
+                rotary_hand = action_hand if (action_hand and events.get("is_dual_hand")) else pointer_hand
+                is_holding_action = (events.get("drag_active") or self.mouse.is_dragging or self.pinch_pct > 65.0 or effective_gesture in (GestureType.PINCH_CLICK, GestureType.THUMB_CLICK))
+
+                if rotary_hand and is_holding_action:
+                    curr_roll = getattr(rotary_hand, 'roll_deg', 0.0)
+                    if self.rotary_anchor_roll is None:
+                        self.rotary_anchor_roll = curr_roll
+                    else:
+                        d_roll = (curr_roll - self.rotary_anchor_roll + 180.0) % 360.0 - 180.0
+                        if abs(d_roll) >= 12.0:
+                            now_rot = time.time()
+                            if now_rot - self.last_rotary_step_time >= 0.08:
+                                self.last_rotary_step_time = now_rot
+                                self.is_rotary_tuning = True
+                                wrist_pos = (int(rotary_hand.landmarks_px[WRIST][0]), int(rotary_hand.landmarks_px[WRIST][1]))
+                                if d_roll > 0:
+                                    self.mouse.volume_up()
+                                    self.hud.trigger_rotary_feedback(wrist_pos, is_up=True, delta_deg=d_roll)
+                                    self.rotary_anchor_roll = curr_roll
+                                else:
+                                    self.mouse.volume_down()
+                                    self.hud.trigger_rotary_feedback(wrist_pos, is_up=False, delta_deg=d_roll)
+                                    self.rotary_anchor_roll = curr_roll
+                else:
+                    self.rotary_anchor_roll = None
+                    self.is_rotary_tuning = False
 
                 scroll_delta = events.get("scroll_delta", 0)
                 if scroll_delta != 0:

@@ -1146,6 +1146,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (pillDistance) pillDistance.style.borderColor = 'rgba(255, 255, 255, 0.12)';
     }
 
+    // Hand Tilt / Roll telemetry
+    const badgeTilt = document.getElementById('badge-tilt');
+    if (badgeTilt && typeof data.roll_deg === 'number' && data.hand_detected) {
+      const sign = data.roll_deg > 0 ? '+' : '';
+      badgeTilt.textContent = `${sign}${Math.round(data.roll_deg)}°`;
+    } else if (badgeTilt && !data.hand_detected) {
+      badgeTilt.textContent = '0°';
+    }
+
     // Tracking status badge
     if (trackingStatusBadge) {
       if (data.hand_detected) {

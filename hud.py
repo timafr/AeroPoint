@@ -40,6 +40,12 @@ class CyberHUD:
         # Click ripple animation queue: list of (x, y, radius, max_radius, color, start_time)
         self.ripples: List[Dict[str, any]] = []
 
+        # Slide swipe visual chevron animation queue
+        self.swipe_chevrons: List[Dict[str, any]] = []
+
+        # Rotary dial visual feedback queue
+        self.rotary_feedbacks: List[Dict[str, any]] = []
+
         # Kinetic velocity tracker & precision reticle
         self.prev_pointer_tip: Optional[Tuple[int, int]] = None
         self.prev_pointer_time: float = 0.0
@@ -61,6 +67,98 @@ class CyberHUD:
             "color": color,
             "created": time.time()
         })
+
+    def trigger_slide_chevron(self, is_next: bool = True):
+        """Spawns a glowing directional slide transition chevron across the HUD."""
+        self.swipe_chevrons.append({
+            "is_next": is_next,
+            "created": time.time()
+        })
+
+    def trigger_rotary_feedback(self, px: Tuple[int, int], is_up: bool = True, delta_deg: float = 0.0):
+        """Spawns an in-air holographic volume dial arc around the wrist/hand."""
+        self.rotary_feedbacks.append({
+            "x": px[0],
+            "y": px[1],
+            "is_up": is_up,
+            "delta_deg": delta_deg,
+            "created": time.time()
+        })
+
+    def draw_slide_chevrons(self, frame: np.ndarray):
+        """Renders animated presentation slide transition chevrons across the screen."""
+        if not self.swipe_chevrons:
+            return
+        now = time.time()
+        active = []
+        h, w, _ = frame.shape
+        cy = h // 2
+
+        for sc in self.swipe_chevrons:
+            elapsed = now - sc["created"]
+            duration = 0.45
+            if elapsed < duration:
+                progress = elapsed / duration
+                alpha = max(0.0, 1.0 - progress)
+                col = (0, 242, 254) if sc["is_next"] else (255, 0, 128)
+                label = "СЛЕДУЮЩИЙ СЛАЙД  >>>" if sc["is_next"] else "<<<  ПРЕДЫДУЩИЙ СЛАЙД"
+
+                if sc["is_next"]:
+                    cx = int(w * 0.40 + (w * 0.45 * progress))
+                else:
+                    cx = int(w * 0.60 - (w * 0.45 * progress))
+
+                bw, bh = 240, 44
+                x1 = max(0, cx - bw // 2)
+                x2 = min(w, cx + bw // 2)
+                y1 = max(0, cy - bh // 2)
+                y2 = min(h, cy + bh // 2)
+
+                if x2 > x1 and y2 > y1:
+                    overlay = frame.copy()
+                    cv2.rectangle(overlay, (x1, y1), (x2, y2), (14, 12, 18), -1)
+                    cv2.rectangle(overlay, (x1, y1), (x2, y2), col, 2, cv2.LINE_AA)
+                    cv2.putText(overlay, label, (x1 + 14, cy + 6), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (255, 255, 255), 1, cv2.LINE_AA)
+                    cv2.addWeighted(overlay, alpha * 0.85, frame, 1.0 - (alpha * 0.85), 0, frame)
+
+                active.append(sc)
+        self.swipe_chevrons = active
+
+    def draw_rotary_dials(self, frame: np.ndarray):
+        """Renders in-air rotary volume knob dial arc at wrist/hand coordinates."""
+        if not self.rotary_feedbacks:
+            return
+        now = time.time()
+        active = []
+        h, w, _ = frame.shape
+
+        for rf in self.rotary_feedbacks:
+            elapsed = now - rf["created"]
+            duration = 0.40
+            if elapsed < duration:
+                progress = elapsed / duration
+                alpha = max(0.0, 1.0 - progress)
+                rx, ry = int(rf["x"]), int(rf["y"])
+                col = (0, 230, 118) if rf["is_up"] else (255, 60, 160)
+                tag = "VOL +" if rf["is_up"] else "VOL -"
+
+                r = 32
+                x1 = max(0, rx - r - 25)
+                x2 = min(w, rx + r + 25)
+                y1 = max(0, ry - r - 25)
+                y2 = min(h, ry + r + 25)
+
+                if x2 > x1 and y2 > y1:
+                    overlay = frame.copy()
+                    start_a = -90 if rf["is_up"] else 90
+                    end_a = start_a + (120 if rf["is_up"] else -120)
+                    cv2.ellipse(overlay, (rx, ry), (r, r), 0, start_a, end_a, col, 3, cv2.LINE_AA)
+                    cv2.circle(overlay, (rx, ry), 4, (255, 255, 255), -1, cv2.LINE_AA)
+                    cv2.putText(overlay, tag, (rx - 22, ry + 5), cv2.FONT_HERSHEY_PLAIN, 0.9, (255, 255, 255), 1, cv2.LINE_AA)
+                    cv2.addWeighted(overlay, alpha * 0.80, frame, 1.0 - (alpha * 0.80), 0, frame)
+
+                active.append(rf)
+        self.rotary_feedbacks = active
 
     def update_jitter_chart(self, raw_coord: float, ema_coord: float):
         """Appends latest coordinates for real-time jitter graph rendering."""
@@ -795,6 +893,8 @@ class CyberHUD:
             self.draw_radial_hud(frame, active_sector=active_radial_sector)
 
         self.draw_ripples(frame)
+        self.draw_slide_chevrons(frame)
+        self.draw_rotary_dials(frame)
         return frame
 
     def render(

@@ -277,6 +277,16 @@ class TestCyberHUD(unittest.TestCase):
         self.assertEqual(hand.roll_deg, 18.5)
         self.assertEqual(hand.pitch_deg, -4.2)
 
+    def test_render_slide_chevrons_and_rotary_dials(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        self.hud.trigger_slide_chevron(is_next=True)
+        self.hud.trigger_slide_chevron(is_next=False)
+        self.hud.trigger_rotary_feedback((320, 240), is_up=True, delta_deg=14.0)
+        self.hud.trigger_rotary_feedback((320, 240), is_up=False, delta_deg=-14.0)
+        rendered = self.hud.render_clean(frame)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+
 
 class TestNightVisionBooster(unittest.TestCase):
     """Verifies low-light CLAHE and zero-latency LUT gamma boost."""
