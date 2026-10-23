@@ -400,22 +400,44 @@ class CyberHUD:
                 bone_col = self.config.COLOR_CYAN
             tip_col = self.config.COLOR_MAGENTA
 
-        # Draw bones
+        # Dynamic 3D Perspective Depth Scaling based on physical distance
+        dist_val = getattr(hand, 'estimated_distance_cm', 50.0)
+        depth_scale = max(0.65, min(1.65, 50.0 / max(22.0, dist_val)))
+        bone_thick = max(1, int(round(2 * depth_scale)))
+        tip_r = max(4, int(round(6 * depth_scale)))
+        joint_r = max(2, int(round(3 * depth_scale)))
+        shadow_dx = max(1, int(round(2 * depth_scale)))
+        shadow_dy = max(2, int(round(3 * depth_scale)))
+
+        # 1. Perspective Depth Drop Shadow (creates floating spatial 3D effect)
+        for p1_idx, p2_idx in HAND_CONNECTIONS:
+            pt1 = (pts[p1_idx][0] + shadow_dx, pts[p1_idx][1] + shadow_dy)
+            pt2 = (pts[p2_idx][0] + shadow_dx, pts[p2_idx][1] + shadow_dy)
+            cv2.line(frame, pt1, pt2, (10, 8, 14), bone_thick + 1, cv2.LINE_AA)
+
+        # 2. Glowing Optical Bones
         for p1_idx, p2_idx in HAND_CONNECTIONS:
             pt1 = (pts[p1_idx][0], pts[p1_idx][1])
             pt2 = (pts[p2_idx][0], pts[p2_idx][1])
-            cv2.line(frame, pt1, pt2, bone_col, 2, cv2.LINE_AA)
+            cv2.line(frame, pt1, pt2, bone_col, bone_thick, cv2.LINE_AA)
 
-        # Draw joints
+        # 3. Floating 3D Joints & Specular Photon Reflections
         for idx, pt in enumerate(pts):
             coord = (pt[0], pt[1])
             is_tip = idx in (THUMB_TIP, INDEX_TIP, MIDDLE_TIP)
 
             if is_tip:
-                cv2.circle(frame, coord, 6, tip_col, -1, cv2.LINE_AA)
-                cv2.circle(frame, coord, 9, self.config.COLOR_WHITE, 1, cv2.LINE_AA)
+                # Shadow
+                cv2.circle(frame, (coord[0] + shadow_dx, coord[1] + shadow_dy), tip_r, (10, 8, 14), -1, cv2.LINE_AA)
+                # Colored core orb
+                cv2.circle(frame, coord, tip_r, tip_col, -1, cv2.LINE_AA)
+                # Outer photon halo
+                cv2.circle(frame, coord, tip_r + 3, self.config.COLOR_WHITE, 1, cv2.LINE_AA)
+                # Specular optical glint
+                cv2.circle(frame, (coord[0] - 1, coord[1] - 1), max(1, tip_r // 3), (255, 255, 255), -1, cv2.LINE_AA)
             else:
-                cv2.circle(frame, coord, 3, bone_col, -1, cv2.LINE_AA)
+                cv2.circle(frame, coord, joint_r, bone_col, -1, cv2.LINE_AA)
+                cv2.circle(frame, coord, max(1, joint_r - 1), (255, 255, 255), -1, cv2.LINE_AA)
 
         # Role badge above wrist
         w_pt = (pts[WRIST][0], max(20, pts[WRIST][1] - 12))
