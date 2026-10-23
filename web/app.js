@@ -1667,11 +1667,58 @@ document.addEventListener('DOMContentLoaded', () => {
   ];
 
   let holoAnimId = null;
+  let holoListenersAttached = false;
+  let holoAngleY = 0;
+  let holoAngleX = 0.35;
+  let holoZoom = 1.0;
+  let holoDragging = false;
+  let holoLastMouse = { x: 0, y: 0 };
+  let holoAutoSpin = true;
+
   function start3DHologramLoop() {
     if (!hologramCanvas) return;
     const ctx = hologramCanvas.getContext('2d');
-    let angleY = 0;
-    let angleX = 0.35;
+
+    if (!holoListenersAttached) {
+      holoListenersAttached = true;
+      hologramCanvas.style.cursor = 'grab';
+
+      hologramCanvas.addEventListener('mousedown', (e) => {
+        holoDragging = true;
+        holoAutoSpin = false;
+        holoLastMouse = { x: e.clientX, y: e.clientY };
+        hologramCanvas.style.cursor = 'grabbing';
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!holoDragging) return;
+        const dx = e.clientX - holoLastMouse.x;
+        const dy = e.clientY - holoLastMouse.y;
+        holoAngleY += dx * 0.012;
+        holoAngleX = Math.max(-1.2, Math.min(1.2, holoAngleX + dy * 0.012));
+        holoLastMouse = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (holoDragging) {
+          holoDragging = false;
+          hologramCanvas.style.cursor = 'grab';
+        }
+      });
+
+      hologramCanvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        holoZoom = Math.max(0.45, Math.min(2.4, holoZoom - e.deltaY * 0.0015));
+      }, { passive: false });
+
+      hologramCanvas.addEventListener('dblclick', () => {
+        holoAngleY = 0;
+        holoAngleX = 0.35;
+        holoZoom = 1.0;
+        holoAutoSpin = true;
+        soundSynth.playPinch();
+      });
+    }
 
     function render3D() {
       if (!is3DModeActive) return;
@@ -1679,15 +1726,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const h = hologramCanvas.height = hologramCanvas.clientHeight || 480;
 
       ctx.clearRect(0, 0, w, h);
-      angleY += 0.018;
+      if (holoAutoSpin && !holoDragging) {
+        holoAngleY += 0.018;
+      }
 
-      // 3D Perspective Projection Matrix
+      // 3D Perspective Projection Matrix with Dynamic Zoom
       const cx = w / 2;
       const cy = h / 2 + 30;
-      const scale = Math.min(w, h) * 0.72;
+      const scale = Math.min(w, h) * 0.72 * holoZoom;
 
-      const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
-      const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
+      const cosY = Math.cos(holoAngleY), sinY = Math.sin(holoAngleY);
+      const cosX = Math.cos(holoAngleX), sinX = Math.sin(holoAngleX);
 
       // Determine active 3D vertices (Live Neural Hand vs Canonical Model)
       let vertices = CANONICAL_HAND_3D;
@@ -1763,7 +1812,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.fillStyle = isLiveMesh ? '#00e676' : 'rgba(0, 242, 254, 0.8)';
       ctx.fillText(isLiveMesh ? '✦ LIVE NEURAL 3D SKELETON (ACTIVE)' : '✦ 3D SPATIAL KINEMATIC MESH (STANDBY)', 24, 34);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-      ctx.fillText(`ROTATION Y: ${(angleY % (Math.PI * 2)).toFixed(2)} rad | JOINTS: 21/21 | MODE: ${isLiveMesh ? 'REAL-TIME 3D' : 'PROJECTION'}`, 24, 52);
+      ctx.fillText(`ROTATION Y: ${(holoAngleY % (Math.PI * 2)).toFixed(2)} rad | ZOOM: ${Math.round(holoZoom * 100)}% | MODE: ${isLiveMesh ? 'REAL-TIME 3D' : 'PROJECTION'} (Тяните мышь для вращения)`, 24, 52);
 
       holoAnimId = requestAnimationFrame(render3D);
     }
