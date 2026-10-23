@@ -20,9 +20,10 @@
 3. В настройках проекта `Signing & Capabilities` выберите ваш бесплатный Apple ID (Personal Team).
 4. Нажмите **Run ▶**. Приложение установится на телефон!
 
-#### Способ 2: Через AltStore / Sideloadly (Без Mac)
-1. Соберите проект в `.ipa` или используйте готовый билд через AltStore / Sideloadly с Windows.
-2. Установите на телефон и подтвердите сертификат в `Настройки -> Основные -> VPN и управление устройством`.
+#### Способ 2: Через GitHub Releases / AltStore / Sideloadly (Без Mac)
+1. Скачайте свежий готовый `AeroPointSpatial.ipa` прямо из вкладки **Releases** или **Actions Artifacts** репозитория GitHub.
+2. Установите через AltStore, SideStore, TrollStore, Scarlet или Sideloadly.
+3. Подтвердите сертификат разработчика: `Настройки -> Основные -> VPN и управление устройством -> Доверять`.
 
 ---
 
