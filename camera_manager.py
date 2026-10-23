@@ -509,7 +509,8 @@ class CameraManager:
                         action_hand=action_hand,
                         gesture=effective_gesture,
                         action_gesture=self.action_gesture,
-                        show_skeleton=self.config.show_skeleton
+                        show_skeleton=self.config.show_skeleton,
+                        laser_pointer_mode=getattr(self.config, 'laser_pointer_mode', False)
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)

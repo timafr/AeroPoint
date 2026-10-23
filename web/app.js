@@ -974,6 +974,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Windows Aero Snap & Desktop Switcher Controls
+  const snapActions = [
+    { id: 'btn-snap-left', action: 'snap_left' },
+    { id: 'btn-snap-max', action: 'snap_maximize' },
+    { id: 'btn-snap-right', action: 'snap_right' },
+    { id: 'btn-desk-prev', action: 'desktop_prev' },
+    { id: 'btn-desk-next', action: 'desktop_next' },
+  ];
+
+  snapActions.forEach(({ id, action }) => {
+    document.getElementById(id)?.addEventListener('click', () => {
+      soundSynth.playPinch();
+      fetch('/api/radial/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+    });
+  });
+
   // =========================================================================
   // 11. Interactive Auto-Calibration Wizard
   // =========================================================================

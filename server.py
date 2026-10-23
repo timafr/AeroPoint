@@ -228,6 +228,16 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 mouse.next_slide()
             elif action in ('prev_slide', 'prev'):
                 mouse.prev_slide()
+            elif action in ('snap_left', 'window_left'):
+                mouse.snap_window_left()
+            elif action in ('snap_right', 'window_right'):
+                mouse.snap_window_right()
+            elif action in ('snap_maximize', 'maximize'):
+                mouse.snap_window_maximize()
+            elif action in ('desktop_next', 'workspace_next'):
+                mouse.switch_desktop_next()
+            elif action in ('desktop_prev', 'workspace_prev'):
+                mouse.switch_desktop_prev()
             else:
                 return {"status": "error", "message": f"Unknown action: {action}"}
             return {"status": "ok", "action": action}

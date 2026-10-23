@@ -1862,6 +1862,31 @@ input:checked + .slider:before {
   margin-top: 10px;
 }
 
+.remote-snap-cluster {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cluster-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+
+.snap-buttons-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.snap-buttons-row:last-child {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 /* ==========================================================================
    Air-Draw Canvas & Floating Palette
    ========================================================================== */

@@ -32,6 +32,8 @@ if IS_WINDOWS:
     VK_S = 0x53
     VK_C = 0x43
     VK_Q = 0x51
+    VK_L = 0x4C
+    VK_Z = 0x5A
     VK_ESCAPE = 0x1B
 
 
@@ -48,6 +50,8 @@ class GlobalHotkeyService:
             "ctrl_alt_s": False,
             "ctrl_alt_c": False,
             "ctrl_alt_q": False,
+            "ctrl_alt_l": False,
+            "ctrl_alt_z": False,
         }
 
     def register_callback(self, hotkey: str, callback: Callable[[], None]):
@@ -118,6 +122,22 @@ class GlobalHotkeyService:
                     elif not q_down:
                         self.key_states["ctrl_alt_q"] = False
 
+                    # 6. Ctrl + Alt + L -> Toggle Laser Pointer Mode
+                    l_down = bool(user32.GetAsyncKeyState(VK_L) & 0x8000)
+                    if l_down and not self.key_states["ctrl_alt_l"]:
+                        self.key_states["ctrl_alt_l"] = True
+                        self._trigger("ctrl_alt_l", self._toggle_laser)
+                    elif not l_down:
+                        self.key_states["ctrl_alt_l"] = False
+
+                    # 7. Ctrl + Alt + Z -> Snap Window Maximize
+                    z_down = bool(user32.GetAsyncKeyState(VK_Z) & 0x8000)
+                    if z_down and not self.key_states["ctrl_alt_z"]:
+                        self.key_states["ctrl_alt_z"] = True
+                        self._trigger("ctrl_alt_z", self._snap_maximize)
+                    elif not z_down:
+                        self.key_states["ctrl_alt_z"] = False
+
                 else:
                     for k in self.key_states:
                         self.key_states[k] = False
@@ -164,3 +184,15 @@ class GlobalHotkeyService:
         if self.manager and hasattr(self.manager, 'mouse'):
             self.manager.mouse.task_view()
             print("[*] Hotkey [Ctrl+Alt+Q]: Quick Task Switch summoned")
+
+    def _toggle_laser(self):
+        if self.manager and hasattr(self.manager, 'config'):
+            cur = getattr(self.manager.config, 'laser_pointer_mode', False)
+            self.manager.config.laser_pointer_mode = not cur
+            state = "ACTIVE" if self.manager.config.laser_pointer_mode else "OFF"
+            print(f"[*] Hotkey [Ctrl+Alt+L]: Laser Pointer {state}")
+
+    def _snap_maximize(self):
+        if self.manager and hasattr(self.manager, 'mouse'):
+            self.manager.mouse.snap_window_maximize()
+            print("[*] Hotkey [Ctrl+Alt+Z]: Window Maximized / Snapped")

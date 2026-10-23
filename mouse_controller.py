@@ -260,6 +260,65 @@ class MouseController:
         else:
             pyautogui.press('left')
 
+    def snap_window_left(self):
+        """Snaps active window to left half (Win + Left)."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_LWIN, 0, 0, 0)
+            user32.keybd_event(VK_LEFT, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.hotkey('win', 'left')
+
+    def snap_window_right(self):
+        """Snaps active window to right half (Win + Right)."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_LWIN, 0, 0, 0)
+            user32.keybd_event(VK_RIGHT, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.hotkey('win', 'right')
+
+    def snap_window_maximize(self):
+        """Maximizes active window (Win + Up)."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_LWIN, 0, 0, 0)
+            user32.keybd_event(VK_UP, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.hotkey('win', 'up')
+
+    def switch_desktop_next(self):
+        """Switches to next virtual desktop (Win + Ctrl + Right)."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_LWIN, 0, 0, 0)
+            user32.keybd_event(VK_CONTROL, 0, 0, 0)
+            user32.keybd_event(VK_RIGHT, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.hotkey('win', 'ctrl', 'right')
+
+    def switch_desktop_prev(self):
+        """Switches to previous virtual desktop (Win + Ctrl + Left)."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_LWIN, 0, 0, 0)
+            user32.keybd_event(VK_CONTROL, 0, 0, 0)
+            user32.keybd_event(VK_LEFT, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.hotkey('win', 'ctrl', 'left')
+
     def press_key(self, key: str):
         """Presses an on-screen / virtual key by name."""
         key_lower = key.lower()

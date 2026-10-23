@@ -20,7 +20,7 @@ from typing import List, Tuple, Optional, Dict
 from config import GestureConfig
 from hand_tracker import (
     HandData, HAND_CONNECTIONS,
-    WRIST, THUMB_TIP, INDEX_TIP, MIDDLE_TIP
+    WRIST, THUMB_TIP, INDEX_MCP, INDEX_TIP, MIDDLE_TIP
 )
 from gestures import GestureType
 
@@ -326,6 +326,63 @@ class CyberHUD:
         cv2.putText(frame, help_text, (16, bar_y),
                     self.font_mono, 0.8, (200, 200, 200), 1, cv2.LINE_AA)
 
+    def draw_laser_pointer(
+        self,
+        frame: np.ndarray,
+        hand: HandData,
+        is_clicking: bool = False
+    ):
+        """Renders holographic laser targeting beam and futuristic reticle."""
+        pts = hand.landmarks_px
+        h, w, _ = frame.shape
+        mcp = pts[INDEX_MCP]
+        tip = pts[INDEX_TIP]
+
+        # Ray vector from knuckle through index tip
+        dx = float(tip[0] - mcp[0])
+        dy = float(tip[1] - mcp[1])
+        mag = math.hypot(dx, dy)
+        if mag < 1e-4:
+            return
+
+        ndx = dx / mag
+        ndy = dy / mag
+
+        # Project 220 pixels in front of the finger tip
+        target_dist = 220.0
+        tx = int(tip[0] + ndx * target_dist)
+        ty = int(tip[1] + ndy * target_dist)
+        tx = max(8, min(w - 8, tx))
+        ty = max(8, min(h - 8, ty))
+
+        beam_color = (0, 242, 254) if not is_clicking else (50, 50, 255)
+        glow_color = (0, 180, 255) if not is_clicking else (80, 80, 255)
+
+        # 1. Outer glowing beam (alpha blended)
+        overlay = frame.copy()
+        cv2.line(overlay, (tip[0], tip[1]), (tx, ty), glow_color, 5, cv2.LINE_AA)
+        cv2.addWeighted(overlay, 0.45, frame, 0.55, 0, frame)
+
+        # 2. Core crisp laser beam
+        cv2.line(frame, (tip[0], tip[1]), (tx, ty), (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.circle(frame, (tip[0], tip[1]), 3, (255, 255, 255), -1, cv2.LINE_AA)
+
+        # 3. Holographic Reticle at target
+        reticle_rad = 12 if not is_clicking else 7
+        cv2.circle(frame, (tx, ty), reticle_rad, beam_color, 1, cv2.LINE_AA)
+        cv2.circle(frame, (tx, ty), 3, (255, 255, 255), -1, cv2.LINE_AA)
+
+        # Crosshairs
+        ch_len = 8
+        cv2.line(frame, (tx - ch_len - 4, ty), (tx - 4, ty), beam_color, 1, cv2.LINE_AA)
+        cv2.line(frame, (tx + 4, ty), (tx + ch_len + 4, ty), beam_color, 1, cv2.LINE_AA)
+        cv2.line(frame, (tx, ty - ch_len - 4), (tx, ty - 4), beam_color, 1, cv2.LINE_AA)
+        cv2.line(frame, (tx, ty + 4), (tx, ty + ch_len + 4), beam_color, 1, cv2.LINE_AA)
+
+        # Target Coordinates Tag
+        tag = f"L-AIM [{tx},{ty}]"
+        cv2.putText(frame, tag, (tx + 12, ty - 6), cv2.FONT_HERSHEY_PLAIN, 0.75, beam_color, 1, cv2.LINE_AA)
+
     def render_clean(
         self,
         frame: np.ndarray,
@@ -335,7 +392,8 @@ class CyberHUD:
         action_gesture: GestureType = GestureType.NONE,
         pointer_hand: Optional[HandData] = None,
         action_hand: Optional[HandData] = None,
-        show_skeleton: bool = True
+        show_skeleton: bool = True,
+        laser_pointer_mode: bool = False
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
         if show_skeleton:
@@ -347,6 +405,13 @@ class CyberHUD:
                     self.draw_skeleton(frame, h, gesture, is_action_hand=(idx > 0))
             elif hand:
                 self.draw_skeleton(frame, hand, gesture, is_action_hand=False)
+
+        # Holographic Laser Aiming Vector
+        if laser_pointer_mode:
+            target_h = pointer_hand or (hands[0] if hands else hand)
+            if target_h:
+                is_click = gesture in (GestureType.THUMB_CLICK, GestureType.PINCH_CLICK, GestureType.AIR_TAP)
+                self.draw_laser_pointer(frame, target_h, is_clicking=is_click)
 
         self.draw_ripples(frame)
         return frame
