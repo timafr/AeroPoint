@@ -406,6 +406,59 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}
 
+    @app.route('/api/diagnostics', method='GET')
+    def get_diagnostics():
+        """Returns deep real-time system diagnostic report across hardware, filters, and OS APIs."""
+        import os, psutil
+        try:
+            process = psutil.Process(os.getpid())
+            mem_rss = round(process.memory_info().rss / (1024 * 1024), 1)
+        except Exception:
+            mem_rss = 0.0
+
+        return {
+            "status": "healthy",
+            "uptime_sec": round(time.time() - getattr(manager, 'start_time', time.time()), 1),
+            "system_resources": {
+                "memory_mb": mem_rss,
+                "cpu_percent": round(manager.hud.cached_cpu, 1),
+            },
+            "subsystems": {
+                "camera_pipeline": {
+                    "fps": round(manager.fps, 1),
+                    "target_fps": manager.config.target_fps,
+                    "latency_ms": round(manager.latency_ms, 1),
+                    "active_camera_id": manager.active_camera_id,
+                    "power_saver_active": bool(manager.is_power_saver),
+                    "active_tab": manager.active_tab,
+                    "directshow_connected": bool(manager.cap and manager.cap.isOpened()),
+                },
+                "spatial_receiver": {
+                    "listening": bool(getattr(manager.spatial_receiver, 'running', False)),
+                    "connected": bool(getattr(manager.spatial_receiver, 'is_connected', False)),
+                    "packet_count": int(getattr(manager.spatial_receiver, 'packet_count', 0)),
+                },
+                "display_and_mouse": {
+                    "origin": list(manager.screen_origin),
+                    "size": list(manager.screen_size),
+                    "monitors_count": len(manager.mouse.monitors),
+                    "active_monitor": manager.mouse.active_monitor_index,
+                },
+                "precision_engine": {
+                    "profile": getattr(manager.precision_engine, 'profile', 'desktop'),
+                    "min_cutoff": float(manager.precision_engine.one_euro.min_cutoff),
+                    "beta": float(manager.precision_engine.one_euro.beta),
+                    "deadzone": float(manager.precision_engine.deadzone_radius),
+                    "is_anchored": bool(manager.precision_engine.is_anchor_active),
+                },
+                "config_persistence": {
+                    "file_exists": bool(os.path.exists("config.json")),
+                    "hud_theme": str(manager.config.hud_theme),
+                    "sound_theme": str(manager.config.sound_theme),
+                }
+            }
+        }
+
     @app.route('/api/status', method='GET')
     def get_status():
         return manager.get_telemetry()

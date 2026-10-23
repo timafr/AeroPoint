@@ -46,6 +46,7 @@ def get_system_camera_names() -> List[str]:
 class CameraManager:
     """Thread-safe multi-camera and gesture processing orchestrator."""
     def __init__(self, config: Optional[GestureConfig] = None):
+        self.start_time = time.time()
         self.config = config or GestureConfig.load_from_file()
         self.mouse = MouseController(enable_sound=self.config.enable_sound_feedback)
         self.screen_size = (self.mouse.screen_width, self.mouse.screen_height)
@@ -151,10 +152,13 @@ class CameraManager:
                 pass
         return None
 
-    def discover_cameras(self, max_test: int = 4) -> List[Dict[str, any]]:
-        """Scans and discovers real hardware cameras using DirectShow device registry."""
+    def discover_cameras(self, max_test: int = 2) -> List[Dict[str, any]]:
+        """Scans and discovers real hardware cameras using DirectShow device registry without slow polling."""
         results = []
-        system_names = get_system_camera_names()
+        try:
+            system_names = get_system_camera_names()
+        except Exception:
+            system_names = []
 
         if system_names:
             for idx, dev_name in enumerate(system_names[:max_test]):
@@ -164,22 +168,22 @@ class CameraManager:
                     "resolution": f"{self.config.cam_width}x{self.config.cam_height}"
                 })
         else:
-            for idx in range(max_test):
-                try:
-                    backend = cv2.CAP_DSHOW if sys.platform.startswith("win") else cv2.CAP_ANY
-                    cap = cv2.VideoCapture(idx, backend)
-                    if cap and cap.isOpened():
-                        results.append({
-                            "id": idx,
-                            "label": f"Camera #{idx}",
-                            "resolution": f"{self.config.cam_width}x{self.config.cam_height}"
-                        })
-                        cap.release()
-                except Exception:
-                    pass
+            # Fast single-device fallback if registry enumeration unavailable
+            try:
+                backend = cv2.CAP_DSHOW if sys.platform.startswith("win") else cv2.CAP_ANY
+                cap = cv2.VideoCapture(0, backend)
+                if cap and cap.isOpened():
+                    results.append({
+                        "id": 0,
+                        "label": "Camera #0",
+                        "resolution": f"{self.config.cam_width}x{self.config.cam_height}"
+                    })
+                    cap.release()
+            except Exception:
+                pass
 
         if not results:
-            results.append({"id": 0, "label": "Default Camera", "resolution": "640x480"})
+            results.append({"id": 0, "label": "Default Camera", "resolution": f"{self.config.cam_width}x{self.config.cam_height}"})
 
         self.discovered_cameras = results
         return results

@@ -208,6 +208,7 @@ class TestSpatialNetworking(unittest.TestCase):
         self.assertEqual(hands[0].handedness, "Right")
         # Landmark X should be inverted: 1.0 - 0.2 = 0.8
         self.assertAlmostEqual(hands[0].landmarks_norm[0][0], 0.8, places=2)
+        receiver.stop()
 
 
 class TestCyberHUD(unittest.TestCase):
@@ -278,10 +279,13 @@ class TestMultiMonitorManagement(unittest.TestCase):
         self.assertGreater(dist_far, 150.0)
 
     def test_keyboard_type_unicode(self):
+        from unittest.mock import patch
         mc = MouseController()
-        # Validates that Unicode typing and key presses execute without errors
-        mc.type_text("Aero")
-        mc.press_key("esc")
+        # Mock low-level User32 keybd_event to prevent terminal input interception
+        with patch('mouse_controller.user32.keybd_event') as mock_keybd:
+            mc.type_text("Aero")
+            mc.press_key("esc")
+            self.assertGreater(mock_keybd.call_count, 0)
 
 
 class TestDynamicPowerSaver(unittest.TestCase):
@@ -292,30 +296,74 @@ class TestDynamicPowerSaver(unittest.TestCase):
         from unittest.mock import patch
         from camera_manager import CameraManager
         with patch.object(CameraManager, 'discover_cameras', return_value=[]):
-            with patch('spatial_receiver.SpatialReceiver.start'):
-                cm = CameraManager()
-                cm.hand_detected = True
-                cm.last_hand_seen_time = time.time()
-                cm.is_power_saver = False
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    cm.hand_detected = True
+                    cm.last_hand_seen_time = time.time()
+                    cm.is_power_saver = False
 
-                # When hand is active
-                self.assertFalse(cm.is_power_saver)
+                    # When hand is active
+                    self.assertFalse(cm.is_power_saver)
 
-                # Simulate 5 seconds without hand
-                cm.hand_detected = False
-                cm.last_hand_seen_time = time.time() - 5.0
-                now_ts = time.time()
-                if (now_ts - cm.last_hand_seen_time) > 4.0:
-                    cm.is_power_saver = True
+                    # Simulate 5 seconds without hand
+                    cm.hand_detected = False
+                    cm.last_hand_seen_time = time.time() - 5.0
+                    now_ts = time.time()
+                    if (now_ts - cm.last_hand_seen_time) > 4.0:
+                        cm.is_power_saver = True
 
-                self.assertTrue(cm.is_power_saver)
+                    self.assertTrue(cm.is_power_saver)
 
-                # Immediate turbo wake-up on hand detection
-                cm.hand_detected = True
-                cm.last_hand_seen_time = time.time()
-                cm.is_power_saver = False
-                self.assertFalse(cm.is_power_saver)
-                cm.stop()
+                    # Immediate turbo wake-up on hand detection
+                    cm.hand_detected = True
+                    cm.last_hand_seen_time = time.time()
+                    cm.is_power_saver = False
+                    self.assertFalse(cm.is_power_saver)
+                    cm.stop()
+
+
+class TestDiagnosticsAPI(unittest.TestCase):
+    """Verifies automated diagnostics data structure and telemetry reporting."""
+
+    def test_diagnostics_report_structure(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+                    self.assertIsNotNone(app)
+
+                    # WSGI invocation of Bottle route
+                    environ = {
+                        'PATH_INFO': '/api/diagnostics',
+                        'REQUEST_METHOD': 'GET',
+                        'wsgi.input': io.BytesIO(),
+                        'wsgi.errors': io.StringIO(),
+                        'SERVER_NAME': 'localhost',
+                        'SERVER_PORT': '5000'
+                    }
+                    status_captured = []
+                    headers_captured = []
+                    def start_response(status, headers, *args):
+                        status_captured.append(status)
+                        headers_captured.extend(headers)
+
+                    body = b"".join(app(environ, start_response))
+                    self.assertTrue(status_captured[0].startswith("200"))
+                    data = json.loads(body.decode('utf-8'))
+                    self.assertIn("status", data)
+                    self.assertIn("subsystems", data)
+                    self.assertIn("system_resources", data)
+                    self.assertIn("camera_pipeline", data["subsystems"])
+                    self.assertIn("spatial_receiver", data["subsystems"])
+                    cm.stop()
 
 
 if __name__ == "__main__":
