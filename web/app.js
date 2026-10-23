@@ -52,6 +52,17 @@ document.addEventListener('DOMContentLoaded', () => {
         gain.connect(this.ctx.destination);
         osc.start(now);
         osc.stop(now + 0.045);
+      } else if (this.theme === 'bionic') {
+        // Bionic tactile micro-relay servo click
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.035);
+        gain.gain.setValueAtTime(this.volume * 0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.045);
       } else {
         // Quantum Cyber click (crisp tactile snap)
         osc.type = 'triangle';
@@ -76,10 +87,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const osc2 = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
 
-      osc1.type = 'sine';
-      osc2.type = 'sine';
-      osc1.frequency.setValueAtTime(880, now);   // A5
-      osc2.frequency.setValueAtTime(1760, now);  // A6
+      if (this.theme === 'vision') {
+        // Apple Vision soft bell dual chime
+        osc1.type = 'sine';
+        osc2.type = 'sine';
+        osc1.frequency.setValueAtTime(880, now);    // A5
+        osc2.frequency.setValueAtTime(1108.7, now); // C#6
+      } else if (this.theme === 'bionic') {
+        // Dual mechanical relay trigger
+        osc1.type = 'square';
+        osc2.type = 'triangle';
+        osc1.frequency.setValueAtTime(550, now);
+        osc2.frequency.setValueAtTime(1100, now);
+      } else {
+        // Quantum octave harmonic ping
+        osc1.type = 'sine';
+        osc2.type = 'sine';
+        osc1.frequency.setValueAtTime(880, now);   // A5
+        osc2.frequency.setValueAtTime(1760, now);  // A6
+      }
 
       gain.gain.setValueAtTime(this.volume * 0.35, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
@@ -103,11 +129,24 @@ document.addEventListener('DOMContentLoaded', () => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(70, now);
-      osc.frequency.exponentialRampToValueAtTime(140, now + 0.15);
+      if (this.theme === 'bionic') {
+        // Heavy hydraulic lock buzz
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(65, now);
+        osc.frequency.exponentialRampToValueAtTime(130, now + 0.15);
+      } else if (this.theme === 'vision') {
+        // Smooth ethereal swell
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(220, now + 0.15);
+      } else {
+        // Quantum bass warp
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(70, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.15);
+      }
 
-      gain.gain.setValueAtTime(this.volume * 0.7, now);
+      gain.gain.setValueAtTime(this.volume * 0.65, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.20);
 
       osc.connect(gain);
@@ -129,9 +168,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
 
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1800, now);
-      osc.frequency.exponentialRampToValueAtTime(400, now + 0.012);
+      if (this.theme === 'vision') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(2200, now);
+        osc.frequency.exponentialRampToValueAtTime(900, now + 0.012);
+      } else if (this.theme === 'bionic') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(1400, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.012);
+      } else {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1800, now);
+        osc.frequency.exponentialRampToValueAtTime(400, now + 0.012);
+      }
 
       gain.gain.setValueAtTime(this.volume * 0.25, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
