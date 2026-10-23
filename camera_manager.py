@@ -286,49 +286,57 @@ class CameraManager:
             # Gesture classification (Single-hand vs Dual-hand)
             pointer_hand = None
             action_hand = None
+            effective_gesture = GestureType.NONE
+            events = {}
 
-            if self.manual_pause or not self.hand_detected:
-                effective_gesture = GestureType.PAUSE if self.manual_pause else GestureType.NONE
-                self.action_gesture = GestureType.NONE
-                events = {
-                    "trigger_left_click": False,
-                    "trigger_right_click": False,
-                    "drag_active": False,
-                    "scroll_delta": 0,
-                    "pinch_proximity_pct": 0.0,
-                    "thumb_idx_ratio": 1.0,
-                    "is_dual_hand": False
-                }
-            elif len(all_hands) >= 2 and self.config.enable_two_hands:
-                self.is_dual_hand_active = True
-                h0, h1 = all_hands[0], all_hands[1]
-                if self.config.dominant_hand == "Left":
-                    pointer_hand = h0 if h0.handedness == "Left" else h1
-                    action_hand = h1 if pointer_hand is h0 else h0
-                else:
-                    pointer_hand = h0 if h0.handedness == "Right" else h1
-                    action_hand = h1 if pointer_hand is h0 else h0
-
-                # Spatial fallback if handedness labels match
-                if pointer_hand.handedness == action_hand.handedness:
-                    x0 = h0.landmarks_px[WRIST][0]
-                    x1 = h1.landmarks_px[WRIST][0]
+            try:
+                if self.manual_pause or not self.hand_detected:
+                    effective_gesture = GestureType.PAUSE if self.manual_pause else GestureType.NONE
+                    self.action_gesture = GestureType.NONE
+                    events = {
+                        "trigger_left_click": False,
+                        "trigger_right_click": False,
+                        "drag_active": False,
+                        "scroll_delta": 0,
+                        "pinch_proximity_pct": 0.0,
+                        "thumb_idx_ratio": 1.0,
+                        "is_dual_hand": False
+                    }
+                elif len(all_hands) >= 2 and self.config.enable_two_hands:
+                    self.is_dual_hand_active = True
+                    h0, h1 = all_hands[0], all_hands[1]
                     if self.config.dominant_hand == "Left":
-                        pointer_hand = h0 if x0 < x1 else h1
+                        pointer_hand = h0 if h0.handedness == "Left" else h1
                         action_hand = h1 if pointer_hand is h0 else h0
                     else:
-                        pointer_hand = h0 if x0 > x1 else h1
+                        pointer_hand = h0 if h0.handedness == "Right" else h1
                         action_hand = h1 if pointer_hand is h0 else h0
 
-                effective_gesture, events = self.recognizer.update_bimanual(pointer_hand, action_hand, frame.shape[:2])
-                act_str = events.get("action_gesture", "NONE")
-                self.action_gesture = getattr(GestureType, act_str, GestureType.NONE) if hasattr(GestureType, act_str) else GestureType.NONE
-            else:
-                self.is_dual_hand_active = False
-                pointer_hand = primary_hand
+                    # Spatial fallback if handedness labels match
+                    if pointer_hand.handedness == action_hand.handedness:
+                        x0 = h0.landmarks_px[WRIST][0]
+                        x1 = h1.landmarks_px[WRIST][0]
+                        if self.config.dominant_hand == "Left":
+                            pointer_hand = h0 if x0 < x1 else h1
+                            action_hand = h1 if pointer_hand is h0 else h0
+                        else:
+                            pointer_hand = h0 if x0 > x1 else h1
+                            action_hand = h1 if pointer_hand is h0 else h0
+
+                    effective_gesture, events = self.recognizer.update_bimanual(pointer_hand, action_hand, frame.shape[:2])
+                    act_str = events.get("action_gesture", "NONE")
+                    self.action_gesture = getattr(GestureType, act_str, GestureType.NONE) if hasattr(GestureType, act_str) else GestureType.NONE
+                else:
+                    self.is_dual_hand_active = False
+                    pointer_hand = primary_hand
+                    action_hand = None
+                    self.action_gesture = GestureType.NONE
+                    effective_gesture, events = self.recognizer.update(primary_hand, frame.shape[:2])
+            except Exception as e:
+                effective_gesture = GestureType.NONE
+                events = {}
+                pointer_hand = None
                 action_hand = None
-                self.action_gesture = GestureType.NONE
-                effective_gesture, events = self.recognizer.update(primary_hand, frame.shape[:2])
 
             self.pointer_hand = pointer_hand
             self.action_hand = action_hand

@@ -634,7 +634,7 @@ class GestureRecognizer:
                             effective_gesture = GestureType.THUMB_CLICK
 
             elif self.config.click_mode == "pinch":
-                act_z_diff = abs(act_pts_3d[THUMB_TIP][2] - act_pts_3d[INDEX_TIP][2]) if len(act_pts_3d[THUMB_TIP]) > 2 else 0.0
+                act_z_diff = abs(action_pts_3d[THUMB_TIP][2] - action_pts_3d[INDEX_TIP][2]) if len(action_pts_3d[THUMB_TIP]) > 2 else 0.0
                 act_z_depth_ok = (act_z_diff < 0.040) if (hasattr(action_hand, "landmarks_world") and action_hand.landmarks_world) else True
 
                 if self.is_action_pinch_active:
