@@ -344,6 +344,18 @@ class TestCyberHUD(unittest.TestCase):
         self.hud.draw_speedometer_and_precision_reticle(frame, (320, 240), velocity=35.0, vec=(0.0, 0.0))
         self.assertGreater(int(np.sum(frame)), 0)
 
+    def test_draw_jitter_chart(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        for i in range(20):
+            self.hud.update_jitter_chart(500.0 + (i % 5) * 4.0, 500.0 + i)
+        self.hud.draw_jitter_chart(frame)
+        self.assertGreater(int(np.sum(frame)), 0)
+
+        self.hud.config.show_jitter_graph = True
+        rendered = self.hud.render_clean(frame)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+
 
 class TestNightVisionBooster(unittest.TestCase):
     """Verifies low-light CLAHE and zero-latency LUT gamma boost."""

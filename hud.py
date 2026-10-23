@@ -618,27 +618,29 @@ class CyberHUD:
                     self.font_mono, 0.75, (180, 180, 180), 1, cv2.LINE_AA)
 
     def draw_jitter_chart(self, frame: np.ndarray):
-        """Draws bottom-right real-time Jitter Attenuation graph (Slide 15)."""
+        """Draws bottom-right real-time Jitter Attenuation graph with zero full-frame copying."""
         if len(self.raw_history) < 2:
             return
 
         h, w, _ = frame.shape
-        chart_w = 200
-        chart_h = 70
+        chart_w = 190
+        chart_h = 60
         chart_x = w - chart_w - 14
-        chart_y = h - chart_h - 35
+        chart_y = h - chart_h - 28
 
-        # Background
-        overlay = frame.copy()
-        cv2.rectangle(overlay, (chart_x, chart_y), (chart_x + chart_w, chart_y + chart_h),
-                      (10, 10, 14), -1)
-        cv2.addWeighted(overlay, 0.7, frame, 0.3, 0, frame)
-        cv2.rectangle(frame, (chart_x, chart_y), (chart_x + chart_w, chart_y + chart_h),
-                      (60, 60, 80), 1)
+        if chart_x < 0 or chart_y < 0 or (chart_x + chart_w) > w or (chart_y + chart_h) > h:
+            return
+
+        # Local ROI clipping to avoid copying full 640x480 buffer
+        roi = frame[chart_y:chart_y + chart_h, chart_x:chart_x + chart_w]
+        overlay_roi = roi.copy()
+        cv2.rectangle(overlay_roi, (0, 0), (chart_w, chart_h), (12, 10, 16), -1)
+        cv2.addWeighted(overlay_roi, 0.72, roi, 0.28, 0, roi)
+        cv2.rectangle(frame, (chart_x, chart_y), (chart_x + chart_w, chart_y + chart_h), (60, 50, 75), 1, cv2.LINE_AA)
 
         # Label & legend
-        cv2.putText(frame, "JITTER FILTER (EMA)", (chart_x + 6, chart_y - 6),
-                    self.font_mono, 0.75, self.config.COLOR_CYAN, 1, cv2.LINE_AA)
+        cv2.putText(frame, "1-EURO ATTENUATION", (chart_x + 6, chart_y - 6),
+                    self.font_mono, 0.70, (0, 242, 254), 1, cv2.LINE_AA)
 
         # Scale data
         raw_arr = np.array(self.raw_history, dtype=np.float32)
@@ -649,25 +651,25 @@ class CyberHUD:
 
         def val_to_y(val):
             norm = (val - min_v) / val_range
-            return int(chart_y + chart_h - 6 - norm * (chart_h - 14))
+            return int(chart_y + chart_h - 5 - norm * (chart_h - 10))
 
         step_x = chart_w / float(self.max_chart_points - 1)
 
-        # Draw raw signal (Red)
+        # Draw raw noisy signal (Magenta/Red, 1px)
         for i in range(len(raw_arr) - 1):
             x1 = int(chart_x + i * step_x)
             y1 = val_to_y(raw_arr[i])
             x2 = int(chart_x + (i + 1) * step_x)
             y2 = val_to_y(raw_arr[i + 1])
-            cv2.line(frame, (x1, y1), (x2, y2), self.config.COLOR_RED, 1, cv2.LINE_AA)
+            cv2.line(frame, (x1, y1), (x2, y2), (60, 60, 255), 1, cv2.LINE_AA)
 
-        # Draw EMA signal (Cyan)
+        # Draw filtered signal (Cyan core, 2px)
         for i in range(len(ema_arr) - 1):
             x1 = int(chart_x + i * step_x)
             y1 = val_to_y(ema_arr[i])
             x2 = int(chart_x + (i + 1) * step_x)
             y2 = val_to_y(ema_arr[i + 1])
-            cv2.line(frame, (x1, y1), (x2, y2), self.config.COLOR_CYAN, 2, cv2.LINE_AA)
+            cv2.line(frame, (x1, y1), (x2, y2), (0, 242, 254), 2, cv2.LINE_AA)
 
     def draw_footer_bar(self, frame: np.ndarray):
         """Renders bottom control help keys."""
@@ -1128,6 +1130,9 @@ class CyberHUD:
             dist_val = getattr(active_target, 'estimated_distance_cm', 50.0)
             if dist_val > 0.0:
                 self.draw_spatial_depth_gauge(frame, dist_val)
+
+        if getattr(self.config, 'show_jitter_graph', False):
+            self.draw_jitter_chart(frame)
 
         self.draw_air_canvas(frame)
         self.draw_ripples(frame)
