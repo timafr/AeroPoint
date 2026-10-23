@@ -98,6 +98,11 @@ class HandTracker:
         self.is_night_mode = False
         self._prev_frame_time = time.time()
         self._clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        # Precomputed zero-latency gamma LUTs for low-light night enhancement
+        self._gamma_tables = {
+            1.25: np.array([min(255, int(((i / 255.0) ** (1.0 / 1.25)) * 255)) for i in range(256)], dtype=np.uint8),
+            1.40: np.array([min(255, int(((i / 255.0) ** (1.0 / 1.40)) * 255)) for i in range(256)], dtype=np.uint8),
+        }
 
     def apply_clahe(self, bgr_image: np.ndarray, clip_limit: float = 2.0) -> np.ndarray:
         """Adaptive histogram equalization for low-light enhancement with dynamic clip limit."""
@@ -134,6 +139,8 @@ class HandTracker:
         if self.is_night_mode:
             clip = 3.2 if mean_lum < 45.0 else 2.0
             frame = self.apply_clahe(frame, clip_limit=clip)
+            if mean_lum < 45.0 and hasattr(self, '_gamma_tables'):
+                frame = cv2.LUT(frame, self._gamma_tables[1.40])
 
         h, w, _ = frame.shape
 

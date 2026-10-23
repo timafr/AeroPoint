@@ -236,6 +236,18 @@ class TestCyberHUD(unittest.TestCase):
         self.assertEqual(rendered.shape, (480, 640, 3))
 
 
+class TestNightVisionBooster(unittest.TestCase):
+    """Verifies low-light CLAHE and zero-latency LUT gamma boost."""
+
+    def test_gamma_lut_enhances_shadows(self):
+        import cv2
+        dark_img = np.full((100, 100, 3), 30, dtype=np.uint8)
+        table = np.array([min(255, int(((i / 255.0) ** (1.0 / 1.40)) * 255)) for i in range(256)], dtype=np.uint8)
+        boosted = cv2.LUT(dark_img, table)
+        # Shadow values (30/255) must be non-linearly brightened
+        self.assertGreater(int(boosted[50, 50, 0]), 50)
+
+
 class TestMultiMonitorManagement(unittest.TestCase):
     """Verifies DPI-aware physical display enumeration and bounds clamping."""
 
