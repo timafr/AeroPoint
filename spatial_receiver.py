@@ -115,6 +115,8 @@ class SpatialReceiver:
                 return
 
             with self.lock:
+                self.last_packet_time = recv_time
+                self.is_connected = True
                 self.device_name = "iPhone (Binary High-Speed)"
                 self.sensor_type = "TrueDepth (Face ID)" if sensor_id == 0 else "LiDAR (Back Pro)"
                 self.remote_fps = fps_x10 / 10.0
@@ -123,9 +125,12 @@ class SpatialReceiver:
                 self.depth_mm = float(depth_mm)
 
                 is_mirrored_pkt = bool(mirror_flag)
-                should_invert = False
-                if self.force_mirror_x is not None:
-                    should_invert = (self.force_mirror_x != is_mirrored_pkt)
+                # By default on PC, interactive desktop control requires mirrored interaction
+                # (user's right hand appears on right, moving right moves cursor right).
+                # iOS Rear LiDAR sends unmirrored packets (is_mirrored_pkt=False),
+                # so desired_mirrored=True automatically inverts it on PC.
+                desired_mirrored = self.force_mirror_x if self.force_mirror_x is not None else True
+                should_invert = (desired_mirrored != is_mirrored_pkt)
 
                 hand_fmt = '!BH63f'
                 hand_size = 255
@@ -202,6 +207,8 @@ class SpatialReceiver:
     def _process_payload(self, p: Dict[str, any], recv_time: float):
         """Converts incoming iOS packet into HandData and live spatial state."""
         with self.lock:
+            self.last_packet_time = recv_time
+            self.is_connected = True
             self.device_name = p.get("device", "iPhone")
             self.sensor_type = p.get("sensor", "TrueDepth")
             self.remote_fps = float(p.get("fps", 60.0))
@@ -214,9 +221,8 @@ class SpatialReceiver:
 
             # Mirroring flag
             is_mirrored_pkt = p.get("is_mirrored", False)
-            should_invert = False
-            if self.force_mirror_x is not None:
-                should_invert = (self.force_mirror_x != is_mirrored_pkt)
+            desired_mirrored = self.force_mirror_x if self.force_mirror_x is not None else True
+            should_invert = (desired_mirrored != is_mirrored_pkt)
 
             hands_raw = p.get("hands", [])
             new_hands: List[HandData] = []

@@ -14,6 +14,7 @@ from config import GestureConfig
 from filters import OneEuroFilter1D, OneEuroFilter2D, AeroPrecisionEngine, InertialScrollEngine
 from gestures import GestureType, GestureRecognizer
 from hand_tracker import HandData
+from spatial_receiver import SpatialReceiver
 from hud import CyberHUD
 
 
@@ -127,6 +128,21 @@ class TestSpatialNetworking(unittest.TestCase):
         self.assertEqual(batt, 98)
         self.assertEqual(depth, 410)
         self.assertEqual(mirror, 1)
+
+    def test_lidar_unmirrored_auto_inverted(self):
+        receiver = SpatialReceiver(port=9999)
+        header_fmt = '!4sBBBBHHHB'
+        hand_fmt = '!BH63f'
+        # sensor=1 (LiDAR), mirror_flag=0 (unmirrored from iPhone rear camera)
+        coords = [0.2] * 63
+        bin_packet = struct.pack(header_fmt, b'AERO', 1, 95, 1, 0, 600, 8, 420, 1) + struct.pack(hand_fmt, 0, 850, *coords)
+        receiver._process_binary_payload(bin_packet, time.time())
+        hands = receiver.get_hands()
+        self.assertEqual(len(hands), 1)
+        # Should be flipped to "Right" (from 0="Left")
+        self.assertEqual(hands[0].handedness, "Right")
+        # Landmark X should be inverted: 1.0 - 0.2 = 0.8
+        self.assertAlmostEqual(hands[0].landmarks_norm[0][0], 0.8, places=2)
 
 
 class TestCyberHUD(unittest.TestCase):
