@@ -671,6 +671,26 @@ class CyberHUD:
             y2 = val_to_y(ema_arr[i + 1])
             cv2.line(frame, (x1, y1), (x2, y2), (0, 242, 254), 2, cv2.LINE_AA)
 
+    def draw_ergonomic_alert(self, frame: np.ndarray, minutes_active: int):
+        """Renders subtle frosted glass reminder to lower hands and rest forearm."""
+        h, w, _ = frame.shape
+        bw = 360
+        bh = 30
+        bx = w // 2 - bw // 2
+        by = h - bh - 18
+
+        if bx < 0 or by < 0 or (bx + bw) > w or (by + bh) > h:
+            return
+
+        roi = frame[by:by + bh, bx:bx + bw]
+        overlay_roi = roi.copy()
+        cv2.rectangle(overlay_roi, (0, 0), (bw, bh), (14, 18, 14), -1)
+        cv2.addWeighted(overlay_roi, 0.75, roi, 0.25, 0, roi)
+        cv2.rectangle(frame, (bx, by), (bx + bw, by + bh), (50, 200, 100), 1, cv2.LINE_AA)
+
+        msg = f"REST FOREARM ({minutes_active}m continuous elevation)"
+        cv2.putText(frame, msg, (bx + 16, by + 20), cv2.FONT_HERSHEY_PLAIN, 0.85, (160, 255, 180), 1, cv2.LINE_AA)
+
     def draw_footer_bar(self, frame: np.ndarray):
         """Renders bottom control help keys."""
         h, w, _ = frame.shape
@@ -1079,7 +1099,8 @@ class CyberHUD:
         radial_menu_active: bool = False,
         active_radial_sector: Optional[int] = None,
         scroll_velocity: float = 0.0,
-        edge_snap_flags: Optional[Tuple[bool, bool, bool, bool]] = None
+        edge_snap_flags: Optional[Tuple[bool, bool, bool, bool]] = None,
+        ergonomic_minutes: Optional[int] = None
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
         if show_skeleton:
@@ -1139,6 +1160,8 @@ class CyberHUD:
         self.draw_slide_chevrons(frame)
         self.draw_rotary_dials(frame)
         self.draw_zoom_loupes(frame)
+        if ergonomic_minutes is not None and ergonomic_minutes >= 20:
+            self.draw_ergonomic_alert(frame, ergonomic_minutes)
         return frame
 
     def render(

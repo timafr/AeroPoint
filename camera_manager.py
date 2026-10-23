@@ -113,6 +113,8 @@ class CameraManager:
         self.cpu_percent = 0.0
         self.is_power_saver = False
         self.last_hand_seen_time = time.time()
+        self.continuous_hand_elevated_sec: float = 0.0
+        self.last_elevated_calc_time: float = time.time()
         self.radial_menu_open: bool = False
         self.active_radial_sector: Optional[int] = None
         self.last_radial_action_time: float = 0.0
@@ -442,12 +444,18 @@ class CameraManager:
                 self.fps = self.tracker.fps
                 self.latency_ms = self.tracker.latency_ms
 
-            # Dynamic Power Saver State Check
+            # Dynamic Power Saver & Ergonomic Health State Check
             now_ts = time.time()
+            dt_elev = max(0.0, min(1.0, now_ts - self.last_elevated_calc_time))
+            self.last_elevated_calc_time = now_ts
+
             if self.hand_detected:
                 self.last_hand_seen_time = now_ts
+                self.continuous_hand_elevated_sec += dt_elev
                 self.is_power_saver = False
             else:
+                if (now_ts - self.last_hand_seen_time) > 15.0:
+                    self.continuous_hand_elevated_sec = 0.0
                 if getattr(self.config, 'enable_power_saver', True) and (now_ts - self.last_hand_seen_time) > 4.0:
                     self.is_power_saver = True
                 else:
@@ -745,6 +753,11 @@ class CameraManager:
                         if e_l or e_r or e_t or e_b:
                             edge_flags = (e_l, e_t, e_r, e_b)
 
+                    ergo_min = None
+                    if getattr(self.config, 'enable_ergonomic_alerts', True):
+                        if self.continuous_hand_elevated_sec >= getattr(self.config, 'ergonomic_alert_interval_sec', 1500.0):
+                            ergo_min = int(self.continuous_hand_elevated_sec / 60.0)
+
                     rendered = self.hud.render_clean(
                         frame=frame,
                         hands=all_hands,
@@ -759,7 +772,8 @@ class CameraManager:
                         radial_menu_active=self.radial_menu_open,
                         active_radial_sector=self.active_radial_sector,
                         scroll_velocity=getattr(self.scroll_engine, 'velocity', 0.0),
-                        edge_snap_flags=edge_flags
+                        edge_snap_flags=edge_flags,
+                        ergonomic_minutes=ergo_min
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)

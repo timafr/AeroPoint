@@ -45,6 +45,8 @@ class GestureConfig:
     laser_pointer_mode: bool = False        # Laser vector aiming mode with snap assistance
     enable_air_draw_stream: bool = False    # Live glowing air-draw annotations directly in the camera stream
     air_draw_color: str = "cyan"            # "cyan", "magenta", "green", "gold", "white"
+    enable_ergonomic_alerts: bool = True    # Ergonomic rest alerts after prolonged mid-air hand elevation
+    ergonomic_alert_interval_sec: float = 1500.0 # 25 minutes threshold
 
     # --- Audio & Sonic Synthesizer ---
     sound_enabled: bool = True

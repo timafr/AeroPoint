@@ -376,6 +376,17 @@ class TestCyberHUD(unittest.TestCase):
         self.assertIsNotNone(rendered)
         self.assertEqual(rendered.shape, (480, 640, 3))
 
+    def test_ergonomic_break_alert(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        self.hud.draw_ergonomic_alert(frame, minutes_active=25)
+        self.assertGreater(int(np.sum(frame)), 0)
+
+        # Integration in render_clean
+        frame.fill(0)
+        rendered = self.hud.render_clean(frame, ergonomic_minutes=30)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+
 
 class TestNightVisionBooster(unittest.TestCase):
     """Verifies low-light CLAHE and zero-latency LUT gamma boost."""
