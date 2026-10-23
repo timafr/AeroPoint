@@ -322,13 +322,22 @@ struct CameraPreviewView: UIViewRepresentable {
         guard let session = session else { return view }
         let preview = AVCaptureVideoPreviewLayer(session: session)
         preview.videoGravity = .resizeAspectFill
+        if preview.connection?.isVideoOrientationSupported == true {
+            preview.connection?.videoOrientation = .portrait
+        }
         view.layer.addSublayer(preview)
         context.coordinator.previewLayer = preview
         return view
     }
     
     func updateUIView(_ uiView: UIView, context: Context) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
         context.coordinator.previewLayer?.frame = uiView.bounds
+        if let conn = context.coordinator.previewLayer?.connection, conn.isVideoOrientationSupported {
+            conn.videoOrientation = .portrait
+        }
+        CATransaction.commit()
     }
     
     func makeCoordinator() -> Coordinator {
@@ -348,32 +357,61 @@ struct SkeletonOverlayView: View {
         Canvas { context, size in
             guard landmarks.count == 21 else { return }
             
-            // Bones
+            // Anatomical Hand Connections (MediaPipe / Vision Topology)
             let connections: [(Int, Int)] = [
+                // Thumb: Wrist -> CMC -> MP -> IP -> Tip
                 (0,1), (1,2), (2,3), (3,4),
+                // Index: Wrist -> MCP -> PIP -> DIP -> Tip
                 (0,5), (5,6), (6,7), (7,8),
+                // Middle: Index MCP -> Middle MCP -> PIP -> DIP -> Tip
                 (5,9), (9,10), (10,11), (11,12),
+                // Ring: Middle MCP -> Ring MCP -> PIP -> DIP -> Tip
                 (9,13), (13,14), (14,15), (15,16),
+                // Little: Ring MCP -> Little MCP -> PIP -> DIP -> Tip
                 (13,17), (17,18), (18,19), (19,20),
+                // Palm base closure: Wrist -> Little MCP
                 (0,17)
             ]
             
+            // 1. Draw Bones
             for (p1, p2) in connections {
-                let pt1 = CGPoint(x: landmarks[p1].x * size.width, y: landmarks[p1].y * size.height)
-                let pt2 = CGPoint(x: landmarks[p2].x * size.width, y: landmarks[p2].y * size.height)
+                guard p1 < landmarks.count && p2 < landmarks.count else { continue }
+                let pt1 = landmarks[p1]
+                let pt2 = landmarks[p2]
+                guard pt1 != .zero && pt2 != .zero else { continue }
+                
+                let pos1 = CGPoint(x: pt1.x * size.width, y: pt1.y * size.height)
+                let pos2 = CGPoint(x: pt2.x * size.width, y: pt2.y * size.height)
+                
                 var path = Path()
-                path.move(to: pt1)
-                path.addLine(to: pt2)
-                context.stroke(path, with: .color(.cyan), lineWidth: 2)
+                path.move(to: pos1)
+                path.addLine(to: pos2)
+                
+                // Outer cyber glow
+                context.stroke(path, with: .color(Color(red: 0.54, green: 0.17, blue: 0.89).opacity(0.55)), lineWidth: 4.5)
+                // Inner bright neon line
+                context.stroke(path, with: .color(Color(red: 0.0, green: 0.95, blue: 1.0)), lineWidth: 2.2)
             }
             
-            // Joints
+            // 2. Draw Joints
             for (idx, pt) in landmarks.enumerated() {
+                guard pt != .zero else { continue }
                 let pos = CGPoint(x: pt.x * size.width, y: pt.y * size.height)
                 let isTip = [4, 8, 12, 16, 20].contains(idx)
-                let radius: CGFloat = isTip ? 6 : 3.5
-                let color: Color = isTip ? .pink : .white
-                context.fill(Path(ellipseIn: CGRect(x: pos.x - radius, y: pos.y - radius, width: radius * 2, height: radius * 2)), with: .color(color))
+                let isWrist = (idx == 0)
+                
+                if isTip {
+                    let radius: CGFloat = 6.5
+                    // Fingertip glowing magenta target
+                    context.fill(Path(ellipseIn: CGRect(x: pos.x - radius, y: pos.y - radius, width: radius * 2, height: radius * 2)), with: .color(Color(red: 1.0, green: 0.15, blue: 0.5)))
+                    context.stroke(Path(ellipseIn: CGRect(x: pos.x - radius - 2, y: pos.y - radius - 2, width: (radius + 2) * 2, height: (radius + 2) * 2)), with: .color(.cyan), lineWidth: 1.5)
+                } else if isWrist {
+                    let radius: CGFloat = 5.5
+                    context.fill(Path(ellipseIn: CGRect(x: pos.x - radius, y: pos.y - radius, width: radius * 2, height: radius * 2)), with: .color(.cyan))
+                } else {
+                    let radius: CGFloat = 3.5
+                    context.fill(Path(ellipseIn: CGRect(x: pos.x - radius, y: pos.y - radius, width: radius * 2, height: radius * 2)), with: .color(.white))
+                }
             }
         }
     }

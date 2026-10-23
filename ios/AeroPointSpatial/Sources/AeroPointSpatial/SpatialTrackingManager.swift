@@ -85,13 +85,23 @@ class SpatialTrackingManager: NSObject, ObservableObject {
             videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
             videoDataOutput.alwaysDiscardsLateVideoFrames = true
             videoDataOutput.setSampleBufferDelegate(self, queue: visionQueue)
-            if session.canAddOutput(videoDataOutput) { session.addOutput(videoDataOutput) }
+            if session.canAddOutput(videoDataOutput) { 
+                session.addOutput(videoDataOutput)
+                if let vConn = videoDataOutput.connection(with: .video) {
+                    if vConn.isVideoOrientationSupported { vConn.videoOrientation = .portrait }
+                    if vConn.isVideoMirroringSupported { vConn.isVideoMirrored = true }
+                }
+            }
             
             // Synchronized Depth Output
             if session.canAddOutput(depthDataOutput) {
                 session.addOutput(depthDataOutput)
                 depthDataOutput.isFilteringEnabled = true
                 depthDataOutput.setDelegate(self, callbackQueue: visionQueue)
+                if let dConn = depthDataOutput.connection(with: .depthData) {
+                    if dConn.isVideoOrientationSupported { dConn.videoOrientation = .portrait }
+                    if dConn.isVideoMirroringSupported { dConn.isVideoMirrored = true }
+                }
             }
             
             session.startRunning()
@@ -124,7 +134,8 @@ class SpatialTrackingManager: NSObject, ObservableObject {
     
     // MARK: - Hand Pose Extraction & Physical Depth Fusion
     private func processHandPose(on pixelBuffer: CVPixelBuffer, depthBuffer: CVPixelBuffer?) {
-        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up, options: [:])
+        let visionOrientation: CGImagePropertyOrientation = (activeSensor == .frontTrueDepth) ? .up : .right
+        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: visionOrientation, options: [:])
         do {
             try handler.perform([handPoseRequest])
             guard let observations = handPoseRequest.results, !observations.isEmpty else {
@@ -136,27 +147,29 @@ class SpatialTrackingManager: NSObject, ObservableObject {
             }
             
             var handsPayload: [[String: Any]] = []
-            var uiPoints: [CGPoint] = []
             
-            for obs in observations {
+            // Strictly ordered 21 hand joints matching MediaPipe standard topology
+            let jointKeys: [VNHumanHandPoseObservation.JointName] = [
+                .wrist,
+                .thumbCMC, .thumbMP, .thumbIP, .thumbTip,
+                .indexMCP, .indexPIP, .indexDIP, .indexTip,
+                .middleMCP, .middlePIP, .middleDIP, .middleTip,
+                .ringMCP, .ringPIP, .ringDIP, .ringTip,
+                .littleMCP, .littlePIP, .littleDIP, .littleTip
+            ]
+            
+            var primaryUILandmarks: [CGPoint] = []
+            
+            for (obsIdx, obs) in observations.enumerated() {
                 let recognizedPoints = try obs.recognizedPoints(.all)
                 var rawPointsNorm: [[Float]] = []
-                
-                // Ordered MediaPipe topology mapping
-                let jointKeys: [VNHumanHandPoseObservation.JointName] = [
-                    .wrist,
-                    .thumbCMC, .thumbMP, .thumbIP, .thumbTip,
-                    .indexMCP, .indexPIP, .indexDIP, .indexTip,
-                    .middleMCP, .middlePIP, .middleDIP, .middleTip,
-                    .ringMCP, .ringPIP, .ringDIP, .ringTip,
-                    .littleMCP, .littlePIP, .littleDIP, .littleTip
-                ]
+                var currentHandUILandmarks: [CGPoint] = []
                 
                 var avgZ: Float = 420.0
                 var samplesZ: [Float] = []
                 
                 for key in jointKeys {
-                    if let pt = recognizedPoints[key], pt.confidence > 0.25 {
+                    if let pt = recognizedPoints[key], pt.confidence > 0.15 {
                         let nx = Float(pt.location.x)
                         let ny = Float(1.0 - pt.location.y)
                         
@@ -170,12 +183,15 @@ class SpatialTrackingManager: NSObject, ObservableObject {
                         }
                         
                         rawPointsNorm.append([nx, ny, zMetricMeters])
-                        if key == .indexTip || key == .wrist {
-                            uiPoints.append(CGPoint(x: CGFloat(nx), y: CGFloat(ny)))
-                        }
+                        currentHandUILandmarks.append(CGPoint(x: CGFloat(nx), y: CGFloat(ny)))
                     } else {
                         rawPointsNorm.append([0.5, 0.5, 0.42])
+                        currentHandUILandmarks.append(.zero)
                     }
+                }
+                
+                if obsIdx == 0 {
+                    primaryUILandmarks = currentHandUILandmarks
                 }
                 
                 if !samplesZ.isEmpty {
@@ -201,9 +217,7 @@ class SpatialTrackingManager: NSObject, ObservableObject {
                 self.isHandDetected = true
                 self.currentDepthMM = handsPayload.first?["depth_avg_mm"] as? Float ?? 420.0
                 self.actualFPS = 0.9 * self.actualFPS + 0.1 * instantFPS
-                if let firstHand = observations.first, let pts = try? firstHand.recognizedPoints(.all) {
-                    self.currentLandmarks = pts.values.map { CGPoint(x: $0.location.x, y: 1.0 - $0.location.y) }
-                }
+                self.currentLandmarks = primaryUILandmarks
             }
             
             // Build network packet
