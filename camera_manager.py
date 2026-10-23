@@ -615,6 +615,16 @@ class CameraManager:
                         self.hud.trigger_slide_chevron(is_next=False)
                         self.hud.trigger_click_ripple(ripple_hand.landmarks_px[INDEX_TIP], is_right=False)
 
+                    if events.get("trigger_air_clap"):
+                        self.scroll_engine.brake()
+                        clap_pt = events.get("air_clap_midpoint", (frame.shape[1] // 2, frame.shape[0] // 2))
+                        self.hud.trigger_click_ripple(clap_pt, is_right=False)
+                        self.hud.trigger_click_ripple(clap_pt, is_right=True)
+                        if getattr(self.config, 'enable_air_draw_stream', False):
+                            self.clear_air_canvas()
+                        else:
+                            self.mouse.play_pause()
+
                 # 3. Spatial Rotary Volume Dial (twist wrist while holding pinch or fist)
                 rotary_hand = action_hand if (action_hand and events.get("is_dual_hand")) else pointer_hand
                 is_holding_action = (events.get("drag_active") or self.mouse.is_dragging or self.pinch_pct > 65.0 or effective_gesture in (GestureType.PINCH_CLICK, GestureType.THUMB_CLICK))

@@ -130,6 +130,7 @@ class GestureRecognizer:
         self.prev_action_scroll_y: Optional[float] = None
         self.prev_bimanual_pinch_dist: Optional[float] = None
         self.last_zoom_time = 0.0
+        self.last_air_clap_time = 0.0
         self.last_action_gesture = GestureType.NONE
 
     def get_finger_states(self, hand: HandData) -> Dict[str, bool]:
@@ -605,6 +606,8 @@ class GestureRecognizer:
 
         action_finger_states = self.get_finger_states(action_hand)
         action_num_extended = sum(action_finger_states.values())
+        ptr_finger_states = self.get_finger_states(pointer_hand)
+        ptr_num_extended = sum(ptr_finger_states.values())
 
         # Start with pointer events (cursor target from pointer hand)
         events = pointer_events.copy()
@@ -622,6 +625,7 @@ class GestureRecognizer:
         events["trigger_show_desktop"] = False
         events["drag_active"] = False
         events["zoom_delta"] = 0
+        events["trigger_air_clap"] = False
         effective_gesture = pointer_gesture
 
         # --- B0. BIMANUAL PINCH-ZOOM (Minority Report: Both hands pinch and move apart/together) ---
@@ -644,6 +648,18 @@ class GestureRecognizer:
                 self.prev_bimanual_pinch_dist = cur_bimanual_dist
         else:
             self.prev_bimanual_pinch_dist = None
+
+        # --- B0.1 BIMANUAL AIR-CLAP (Both open hands come together in mid-air < 65px) ---
+        ptr_wrist = ptr_pts_2d[WRIST]
+        act_wrist = action_pts_2d[WRIST]
+        palm_dist = math.hypot(ptr_wrist[0] - act_wrist[0], ptr_wrist[1] - act_wrist[1])
+        if ptr_num_extended >= 4 and action_num_extended >= 4 and palm_dist < 65.0:
+            if (now - self.last_air_clap_time) > 0.65:
+                self.last_air_clap_time = now
+                events["trigger_air_clap"] = True
+                events["air_clap_midpoint"] = (int((ptr_wrist[0] + act_wrist[0]) / 2), int((ptr_wrist[1] + act_wrist[1]) / 2))
+                events["action_gesture"] = "AIR CLAP"
+                return GestureType.PAUSE, events
 
         # --- A. ACTION HAND SAFETY PAUSE (🖐️ Open palm on action hand: 5 fingers extended) ---
         if action_num_extended == 5:

@@ -612,5 +612,68 @@ class TestSpatialAirCanvas(unittest.TestCase):
                     cm.stop()
 
 
+class TestBimanualAirClap(unittest.TestCase):
+    """Verifies Bimanual Air-Clap Macro: gesture triggering, palm proximity detection, and cooldown."""
+
+    def test_air_clap_detection(self):
+        config = GestureConfig()
+        rec = GestureRecognizer(config, screen_size=(1920, 1080), screen_origin=(0, 0))
+
+        # Helper to build an open palm hand (5 extended fingers)
+        def build_open_palm(wx: float, wy: float) -> HandData:
+            px = [(wx, wy, 0.0)] * 21
+            # Thumb (1, 2, 3, 4)
+            px[1] = (wx - 15.0, wy - 15.0, 0.0)
+            px[2] = (wx - 25.0, wy - 30.0, 0.0)
+            px[3] = (wx - 35.0, wy - 45.0, 0.0)
+            px[4] = (wx - 45.0, wy - 60.0, 0.0)
+            # Index (5, 6, 7, 8)
+            px[5] = (wx - 10.0, wy - 40.0, 0.0)
+            px[6] = (wx - 10.0, wy - 65.0, 0.0)
+            px[7] = (wx - 10.0, wy - 85.0, 0.0)
+            px[8] = (wx - 10.0, wy - 105.0, 0.0)
+            # Middle (9, 10, 11, 12)
+            px[9] = (wx, wy - 42.0, 0.0)
+            px[10] = (wx, wy - 70.0, 0.0)
+            px[11] = (wx, wy - 92.0, 0.0)
+            px[12] = (wx, wy - 115.0, 0.0)
+            # Ring (13, 14, 15, 16)
+            px[13] = (wx + 10.0, wy - 40.0, 0.0)
+            px[14] = (wx + 10.0, wy - 65.0, 0.0)
+            px[15] = (wx + 10.0, wy - 85.0, 0.0)
+            px[16] = (wx + 10.0, wy - 105.0, 0.0)
+            # Pinky (17, 18, 19, 20)
+            px[17] = (wx + 20.0, wy - 35.0, 0.0)
+            px[18] = (wx + 20.0, wy - 55.0, 0.0)
+            px[19] = (wx + 20.0, wy - 72.0, 0.0)
+            px[20] = (wx + 20.0, wy - 90.0, 0.0)
+
+            return HandData(
+                landmarks_norm=[(p[0] / 640.0, p[1] / 480.0, 0.0) for p in px],
+                landmarks_px=px,
+                landmarks_world=[(p[0] * 0.001, p[1] * 0.001, 0.0) for p in px],
+                palm_size=0.15,
+                handedness="Right"
+            )
+
+        # 1. Hands far apart (180px distance) -> NO clap
+        h1 = build_open_palm(200.0, 300.0)
+        h2 = build_open_palm(380.0, 300.0)
+        gest, events = rec.update_bimanual(h1, h2, (480, 640))
+        self.assertFalse(events.get("trigger_air_clap", False))
+
+        # 2. Hands come together (<50px distance) -> AIR CLAP!
+        h3 = build_open_palm(300.0, 300.0)
+        h4 = build_open_palm(335.0, 300.0)
+        gest, events = rec.update_bimanual(h3, h4, (480, 640))
+        self.assertTrue(events.get("trigger_air_clap", False))
+        self.assertEqual(events.get("action_gesture"), "AIR CLAP")
+        self.assertIn("air_clap_midpoint", events)
+
+        # 3. Consecutive frame in quick succession (<0.65s) -> Debounced
+        gest, events_cooldown = rec.update_bimanual(h3, h4, (480, 640))
+        self.assertFalse(events_cooldown.get("trigger_air_clap", False))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
