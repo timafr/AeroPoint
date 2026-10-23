@@ -68,6 +68,10 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
     def mobile_view():
         return bottle.static_file('mobile.html', root=WEB_DIR)
 
+    @app.route('/download/ipa')
+    def download_ipa():
+        return bottle.static_file('AeroPointSpatial.ipa', root=os.path.dirname(__file__), download='AeroPointSpatial.ipa')
+
     @app.route('/<filename:path>')
     def static_files(filename):
         return bottle.static_file(filename, root=WEB_DIR)
