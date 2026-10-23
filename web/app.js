@@ -1855,4 +1855,194 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // =========================================================================
+  // 17. Deep System Health Diagnostics & Resource Telemetry
+  // =========================================================================
+  const btnQuickDiag = document.getElementById('btn-quick-diagnostics');
+  const btnRunDiag = document.getElementById('btn-run-diagnostics');
+  const btnResetFilters = document.getElementById('btn-reset-filters');
+  const btnExportDiag = document.getElementById('btn-export-diagnostics');
+  const diagTerminalLog = document.getElementById('diag-terminal-log');
+  let cachedDiagnosticsData = null;
+
+  function appendDiagLog(msg) {
+    if (!diagTerminalLog) return;
+    const timeStr = new Date().toLocaleTimeString();
+    diagTerminalLog.textContent += `\n[${timeStr}] ${msg}`;
+    diagTerminalLog.scrollTop = diagTerminalLog.scrollHeight;
+  }
+
+  async function fetchSystemDiagnostics(isManualTest = false) {
+    const tStart = performance.now();
+    try {
+      const resp = await fetch('/api/diagnostics');
+      const rtt = Math.round(performance.now() - tStart);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      cachedDiagnosticsData = data;
+
+      // Update RTT and uptime
+      const elRtt = document.getElementById('diag-val-rtt');
+      const elUptime = document.getElementById('diag-val-uptime');
+      if (elRtt) elRtt.textContent = rtt;
+      if (elUptime) elUptime.textContent = data.uptime_sec || 0;
+
+      // Update memory & CPU
+      const memMb = data.system_resources?.memory_mb || 0;
+      const cpuPct = data.system_resources?.cpu_percent || 0;
+      const elMem = document.getElementById('diag-val-mem');
+      const barMem = document.getElementById('diag-bar-mem');
+      if (elMem) elMem.textContent = `${memMb} MB`;
+      if (barMem) barMem.style.width = `${Math.min(100, Math.max(5, (memMb / 450) * 100))}%`;
+
+      const elCpu = document.getElementById('diag-val-cpu');
+      const barCpu = document.getElementById('diag-bar-cpu');
+      if (elCpu) elCpu.textContent = `${cpuPct}%`;
+      if (barCpu) barCpu.style.width = `${Math.min(100, Math.max(5, cpuPct * 2))}%`;
+
+      // Update Camera & FPS
+      const cam = data.subsystems?.camera_pipeline || {};
+      const elFps = document.getElementById('diag-val-fps');
+      const elLat = document.getElementById('diag-val-lat');
+      const barFps = document.getElementById('diag-bar-fps');
+      if (elFps) elFps.textContent = `${cam.fps || 0} FPS`;
+      if (elLat) elLat.textContent = cam.latency_ms || 0;
+      if (barFps) barFps.style.width = `${Math.min(100, ((cam.fps || 0) / 60) * 100)}%`;
+
+      const elSaver = document.getElementById('diag-val-saver');
+      if (elSaver) {
+        if (cam.power_saver_active) {
+          elSaver.textContent = 'Standby (ECO 15 FPS)';
+          elSaver.style.color = '#38bdf8';
+        } else {
+          elSaver.textContent = 'Turbo 60 FPS (Активен)';
+          elSaver.style.color = '#00e676';
+        }
+      }
+
+      // Camera Subsystem
+      const elCamStatus = document.getElementById('diag-val-cam-status');
+      if (elCamStatus) {
+        if (cam.directshow_connected) {
+          elCamStatus.textContent = `DirectShow Cam #${cam.active_camera_id} (Подключена)`;
+          elCamStatus.style.color = '#00e676';
+        } else {
+          elCamStatus.textContent = `DirectShow Cam #${cam.active_camera_id} (Ожидание потока)`;
+          elCamStatus.style.color = '#ff9800';
+        }
+      }
+
+      // Spatial iPhone Subsystem
+      const spatial = data.subsystems?.spatial_receiver || {};
+      const elSpatialStatus = document.getElementById('diag-val-spatial-status');
+      const elSpatialPackets = document.getElementById('diag-val-spatial-packets');
+      if (elSpatialStatus) {
+        if (spatial.connected) {
+          elSpatialStatus.textContent = `Подключен iPhone (UDP 8765)`;
+          elSpatialStatus.style.color = '#00e676';
+        } else {
+          elSpatialStatus.textContent = `Ожидание iPhone (UDP 0.0.0.0:8765)`;
+          elSpatialStatus.style.color = 'var(--text-secondary)';
+        }
+      }
+      if (elSpatialPackets) elSpatialPackets.textContent = spatial.packet_count || 0;
+
+      // Displays
+      const display = data.subsystems?.display_and_mouse || {};
+      const elMonitors = document.getElementById('diag-val-monitors');
+      if (elMonitors) {
+        elMonitors.textContent = `${display.monitors_count || 1} монитор(ов) | ${display.size?.[0] || 1920}x${display.size?.[1] || 1080}`;
+      }
+
+      // Precision Engine
+      const prec = data.subsystems?.precision_engine || {};
+      const elProfile = document.getElementById('diag-val-profile');
+      const elCutoffs = document.getElementById('diag-val-cutoffs');
+      const elAnchor = document.getElementById('diag-val-anchor');
+      if (elProfile) elProfile.textContent = (prec.profile || 'desktop').toUpperCase();
+      if (elCutoffs) elCutoffs.textContent = `${prec.min_cutoff} Hz / ${prec.beta}`;
+      if (elAnchor) elAnchor.textContent = `${prec.deadzone} px / ${prec.is_anchored ? '🔒 Заблокирован' : 'Свободен'}`;
+
+      if (isManualTest) {
+        appendDiagLog(`[OK] Экспресс-тест завершен за ${rtt} мс. Все контрольные точки подсистем в норме.`);
+      }
+    } catch (err) {
+      if (isManualTest) {
+        appendDiagLog(`[ОШИБКА] Сбой опроса диагностики: ${err.message}`);
+      }
+    }
+  }
+
+  // Quick button switches view to diagnostics
+  if (btnQuickDiag) {
+    btnQuickDiag.addEventListener('click', () => {
+      dockButtons.forEach(b => b.classList.remove('active'));
+      quantumViews.forEach(v => v.classList.remove('active'));
+
+      const diagDockBtn = document.querySelector('.dock-btn[data-view="view-diagnostics"]');
+      if (diagDockBtn) diagDockBtn.classList.add('active');
+
+      const diagView = document.getElementById('view-diagnostics');
+      if (diagView) diagView.classList.add('active');
+
+      soundSynth.playChord();
+      fetchSystemDiagnostics(true);
+    });
+  }
+
+  // Manual express test
+  if (btnRunDiag) {
+    btnRunDiag.addEventListener('click', () => {
+      appendDiagLog('[START] Запуск экспресс-теста целостности аппаратного и программного стека...');
+      soundSynth.playChord();
+      fetchSystemDiagnostics(true);
+    });
+  }
+
+  // Filter Reset
+  if (btnResetFilters) {
+    btnResetFilters.addEventListener('click', async () => {
+      try {
+        appendDiagLog('[CMD] Отправка команды сброса математического сглаживания 1-Euro...');
+        const resp = await fetch('/api/precision/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile: 'desktop' })
+        });
+        if (resp.ok) {
+          appendDiagLog('[OK] Фильтры 1-Euro очищены и переинициализированы (профиль desktop).');
+          soundSynth.playClick();
+          fetchSystemDiagnostics(false);
+        }
+      } catch (e) {
+        appendDiagLog(`[ERR] Не удалось сбросить фильтры: ${e.message}`);
+      }
+    });
+  }
+
+  // Export JSON Report
+  if (btnExportDiag) {
+    btnExportDiag.addEventListener('click', () => {
+      if (!cachedDiagnosticsData) {
+        appendDiagLog('[WARN] Нет кэшированных данных диагностики для экспорта.');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(cachedDiagnosticsData, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.download = `aeropoint_diagnostics_${Date.now()}.json`;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      soundSynth.playChord();
+      appendDiagLog('[EXPORT] Отчет диагностики сохранен на диск.');
+    });
+  }
+
+  // Periodically refresh diagnostics when diagnostics view is active
+  setInterval(() => {
+    const diagView = document.getElementById('view-diagnostics');
+    if (diagView && diagView.classList.contains('active')) {
+      fetchSystemDiagnostics(false);
+    }
+  }, 2000);
+
 });

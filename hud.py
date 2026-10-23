@@ -550,6 +550,84 @@ class CyberHUD:
         tag = f"DEPTH {int(air_tap_pct)}%"
         cv2.putText(frame, tag, (ix + 16, iy + 14), cv2.FONT_HERSHEY_PLAIN, 0.8, ring_col, 1, cv2.LINE_AA)
 
+    def draw_scroll_cylinder(
+        self,
+        frame: np.ndarray,
+        center_pt: Tuple[int, int],
+        velocity: float
+    ):
+        """
+        Renders an in-air holographic 3D rotating scroll wheel with sinusoidal projection.
+        Ticks compress towards top/bottom edges simulating a physical cylindrical roller.
+        """
+        h, w, _ = frame.shape
+        cx, cy = center_pt
+        # Clamp within frame margins
+        cx = max(30, min(w - 30, cx + 45))
+        cy = max(60, min(h - 60, cy))
+
+        wheel_w = 24
+        wheel_h = 76
+        half_w = wheel_w // 2
+        half_h = wheel_h // 2
+
+        # Draw semi-transparent dark backing capsule
+        overlay = frame.copy()
+        cv2.rectangle(
+            overlay,
+            (cx - half_w, cy - half_h),
+            (cx + half_w, cy + half_h),
+            (14, 12, 18),
+            -1
+        )
+        cv2.addWeighted(overlay, 0.70, frame, 0.30, 0, frame)
+
+        # Outer glowing border
+        glow_col = self.config.COLOR_GREEN if abs(velocity) > 0.1 else self.config.COLOR_CYAN
+        cv2.rectangle(
+            frame,
+            (cx - half_w, cy - half_h),
+            (cx + half_w, cy + half_h),
+            glow_col,
+            1,
+            cv2.LINE_AA
+        )
+
+        # Update accumulated rotational phase for cylindrical animation
+        if not hasattr(self, '_scroll_phase'):
+            self._scroll_phase = 0.0
+        self._scroll_phase += velocity * 0.12
+
+        # Draw 7 cylindrical rungs using sinusoidal projection
+        num_ticks = 7
+        for i in range(num_ticks):
+            angle = (self._scroll_phase + i * (math.pi / 3.5)) % math.pi - (math.pi / 2.0)
+            tick_y = int(cy + half_h * math.sin(angle))
+            factor = max(0.2, math.cos(angle))
+            tick_w = int(half_w * factor)
+            tick_col = (
+                int(glow_col[0] * factor),
+                int(glow_col[1] * factor),
+                int(glow_col[2] * factor)
+            )
+            cv2.line(
+                frame,
+                (cx - tick_w + 2, tick_y),
+                (cx + tick_w - 2, tick_y),
+                tick_col,
+                1,
+                cv2.LINE_AA
+            )
+
+        # Directional Arrow Indicator
+        if velocity < -0.2:
+            cv2.putText(frame, "^", (cx - 4, cy - half_h - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.config.COLOR_GREEN, 1, cv2.LINE_AA)
+        elif velocity > 0.2:
+            cv2.putText(frame, "v", (cx - 4, cy + half_h + 12), cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.config.COLOR_GREEN, 1, cv2.LINE_AA)
+
+        # Label tag
+        cv2.putText(frame, "SCROLL", (cx - 20, cy + half_h + (22 if velocity > 0.2 else 12)), cv2.FONT_HERSHEY_PLAIN, 0.65, (220, 220, 220), 1, cv2.LINE_AA)
+
     def draw_radial_hud(
         self,
         frame: np.ndarray,
@@ -633,7 +711,8 @@ class CyberHUD:
         calibration_progress: Optional[float] = None,
         air_tap_pct: float = 0.0,
         radial_menu_active: bool = False,
-        active_radial_sector: Optional[int] = None
+        active_radial_sector: Optional[int] = None,
+        scroll_velocity: float = 0.0
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
         if show_skeleton:
@@ -659,6 +738,13 @@ class CyberHUD:
             if target_h:
                 tip = (int(target_h.landmarks_px[INDEX_TIP][0]), int(target_h.landmarks_px[INDEX_TIP][1]))
                 self.draw_depth_push_indicator(frame, tip, air_tap_pct)
+
+        # Holographic 3D Virtual Scroll Cylinder
+        if abs(scroll_velocity) > 0.02 or gesture == GestureType.SCROLL or action_gesture == GestureType.SCROLL:
+            target_h = action_hand if action_gesture == GestureType.SCROLL else (pointer_hand or (hands[0] if hands else hand))
+            if target_h and hasattr(target_h, 'landmarks_px') and len(target_h.landmarks_px) > MIDDLE_MCP:
+                pt = (int(target_h.landmarks_px[MIDDLE_MCP][0]), int(target_h.landmarks_px[MIDDLE_MCP][1]))
+                self.draw_scroll_cylinder(frame, pt, scroll_velocity)
 
         # Holographic Auto-Calibration Countdown
         if calibration_progress is not None:

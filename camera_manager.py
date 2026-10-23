@@ -629,7 +629,8 @@ class CameraManager:
                         calibration_progress=calibration_prog,
                         air_tap_pct=events.get("air_tap_pct", 0.0),
                         radial_menu_active=self.radial_menu_open,
-                        active_radial_sector=self.active_radial_sector
+                        active_radial_sector=self.active_radial_sector,
+                        scroll_velocity=getattr(self.scroll_engine, 'velocity', 0.0)
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)

@@ -236,6 +236,15 @@ class TestCyberHUD(unittest.TestCase):
         self.assertIsNotNone(rendered)
         self.assertEqual(rendered.shape, (480, 640, 3))
 
+    def test_render_clean_with_scroll_cylinder(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        rendered = self.hud.render_clean(frame, scroll_velocity=-1.8)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+        # Direct cylinder drawing
+        self.hud.draw_scroll_cylinder(frame, (320, 240), velocity=2.5)
+        self.hud.draw_scroll_cylinder(frame, (320, 240), velocity=-2.5)
+
 
 class TestNightVisionBooster(unittest.TestCase):
     """Verifies low-light CLAHE and zero-latency LUT gamma boost."""
