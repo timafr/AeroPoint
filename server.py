@@ -316,4 +316,21 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
     def get_status():
         return manager.get_telemetry()
 
+    @app.route('/api/stream_events')
+    def stream_events():
+        bottle.response.content_type = 'text/event-stream'
+        bottle.response.headers['Cache-Control'] = 'no-cache'
+        bottle.response.headers['Access-Control-Allow-Origin'] = '*'
+
+        def event_generator():
+            while True:
+                try:
+                    status_dict = manager.get_telemetry()
+                    yield f"data: {json.dumps(status_dict)}\n\n"
+                    time.sleep(0.04)
+                except Exception:
+                    break
+
+        return event_generator()
+
     return app

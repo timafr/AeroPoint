@@ -634,93 +634,118 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshCameras();
 
   // =========================================================================
-  // 8. 20 Hz Real-Time Telemetry Polling Loop
+  // 8. 25-60 Hz Real-Time Telemetry Stream (SSE with Polling Fallback)
   // =========================================================================
-  function pollStatus() {
-    fetch('/api/status')
-      .then(r => r.json())
-      .then(data => {
-        loadingOverlay.style.display = 'none';
+  function handleStatusData(data) {
+    if (!data) return;
+    loadingOverlay.style.display = 'none';
 
-        // Telemetry top badges
-        badgeFps.textContent = `${data.fps || 0} FPS`;
-        badgeLatency.textContent = `${data.latency_ms || 0} ms`;
-        if (badgeCpu) badgeCpu.textContent = `${data.cpu || 0}%`;
+    // Telemetry top badges
+    badgeFps.textContent = `${data.fps || 0} FPS`;
+    badgeLatency.textContent = `${data.latency_ms || 0} ms`;
+    if (badgeCpu) badgeCpu.textContent = `${data.cpu || 0}%`;
 
-        // Anchor status
-        if (data.is_anchored) {
-          badgeAnchor.textContent = 'Якорь: ЗАФИКСИРОВАН';
-          pillAnchorStatus.style.borderColor = 'rgba(0, 242, 254, 0.7)';
-        } else {
-          badgeAnchor.textContent = 'Курсор: Свободен';
-          pillAnchorStatus.style.borderColor = 'rgba(255, 255, 255, 0.12)';
-        }
+    // Anchor status
+    if (data.is_anchored) {
+      badgeAnchor.textContent = 'Якорь: ЗАФИКСИРОВАН';
+      pillAnchorStatus.style.borderColor = 'rgba(0, 242, 254, 0.7)';
+    } else {
+      badgeAnchor.textContent = 'Курсор: Свободен';
+      pillAnchorStatus.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+    }
 
-        // Hands Mode
-        if (data.is_dual_hand) {
-          badgeHandsIcon.textContent = '🙌';
-          badgeHandsMode.textContent = '2 Руки (Bimanual)';
-          pillHandsMode.style.borderColor = 'var(--aero-violet)';
-        } else if (data.hand_detected) {
-          badgeHandsIcon.textContent = '🖐️';
-          badgeHandsMode.textContent = '1 Рука';
-          pillHandsMode.style.borderColor = 'rgba(255, 255, 255, 0.12)';
-        } else {
-          badgeHandsIcon.textContent = '🔍';
-          badgeHandsMode.textContent = 'Поиск руки...';
-          pillHandsMode.style.borderColor = 'rgba(255, 255, 255, 0.12)';
-        }
+    // Hands Mode
+    if (data.is_dual_hand) {
+      badgeHandsIcon.textContent = '🙌';
+      badgeHandsMode.textContent = '2 Руки (Bimanual)';
+      pillHandsMode.style.borderColor = 'var(--aero-violet)';
+    } else if (data.hand_detected) {
+      badgeHandsIcon.textContent = '🖐️';
+      badgeHandsMode.textContent = '1 Рука';
+      pillHandsMode.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+    } else {
+      badgeHandsIcon.textContent = '🔍';
+      badgeHandsMode.textContent = 'Поиск руки...';
+      pillHandsMode.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+    }
 
-        // Tracking status badge
-        if (trackingStatusBadge) {
-          if (data.hand_detected) {
-            trackingStatusBadge.textContent = 'АКТИВЕН';
-            trackingStatusBadge.style.color = '#00e676';
-            trackingStatusBadge.style.borderColor = 'rgba(0, 230, 118, 0.4)';
-          } else {
-            trackingStatusBadge.textContent = 'СКАНИРОВАНИЕ';
-            trackingStatusBadge.style.color = 'var(--aero-cyan)';
-            trackingStatusBadge.style.borderColor = 'rgba(0, 242, 254, 0.3)';
-          }
-        }
+    // Tracking status badge
+    if (trackingStatusBadge) {
+      if (data.hand_detected) {
+        trackingStatusBadge.textContent = 'АКТИВЕН';
+        trackingStatusBadge.style.color = '#00e676';
+        trackingStatusBadge.style.borderColor = 'rgba(0, 230, 118, 0.4)';
+      } else {
+        trackingStatusBadge.textContent = 'СКАНИРОВАНИЕ';
+        trackingStatusBadge.style.color = 'var(--aero-cyan)';
+        trackingStatusBadge.style.borderColor = 'rgba(0, 242, 254, 0.3)';
+      }
+    }
 
-        // Pinch force gauge
-        const pct = Math.max(0, Math.min(100, Math.round(data.pinch_pct || 0)));
-        pinchPercentText.textContent = `${pct}%`;
-        pinchBarFill.style.width = `${pct}%`;
+    // Pinch force gauge
+    const pct = Math.max(0, Math.min(100, Math.round(data.pinch_pct || 0)));
+    pinchPercentText.textContent = `${pct}%`;
+    pinchBarFill.style.width = `${pct}%`;
 
-        // Update active gesture card
-        updateCoreGestureHighlight(data.gesture);
+    // Update active gesture card
+    updateCoreGestureHighlight(data.gesture);
 
-        // iPhone Sensor telemetry
-        const iph = data.iphone_status;
-        if (iph) {
-          if (iph.connected) {
-            badgeIphoneConn.textContent = 'ПОДКЛЮЧЕН';
-            badgeIphoneConn.className = 'sensor-badge connected';
-            valIphoneSensor.textContent = iph.sensor || 'TrueDepth';
-            valIphonePing.textContent = `${iph.latency_ms || 0.8} ms`;
-            valIphoneBattery.textContent = `${iph.battery || 100}%`;
-            valIphoneDepth.textContent = `${Math.round(iph.depth_mm || 420)} mm`;
-            valIphoneDepthDisplay.textContent = `${Math.round(iph.depth_mm || 420)} mm`;
+    // iPhone Sensor telemetry
+    const iph = data.iphone_status;
+    if (iph) {
+      if (iph.connected) {
+        badgeIphoneConn.textContent = 'ПОДКЛЮЧЕН';
+        badgeIphoneConn.className = 'sensor-badge connected';
+        valIphoneSensor.textContent = iph.sensor || 'TrueDepth';
+        valIphonePing.textContent = `${iph.latency_ms || 0.8} ms`;
+        valIphoneBattery.textContent = `${iph.battery || 100}%`;
+        valIphoneDepth.textContent = `${Math.round(iph.depth_mm || 420)} mm`;
+        valIphoneDepthDisplay.textContent = `${Math.round(iph.depth_mm || 420)} mm`;
 
-            const depthPct = Math.max(5, Math.min(100, (iph.depth_mm / 800.0) * 100));
-            barIphoneDepth.style.width = `${depthPct}%`;
+        const depthPct = Math.max(5, Math.min(100, (iph.depth_mm / 800.0) * 100));
+        barIphoneDepth.style.width = `${depthPct}%`;
 
-            const isMirr = !!iph.mirror_x;
-            txtMirrorStatus.textContent = isMirr ? 'ЗЕРКАЛЬНО: ВКЛ' : 'ПРЯМО: ВЫКЛ';
-          } else {
-            badgeIphoneConn.textContent = 'ОЖИДАНИЕ';
-            badgeIphoneConn.className = 'sensor-badge disconnected';
-          }
-        }
-      })
-      .catch(() => {})
-      .finally(() => setTimeout(pollStatus, 50));
+        const isMirr = !!iph.mirror_x;
+        txtMirrorStatus.textContent = isMirr ? 'ЗЕРКАЛЬНО: ВКЛ' : 'ПРЯМО: ВЫКЛ';
+      } else {
+        badgeIphoneConn.textContent = 'ОЖИДАНИЕ';
+        badgeIphoneConn.className = 'sensor-badge disconnected';
+      }
+    }
   }
 
-  // Start telemetry loop
-  pollStatus();
+  // Real-time EventSource with Automatic Polling Fallback
+  let eventSourceActive = false;
+  if ('EventSource' in window) {
+    try {
+      const sse = new EventSource('/api/stream_events');
+      sse.onmessage = (e) => {
+        eventSourceActive = true;
+        try {
+          const data = JSON.parse(e.data);
+          handleStatusData(data);
+        } catch (err) {}
+      };
+      sse.onerror = () => {
+        if (!eventSourceActive) pollStatus();
+      };
+    } catch (e) {
+      pollStatus();
+    }
+  } else {
+    pollStatus();
+  }
+
+  function pollStatus() {
+    if (eventSourceActive) return;
+    fetch('/api/status')
+      .then(r => r.json())
+      .then(handleStatusData)
+      .catch(() => {})
+      .finally(() => {
+        if (!eventSourceActive) setTimeout(pollStatus, 50);
+      });
+  }
 
   // Load LAN Info for QR code
   fetch('/api/lan_info')

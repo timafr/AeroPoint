@@ -128,6 +128,8 @@ class GestureRecognizer:
         self.is_action_fist_active = False
         self.action_fist_start_time = 0.0
         self.prev_action_scroll_y: Optional[float] = None
+        self.prev_bimanual_pinch_dist: Optional[float] = None
+        self.last_zoom_time = 0.0
         self.last_action_gesture = GestureType.NONE
 
     def get_finger_states(self, hand: HandData) -> Dict[str, bool]:
@@ -588,7 +590,29 @@ class GestureRecognizer:
         events["trigger_alt_tab"] = False
         events["trigger_show_desktop"] = False
         events["drag_active"] = False
+        events["zoom_delta"] = 0
         effective_gesture = pointer_gesture
+
+        # --- B0. BIMANUAL PINCH-ZOOM (Minority Report: Both hands pinch and move apart/together) ---
+        ptr_pts_2d = pointer_hand.landmarks_px
+        ptr_thumb_idx = calc_euclidean_distance(ptr_pts_2d[THUMB_TIP], ptr_pts_2d[INDEX_TIP]) / max(1.0, getattr(pointer_hand, 'palm_size_px', 60.0))
+        act_thumb_idx = calc_euclidean_distance(action_pts_2d[THUMB_TIP], action_pts_2d[INDEX_TIP]) / max(1.0, getattr(action_hand, 'palm_size_px', 60.0))
+
+        if ptr_thumb_idx < 0.38 and act_thumb_idx < 0.38:
+            cur_bimanual_dist = math.hypot(ptr_pts_2d[INDEX_TIP][0] - action_pts_2d[INDEX_TIP][0], ptr_pts_2d[INDEX_TIP][1] - action_pts_2d[INDEX_TIP][1])
+            if self.prev_bimanual_pinch_dist is not None:
+                d_dist = cur_bimanual_dist - self.prev_bimanual_pinch_dist
+                if abs(d_dist) > 16.0 and (now - self.last_zoom_time > 0.10):
+                    events["zoom_delta"] = 1 if d_dist > 0 else -1
+                    self.last_zoom_time = now
+                    events["action_gesture"] = "BIMANUAL ZOOM"
+                    self.last_action_gesture = GestureType.PINCH_CLICK
+                    self.prev_bimanual_pinch_dist = cur_bimanual_dist
+                    return effective_gesture, events
+            else:
+                self.prev_bimanual_pinch_dist = cur_bimanual_dist
+        else:
+            self.prev_bimanual_pinch_dist = None
 
         # --- A. ACTION HAND SAFETY PAUSE (🖐️ Open palm on action hand: 5 fingers extended) ---
         if action_num_extended == 5:

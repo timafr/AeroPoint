@@ -441,6 +441,10 @@ class CameraManager:
                     inertial_delta = self.scroll_engine.tick()
                     if inertial_delta != 0:
                         self.mouse.scroll(inertial_delta)
+
+                zoom_delta = events.get("zoom_delta", 0)
+                if zoom_delta != 0:
+                    self.mouse.zoom(zoom_delta)
             else:
                 self.scroll_engine.brake()
                 if self.mouse.is_dragging:
