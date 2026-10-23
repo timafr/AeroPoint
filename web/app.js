@@ -901,9 +901,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateActiveSkin(skin) {
     if (!skin) return;
-    skinButtons.forEach(b => b.classList.toggle('active', b.getAttribute('data-skin') === skin));
+    const cleanSkin = skin.toLowerCase();
+    skinButtons.forEach(b => b.classList.toggle('active', b.getAttribute('data-skin') === cleanSkin));
+    document.body.classList.remove('theme-cyberpunk', 'theme-visionos', 'theme-matrix', 'theme-solar');
+    document.body.classList.add(`theme-${cleanSkin}`);
     if (badgeHudThemeLabel) {
-      badgeHudThemeLabel.textContent = skin.toUpperCase();
+      badgeHudThemeLabel.textContent = cleanSkin.toUpperCase();
     }
   }
 

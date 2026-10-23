@@ -36,6 +36,41 @@
   --smooth-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Dynamic HUD Theme Skin Presets */
+body.theme-visionos {
+  --aero-cyan: #f1f5f9;
+  --aero-blue: #cbd5e1;
+  --aero-glow: rgba(241, 245, 249, 0.45);
+  --aero-violet: #94a3b8;
+  --aero-magenta: #e2e8f0;
+  --surface-border: rgba(255, 255, 255, 0.22);
+}
+
+body.theme-matrix {
+  --aero-cyan: #00ff41;
+  --aero-blue: #008f11;
+  --aero-glow: rgba(0, 255, 65, 0.45);
+  --aero-violet: #00ff66;
+  --aero-magenta: #50ff80;
+  --surface-border: rgba(0, 255, 65, 0.25);
+}
+
+body.theme-solar {
+  --aero-cyan: #ffd32a;
+  --aero-blue: #ff9f1a;
+  --aero-glow: rgba(255, 211, 42, 0.45);
+  --aero-violet: #ff5252;
+  --aero-magenta: #ff793f;
+  --surface-border: rgba(255, 177, 66, 0.25);
+}
+
+body.theme-cyberpunk {
+  --aero-cyan: #00f2fe;
+  --aero-glow: rgba(0, 242, 254, 0.35);
+  --aero-violet: #8b5cf6;
+  --aero-magenta: #ec4899;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
