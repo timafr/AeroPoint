@@ -93,6 +93,8 @@ class HandTracker:
         self.last_timestamp_ms = 0
         self.fps = 0.0
         self.latency_ms = 0.0
+        self.current_luminance = 120.0
+        self.is_night_mode = False
         self._prev_frame_time = time.time()
         self._clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
@@ -126,7 +128,9 @@ class HandTracker:
         # Step 2: Dynamic Auto-Illumination (Smart Low-Light Booster)
         # Fast subsampled luminance check (takes < 0.03 ms)
         mean_lum = float(np.mean(frame[::16, ::16, 0]))
-        if self.config.use_clahe or mean_lum < 75.0:
+        self.current_luminance = mean_lum
+        self.is_night_mode = bool(self.config.use_clahe or mean_lum < 75.0)
+        if self.is_night_mode:
             clip = 3.2 if mean_lum < 45.0 else 2.0
             frame = self.apply_clahe(frame, clip_limit=clip)
 

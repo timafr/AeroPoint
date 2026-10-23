@@ -264,6 +264,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const pillHandsMode = document.getElementById('pill-hands-mode');
   const badgeHandsIcon = document.getElementById('badge-hands-icon');
   const badgeHandsMode = document.getElementById('badge-hands-mode');
+  const pillLighting = document.getElementById('pill-lighting');
+  const badgeLightingIcon = document.getElementById('badge-lighting-icon');
+  const badgeLightingText = document.getElementById('badge-lighting-text');
   const trackingStatusBadge = document.getElementById('tracking-status-badge');
 
   // Gesture Banner & Pinch Gauge
@@ -801,6 +804,24 @@ document.addEventListener('DOMContentLoaded', () => {
       badgeHandsIcon.textContent = '🔍';
       badgeHandsMode.textContent = 'Поиск руки...';
       pillHandsMode.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+    }
+
+    // Lighting Telemetry Badge
+    if (badgeLightingText && typeof data.luminance === 'number') {
+      const lx = Math.round(data.luminance);
+      if (data.is_night_mode) {
+        if (badgeLightingIcon) badgeLightingIcon.textContent = '🌙';
+        badgeLightingText.textContent = `${lx} lx (Ночь)`;
+        if (pillLighting) pillLighting.style.borderColor = 'rgba(255, 170, 0, 0.45)';
+      } else if (lx >= 100) {
+        if (badgeLightingIcon) badgeLightingIcon.textContent = '☀️';
+        badgeLightingText.textContent = `${lx} lx (Светло)`;
+        if (pillLighting) pillLighting.style.borderColor = 'rgba(0, 242, 254, 0.3)';
+      } else {
+        if (badgeLightingIcon) badgeLightingIcon.textContent = '⛅';
+        badgeLightingText.textContent = `${lx} lx`;
+        if (pillLighting) pillLighting.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+      }
     }
 
     // Tracking status badge

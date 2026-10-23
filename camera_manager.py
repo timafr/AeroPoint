@@ -562,6 +562,8 @@ class CameraManager:
             "click_mode": self.config.click_mode,
             "is_anchored": self.precision_engine.is_anchor_active,
             "gain": round(self.precision_engine.current_gain, 2),
+            "luminance": round(getattr(self.tracker, 'current_luminance', 120.0), 1),
+            "is_night_mode": getattr(self.tracker, 'is_night_mode', False),
             "use_clahe": self.config.use_clahe,
             "show_skeleton": self.config.show_skeleton,
             "enable_sound": self.config.enable_sound_feedback,
