@@ -814,19 +814,21 @@ class CyberHUD:
         h, w, _ = frame.shape
         ix, iy = index_pt
 
-        if velocity >= 260.0:
-            # Kinetic high-speed tracking: motion streak + velocity tag
+        if velocity >= 120.0:
+            # Kinetic high-speed tracking: dynamic motion vector streak + speed badge
             norm = math.hypot(vec[0], vec[1])
+            vel_col = (255, 0, 128) if velocity >= 450.0 else ((0, 215, 255) if velocity >= 250.0 else (0, 242, 254))
             if norm > 1.0:
-                streak_len = min(28, int(norm * 0.025))
+                streak_len = min(36, int(norm * 0.035))
                 tx = int(ix - (vec[0] / norm) * streak_len)
                 ty = int(iy - (vec[1] / norm) * streak_len)
-                cv2.line(frame, (ix, iy), (tx, ty), (0, 242, 254), 2, cv2.LINE_AA)
+                cv2.line(frame, (ix, iy), (tx, ty), vel_col, 2, cv2.LINE_AA)
+                cv2.circle(frame, (ix, iy), 3, (255, 255, 255), -1, cv2.LINE_AA)
 
             badge_text = f"{int(velocity)} px/s"
             bx = max(10, min(w - 95, ix + 14))
             by = max(18, min(h - 10, iy - 8))
-            cv2.putText(frame, badge_text, (bx, by), cv2.FONT_HERSHEY_PLAIN, 0.85, (0, 242, 254), 1, cv2.LINE_AA)
+            cv2.putText(frame, badge_text, (bx, by), cv2.FONT_HERSHEY_PLAIN, 0.85, vel_col, 1, cv2.LINE_AA)
 
         elif velocity <= 80.0:
             # Micro-Precision Stabilization reticle
@@ -835,6 +837,7 @@ class CyberHUD:
             cv2.line(frame, (ix + 6, iy), (ix + 14, iy), (0, 242, 254), 1, cv2.LINE_AA)
             cv2.line(frame, (ix, iy - 14), (ix, iy - 6), (0, 242, 254), 1, cv2.LINE_AA)
             cv2.line(frame, (ix, iy + 6), (ix, iy + 14), (0, 242, 254), 1, cv2.LINE_AA)
+            cv2.circle(frame, index_pt, 2, (255, 255, 255), -1, cv2.LINE_AA)
 
     def draw_depth_push_indicator(
         self,

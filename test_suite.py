@@ -333,6 +333,17 @@ class TestCyberHUD(unittest.TestCase):
         self.assertIsNotNone(rendered)
         self.assertEqual(rendered.shape, (480, 640, 3))
 
+    def test_draw_speedometer_and_reticle(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        # High-speed motion vector
+        self.hud.draw_speedometer_and_precision_reticle(frame, (320, 240), velocity=360.0, vec=(180.0, 120.0))
+        self.assertGreater(int(np.sum(frame)), 0)
+
+        # Micro-precision reticle
+        frame.fill(0)
+        self.hud.draw_speedometer_and_precision_reticle(frame, (320, 240), velocity=35.0, vec=(0.0, 0.0))
+        self.assertGreater(int(np.sum(frame)), 0)
+
 
 class TestNightVisionBooster(unittest.TestCase):
     """Verifies low-light CLAHE and zero-latency LUT gamma boost."""
