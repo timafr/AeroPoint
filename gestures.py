@@ -133,39 +133,48 @@ class GestureRecognizer:
         self.last_action_gesture = GestureType.NONE
 
     def get_finger_states(self, hand: HandData) -> Dict[str, bool]:
-        """Determines whether each finger is extended (True) or curled (False) using true 3D kinematics."""
+        """Determines whether each finger is extended (True) or curled (False) using true 3D kinematics with desk-rest tilt compensation."""
         pts = hand.landmarks_world if (hasattr(hand, "landmarks_world") and hand.landmarks_world) else hand.landmarks_px
         w = pts[WRIST]
+
+        # Ergonomic Desk-Rest Tilt Compensation:
+        # Calculates palm pitch vector (Wrist to Middle MCP)
+        m_mcp = pts[MIDDLE_MCP]
+        dz = m_mcp[2] - w[2] if len(w) > 2 and len(m_mcp) > 2 else 0.0
+        dy = m_mcp[1] - w[1]
+        pitch_angle_deg = math.degrees(math.atan2(abs(dz), max(1e-4, abs(dy))))
+        tilt_relax = min(8.0, (pitch_angle_deg / 45.0) * 8.0)
+        min_finger_angle = max(120.0, 130.0 - tilt_relax)
 
         # 1. Thumb
         thumb_tip_dist = calc_euclidean_distance(pts[THUMB_TIP], pts[PINKY_MCP])
         thumb_ip_dist = calc_euclidean_distance(pts[THUMB_IP], pts[PINKY_MCP])
         thumb_angle = calc_joint_angle(pts[THUMB_MCP], pts[THUMB_IP], pts[THUMB_TIP])
-        thumb_extended = (thumb_tip_dist > thumb_ip_dist * 1.05) and (thumb_angle > 118.0)
+        thumb_extended = (thumb_tip_dist > thumb_ip_dist * 1.05) and (thumb_angle > (118.0 - tilt_relax * 0.5))
 
         # 2. Index Finger
         idx_tip_wrist = calc_euclidean_distance(pts[INDEX_TIP], w)
         idx_pip_wrist = calc_euclidean_distance(pts[INDEX_PIP], w)
         idx_angle = calc_joint_angle(pts[INDEX_MCP], pts[INDEX_PIP], pts[INDEX_TIP])
-        index_extended = (idx_tip_wrist > idx_pip_wrist * 1.06) and (idx_angle > 130.0)
+        index_extended = (idx_tip_wrist > idx_pip_wrist * 1.06) and (idx_angle > min_finger_angle)
 
         # 3. Middle Finger
         mid_tip_wrist = calc_euclidean_distance(pts[MIDDLE_TIP], w)
         mid_pip_wrist = calc_euclidean_distance(pts[MIDDLE_PIP], w)
         mid_angle = calc_joint_angle(pts[MIDDLE_MCP], pts[MIDDLE_PIP], pts[MIDDLE_TIP])
-        middle_extended = (mid_tip_wrist > mid_pip_wrist * 1.06) and (mid_angle > 130.0)
+        middle_extended = (mid_tip_wrist > mid_pip_wrist * 1.06) and (mid_angle > min_finger_angle)
 
         # 4. Ring Finger
         ring_tip_wrist = calc_euclidean_distance(pts[RING_TIP], w)
         ring_pip_wrist = calc_euclidean_distance(pts[RING_PIP], w)
         ring_angle = calc_joint_angle(pts[RING_MCP], pts[RING_PIP], pts[RING_TIP])
-        ring_extended = (ring_tip_wrist > ring_pip_wrist * 1.06) and (ring_angle > 130.0)
+        ring_extended = (ring_tip_wrist > ring_pip_wrist * 1.06) and (ring_angle > min_finger_angle)
 
         # 5. Pinky Finger
         pinky_tip_wrist = calc_euclidean_distance(pts[PINKY_TIP], w)
         pinky_pip_wrist = calc_euclidean_distance(pts[PINKY_PIP], w)
         pinky_angle = calc_joint_angle(pts[PINKY_MCP], pts[PINKY_PIP], pts[PINKY_TIP])
-        pinky_extended = (pinky_tip_wrist > pinky_pip_wrist * 1.06) and (pinky_angle > 130.0)
+        pinky_extended = (pinky_tip_wrist > pinky_pip_wrist * 1.06) and (pinky_angle > min_finger_angle)
 
         return {
             "thumb": thumb_extended,

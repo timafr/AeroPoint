@@ -190,6 +190,30 @@ document.addEventListener('DOMContentLoaded', () => {
       osc.start(now);
       osc.stop(now + 0.11);
     }
+
+    playPitchGliss(isUp = true) {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+
+      const startFreq = isUp ? 520 : 780;
+      const endFreq = isUp ? 880 : 440;
+      osc.frequency.setValueAtTime(startFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.12);
+
+      gain.gain.setValueAtTime(this.volume * 0.4, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    }
   }
 
   const soundSynth = new SpatialAudioSynthesizer();
@@ -342,7 +366,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const actionListItems = document.querySelectorAll('.action-item');
 
   function triggerRadialAction(actionName) {
-    soundSynth.playRadialChime();
+    if (actionName.includes('up')) {
+      soundSynth.playPitchGliss(true);
+    } else if (actionName.includes('down')) {
+      soundSynth.playPitchGliss(false);
+    } else {
+      soundSynth.playRadialChime();
+    }
     fetch('/api/radial/action', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
