@@ -15,6 +15,7 @@ from filters import OneEuroFilter1D, OneEuroFilter2D, AeroPrecisionEngine, Inert
 from gestures import GestureType, GestureRecognizer
 from hand_tracker import HandData
 from spatial_receiver import SpatialReceiver
+from mouse_controller import MouseController
 from hud import CyberHUD
 
 
@@ -186,6 +187,26 @@ class TestCyberHUD(unittest.TestCase):
         self.hud.trigger_click_ripple((320, 240), is_right=False)
         rendered = self.hud.render_clean(frame, calibration_progress=0.75, air_tap_pct=45.0)
         self.assertIsNotNone(rendered)
+
+
+class TestMultiMonitorManagement(unittest.TestCase):
+    """Verifies DPI-aware physical display enumeration and bounds clamping."""
+
+    def test_monitor_enumeration(self):
+        mc = MouseController()
+        monitors = mc.enumerate_monitors()
+        self.assertGreater(len(monitors), 0)
+        for m in monitors:
+            self.assertGreater(m["width"], 0)
+            self.assertGreater(m["height"], 0)
+
+    def test_monitor_switching(self):
+        mc = MouseController()
+        mc.set_active_monitor(0)
+        self.assertEqual(mc.active_monitor_index, 0)
+        # Reset to full desktop
+        mc.set_active_monitor(-1)
+        self.assertEqual(mc.active_monitor_index, -1)
 
 
 if __name__ == "__main__":

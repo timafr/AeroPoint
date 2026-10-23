@@ -34,6 +34,7 @@ if IS_WINDOWS:
     VK_Q = 0x51
     VK_L = 0x4C
     VK_Z = 0x5A
+    VK_M = 0x4D
     VK_ESCAPE = 0x1B
 
 
@@ -52,6 +53,7 @@ class GlobalHotkeyService:
             "ctrl_alt_q": False,
             "ctrl_alt_l": False,
             "ctrl_alt_z": False,
+            "ctrl_alt_m": False,
         }
 
     def register_callback(self, hotkey: str, callback: Callable[[], None]):
@@ -138,6 +140,14 @@ class GlobalHotkeyService:
                     elif not z_down:
                         self.key_states["ctrl_alt_z"] = False
 
+                    # 8. Ctrl + Alt + M -> Cycle Target Monitor
+                    m_down = bool(user32.GetAsyncKeyState(VK_M) & 0x8000)
+                    if m_down and not self.key_states["ctrl_alt_m"]:
+                        self.key_states["ctrl_alt_m"] = True
+                        self._trigger("ctrl_alt_m", self._cycle_monitor)
+                    elif not m_down:
+                        self.key_states["ctrl_alt_m"] = False
+
                 else:
                     for k in self.key_states:
                         self.key_states[k] = False
@@ -199,3 +209,8 @@ class GlobalHotkeyService:
         if self.manager and hasattr(self.manager, 'mouse'):
             self.manager.mouse.snap_window_maximize()
             print("[*] Hotkey [Ctrl+Alt+Z]: Window Maximized / Snapped")
+
+    def _cycle_monitor(self):
+        if self.manager and hasattr(self.manager, 'cycle_monitor'):
+            new_idx = self.manager.cycle_monitor()
+            print(f"[*] Hotkey [Ctrl+Alt+M]: Cycled to Monitor #{new_idx}")

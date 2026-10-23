@@ -9,7 +9,7 @@ Includes Per-Monitor High-DPI awareness to support full native screen resolution
 
 import sys
 import time
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List, Dict
 
 # Check if running on Windows for direct User32 API
 IS_WINDOWS = sys.platform.startswith("win")
@@ -80,8 +80,69 @@ class MouseController:
     def __init__(self, enable_sound: bool = True):
         self.enable_sound = enable_sound
         self.is_dragging = False
+        self.monitors: List[Dict[str, any]] = self.enumerate_monitors()
+        self.active_monitor_index: int = -1  # -1 = Full Virtual Desktop spanning all displays
         self.x_origin, self.y_origin, self.screen_width, self.screen_height = self.get_virtual_desktop_bounds()
         self.last_pos = (self.x_origin + self.screen_width // 2, self.y_origin + self.screen_height // 2)
+
+    def enumerate_monitors(self) -> List[Dict[str, any]]:
+        """Enumerates physical and virtual displays with DPI-aware physical bounds."""
+        if not IS_WINDOWS:
+            w, h = pyautogui.size()
+            return [{"id": 0, "name": "Основной дисплей", "left": 0, "top": 0, "width": w, "height": h, "is_primary": True}]
+
+        monitors = []
+        try:
+            def enum_cb(hMonitor, hdcMonitor, lprcMonitor, dwData):
+                r = lprcMonitor.contents
+                w = max(1, r.right - r.left)
+                h = max(1, r.bottom - r.top)
+                monitors.append({
+                    "id": len(monitors),
+                    "name": f"Монитор {len(monitors) + 1} ({w}x{h})",
+                    "left": int(r.left),
+                    "top": int(r.top),
+                    "width": int(w),
+                    "height": int(h),
+                    "is_primary": (r.left == 0 and r.top == 0)
+                })
+                return True
+
+            MONITORENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.HMONITOR, ctypes.wintypes.HDC, ctypes.POINTER(ctypes.wintypes.RECT), ctypes.wintypes.LPARAM)
+            user32.EnumDisplayMonitors(None, None, MONITORENUMPROC(enum_cb), 0)
+        except Exception:
+            pass
+
+        if not monitors:
+            w = user32.GetSystemMetrics(0)
+            h = user32.GetSystemMetrics(1)
+            monitors.append({"id": 0, "name": f"Основной дисплей ({w}x{h})", "left": 0, "top": 0, "width": w, "height": h, "is_primary": True})
+        return monitors
+
+    def set_active_monitor(self, index: int):
+        """Locks cursor movement bounds to a specific monitor, or -1 for the entire multi-monitor span."""
+        self.monitors = self.enumerate_monitors()
+        if index < 0 or index >= len(self.monitors):
+            self.active_monitor_index = -1
+            self.x_origin, self.y_origin, self.screen_width, self.screen_height = self.get_virtual_desktop_bounds()
+        else:
+            self.active_monitor_index = index
+            m = self.monitors[index]
+            self.x_origin = m["left"]
+            self.y_origin = m["top"]
+            self.screen_width = m["width"]
+            self.screen_height = m["height"]
+
+    def cycle_monitor(self) -> int:
+        """Cycles target display: Monitor 0 -> Monitor 1 -> ... -> Full Desktop (-1)."""
+        self.monitors = self.enumerate_monitors()
+        if not self.monitors:
+            return -1
+        next_idx = self.active_monitor_index + 1
+        if next_idx >= len(self.monitors):
+            next_idx = -1
+        self.set_active_monitor(next_idx)
+        return self.active_monitor_index
 
     def get_virtual_desktop_bounds(self) -> Tuple[int, int, int, int]:
         """Returns (x_origin, y_origin, width, height) of full multi-monitor virtual desktop."""

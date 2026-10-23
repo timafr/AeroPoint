@@ -329,6 +329,24 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
     def spatial_status():
         return manager.spatial_receiver.get_status()
 
+    @app.route('/api/monitors', method='GET')
+    def get_monitors():
+        return {
+            "monitors": manager.mouse.enumerate_monitors(),
+            "active_monitor": manager.mouse.active_monitor_index
+        }
+
+    @app.route('/api/monitors/switch', method='POST')
+    def switch_monitor():
+        try:
+            data = bottle.request.json or {}
+            idx = int(data.get('monitor_id', -1))
+            res = manager.switch_monitor(idx)
+            return {"status": "ok", "active_monitor": res}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
     @app.route('/api/lan_info', method='GET')
     def lan_info():
         ip = get_primary_lan_ip()

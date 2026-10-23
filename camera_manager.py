@@ -177,6 +177,28 @@ class CameraManager:
         self.discovered_cameras = results
         return results
 
+    def switch_monitor(self, monitor_id: int) -> int:
+        """Switches active target display (-1 for full desktop, 0..N for individual monitor)."""
+        with self.lock:
+            self.mouse.set_active_monitor(monitor_id)
+            self.screen_size = (self.mouse.screen_width, self.mouse.screen_height)
+            self.screen_origin = (self.mouse.x_origin, self.mouse.y_origin)
+            self.recognizer.screen_size = self.screen_size
+            self.recognizer.screen_origin = self.screen_origin
+            print(f"[+] Active Monitor switched to #{monitor_id}: origin={self.screen_origin}, size={self.screen_size}")
+            return self.mouse.active_monitor_index
+
+    def cycle_monitor(self) -> int:
+        """Cycles through physical monitors and virtual desktop."""
+        with self.lock:
+            idx = self.mouse.cycle_monitor()
+            self.screen_size = (self.mouse.screen_width, self.mouse.screen_height)
+            self.screen_origin = (self.mouse.x_origin, self.mouse.y_origin)
+            self.recognizer.screen_size = self.screen_size
+            self.recognizer.screen_origin = self.screen_origin
+            print(f"[+] Cycled to Monitor #{idx}: origin={self.screen_origin}, size={self.screen_size}")
+            return idx
+
     def switch_camera(self, camera_id: int) -> bool:
         """Dynamically switches active video device safely."""
         with self.lock:
@@ -607,6 +629,8 @@ class CameraManager:
             "margin_x": round(self.config.margin_x, 2),
             "margin_y": round(self.config.margin_y, 2),
             "min_cutoff": round(self.precision_engine.one_euro.min_cutoff, 2),
+            "active_monitor": self.mouse.active_monitor_index,
+            "monitors": self.mouse.monitors,
             "active_tab": self.active_tab,
             "iphone_status": self.spatial_receiver.get_status()
         }
