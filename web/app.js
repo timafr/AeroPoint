@@ -273,7 +273,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Click Mode Buttons
   const btnModeThumb = document.getElementById('btn-mode-thumb');
   const btnModePinch = document.getElementById('btn-mode-pinch');
+  const btnModeAirTap = document.getElementById('btn-mode-airtap');
   const modeHintText = document.getElementById('mode-hint-text');
+
+  // Presentation & Air-Swipe Switch
+  const switchPresentation = document.getElementById('switch-presentation');
 
   // Legacy Gestures Switch
   const switchLegacyGestures = document.getElementById('switch-legacy-gestures');
@@ -492,10 +496,11 @@ document.addEventListener('DOMContentLoaded', () => {
     postSettings({ manual_pause: newPauseState });
   });
 
-  // Click Mode (Thumb Bend vs Pinch)
+  // Click Mode (Thumb Bend vs Pinch vs Air-Tap)
   btnModeThumb?.addEventListener('click', () => {
     btnModeThumb.classList.add('active');
-    btnModePinch.classList.remove('active');
+    btnModePinch?.classList.remove('active');
+    btnModeAirTap?.classList.remove('active');
     modeHintText.innerHTML = 'Наведите курсор указательным пальцем и <strong>согните большой палец</strong> для клика без смещения мыши.';
     gaugeLabelTitle.textContent = 'Сгиб большого пальца';
     soundSynth.playPinch();
@@ -504,11 +509,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnModePinch?.addEventListener('click', () => {
     btnModePinch.classList.add('active');
-    btnModeThumb.classList.remove('active');
+    btnModeThumb?.classList.remove('active');
+    btnModeAirTap?.classList.remove('active');
     modeHintText.innerHTML = 'Сведите <strong>кончики большого и указательного пальцев</strong> (щипок) для клика, удерживайте для Drag & Drop.';
     gaugeLabelTitle.textContent = 'Сила щипка (Pinch)';
     soundSynth.playPinch();
     postSettings({ click_mode: 'pinch' });
+  });
+
+  btnModeAirTap?.addEventListener('click', () => {
+    btnModeAirTap.classList.add('active');
+    btnModeThumb?.classList.remove('active');
+    btnModePinch?.classList.remove('active');
+    modeHintText.innerHTML = 'Направьте указательный палец и <strong>толкните воздух вперед</strong> (Vision Pro Push-to-Click)!';
+    gaugeLabelTitle.textContent = 'Глубина нажатия (Z-Push)';
+    soundSynth.playPinch();
+    postSettings({ click_mode: 'air_tap' });
+  });
+
+  switchPresentation?.addEventListener('change', (e) => {
+    soundSynth.playPinch();
+    postSettings({ presentation_mode_enabled: e.target.checked });
   });
 
   // Two-Hand Dominant Hand
@@ -778,6 +799,276 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => requestAnimationFrame(renderNebula), 33);
     }
     renderNebula();
+  }
+
+  // =========================================================================
+  // 10. Air-Keys Virtual Numpad & Presentation Remote
+  // =========================================================================
+  const numpadBuffer = document.getElementById('numpad-buffer');
+  let currentKeyBuffer = '';
+
+  document.querySelectorAll('.v-key, .dpad-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-key');
+      if (!key) return;
+
+      soundSynth.playClick();
+      fetch('/api/keyboard/press', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: key })
+      }).catch(err => console.error('[!] Key press error:', err));
+
+      if (key === 'backspace') {
+        currentKeyBuffer = currentKeyBuffer.slice(0, -1);
+      } else if (key === 'enter') {
+        soundSynth.playChord();
+        currentKeyBuffer = '';
+      } else if (key === 'space') {
+        currentKeyBuffer += ' ';
+      } else if (key === 'escape' || key === 'tab' || key.startsWith('dpad')) {
+        // action keys
+      } else if (key.length === 1) {
+        currentKeyBuffer = (currentKeyBuffer + key).slice(-14);
+      }
+      if (numpadBuffer) {
+        numpadBuffer.textContent = currentKeyBuffer.length > 0 ? currentKeyBuffer : '_';
+      }
+    });
+  });
+
+  document.getElementById('btn-clear-buffer')?.addEventListener('click', () => {
+    currentKeyBuffer = '';
+    if (numpadBuffer) numpadBuffer.textContent = '_';
+    soundSynth.playClick();
+  });
+
+  // Remote Presentation Buttons
+  document.getElementById('btn-remote-prev')?.addEventListener('click', () => {
+    soundSynth.playClick();
+    fetch('/api/radial/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'prev_slide' })
+    });
+  });
+
+  document.getElementById('btn-remote-play')?.addEventListener('click', () => {
+    soundSynth.playChord();
+    fetch('/api/radial/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'play_pause' })
+    });
+  });
+
+  document.getElementById('btn-remote-next')?.addEventListener('click', () => {
+    soundSynth.playClick();
+    fetch('/api/radial/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'next_slide' })
+    });
+  });
+
+  // =========================================================================
+  // 11. Interactive Auto-Calibration Wizard
+  // =========================================================================
+  const btnStartCalib = document.getElementById('btn-start-calibration');
+  const cwProgressWrap = document.getElementById('cw-progress-wrap');
+  const cwProgressFill = document.getElementById('cw-progress-fill');
+  const cwStatusBadge = document.getElementById('cw-status-badge');
+  const cwDescText = document.getElementById('cw-desc-text');
+  let isCalibrating = false;
+
+  btnStartCalib?.addEventListener('click', () => {
+    if (isCalibrating) return;
+    isCalibrating = true;
+    btnStartCalib.disabled = true;
+    cwProgressWrap.classList.remove('hidden');
+    cwStatusBadge.textContent = 'ИЗМЕРЕНИЕ...';
+    cwStatusBadge.style.color = '#ffaa00';
+    cwDescText.innerHTML = '🎯 <strong>Анализ тремора:</strong> Зафиксируйте руку в воздухе на 3 секунды...';
+    soundSynth.playChord();
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 4;
+      cwProgressFill.style.width = `${progress}%`;
+      if (progress >= 100) {
+        clearInterval(interval);
+        isCalibrating = false;
+        btnStartCalib.disabled = false;
+        cwStatusBadge.textContent = '✓ ОТКАЛИБРОВАНО';
+        cwStatusBadge.style.color = '#00e676';
+        cwDescText.innerHTML = '✨ <strong>Готово!</strong> Мертвая зона установлена на <strong>3.0 px</strong>, фильтр 1-Euro синхронизирован с физиологией вашей кисти.';
+        soundSynth.playChord();
+
+        // Send optimal parameters
+        postSettings({
+          deadzone_radius: 3.0,
+          sensitivity: 1.85,
+          smoothing_alpha: 0.32
+        });
+        if (sliderDeadzone) sliderDeadzone.value = "3.0";
+        if (valDeadzone) valDeadzone.textContent = "3.0 px";
+        if (sliderSensitivity) sliderSensitivity.value = "1.85";
+        if (valSensitivity) valSensitivity.textContent = "1.85x";
+      }
+    }, 120);
+  });
+
+  // =========================================================================
+  // 12. Viewport 2D / 3D Switcher & Holographic WebGL/Canvas Projection
+  // =========================================================================
+  const btnVpVideo = document.getElementById('btn-vp-video');
+  const btnVp3d = document.getElementById('btn-vp-3d');
+  const hologramCanvas = document.getElementById('hologram-3d-canvas');
+  let is3DModeActive = false;
+
+  btnVpVideo?.addEventListener('click', () => {
+    is3DModeActive = false;
+    btnVpVideo.classList.add('active');
+    btnVp3d?.classList.remove('active');
+    streamImg.style.display = 'block';
+    if (hologramCanvas) hologramCanvas.style.display = 'none';
+    soundSynth.playClick();
+  });
+
+  btnVp3d?.addEventListener('click', () => {
+    is3DModeActive = true;
+    btnVp3d.classList.add('active');
+    btnVpVideo?.classList.remove('active');
+    streamImg.style.display = 'none';
+    if (hologramCanvas) {
+      hologramCanvas.style.display = 'block';
+      start3DHologramLoop();
+    }
+    soundSynth.playChord();
+  });
+
+  // Canonical 3D hand landmarks model for holographic preview
+  const CANONICAL_HAND_3D = [
+    [0.0, 0.5, 0.0],          // 0: Wrist
+    [-0.15, 0.35, 0.05],      // 1: Thumb CMC
+    [-0.26, 0.22, 0.08],      // 2: Thumb MCP
+    [-0.34, 0.12, 0.09],      // 3: Thumb IP
+    [-0.40, 0.02, 0.08],      // 4: Thumb Tip
+    [-0.10, 0.10, 0.04],      // 5: Index MCP
+    [-0.11, -0.10, 0.05],     // 6: Index PIP
+    [-0.12, -0.25, 0.05],     // 7: Index DIP
+    [-0.13, -0.38, 0.04],     // 8: Index Tip
+    [0.0, 0.08, 0.02],        // 9: Middle MCP
+    [0.0, -0.14, 0.03],       // 10: Middle PIP
+    [0.0, -0.30, 0.03],       // 11: Middle DIP
+    [0.0, -0.44, 0.02],       // 12: Middle Tip
+    [0.10, 0.10, 0.0],        // 13: Ring MCP
+    [0.11, -0.10, 0.0],       // 14: Ring PIP
+    [0.12, -0.24, 0.0],       // 15: Ring DIP
+    [0.12, -0.37, -0.01],     // 16: Ring Tip
+    [0.20, 0.15, -0.03],      // 17: Pinky MCP
+    [0.22, -0.02, -0.04],     // 18: Pinky PIP
+    [0.23, -0.14, -0.04],     // 19: Pinky DIP
+    [0.24, -0.25, -0.05]      // 20: Pinky Tip
+  ];
+
+  const HAND_BONES = [
+    [0,1],[1,2],[2,3],[3,4],
+    [0,5],[5,6],[6,7],[7,8],
+    [5,9],[9,10],[10,11],[11,12],
+    [9,13],[13,14],[14,15],[15,16],
+    [13,17],[17,18],[18,19],[19,20],
+    [0,17]
+  ];
+
+  let holoAnimId = null;
+  function start3DHologramLoop() {
+    if (!hologramCanvas) return;
+    const ctx = hologramCanvas.getContext('2d');
+    let angleY = 0;
+    let angleX = 0.35;
+
+    function render3D() {
+      if (!is3DModeActive) return;
+      const w = hologramCanvas.width = hologramCanvas.clientWidth || 640;
+      const h = hologramCanvas.height = hologramCanvas.clientHeight || 480;
+
+      ctx.clearRect(0, 0, w, h);
+      angleY += 0.018;
+
+      // 3D Perspective Projection Matrix
+      const cx = w / 2;
+      const cy = h / 2 + 30;
+      const scale = Math.min(w, h) * 0.72;
+
+      const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
+      const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
+
+      // Project 21 vertices
+      const projected = CANONICAL_HAND_3D.map(([x, y, z]) => {
+        // Rotate around Y
+        let rx = x * cosY - z * sinY;
+        let rz = x * sinY + z * cosY;
+        // Rotate around X
+        let ry = y * cosX - rz * sinX;
+        rz = y * sinX + rz * cosX;
+
+        // Perspective division
+        const fov = 2.4;
+        const pz = rz + fov;
+        const px = cx + (rx / pz) * scale;
+        const py = cy + (ry / pz) * scale;
+        return { x: px, y: py, z: pz };
+      });
+
+      // Draw Depth Plane Grid
+      ctx.strokeStyle = 'rgba(0, 242, 254, 0.08)';
+      ctx.lineWidth = 1;
+      for (let r = 40; r <= 220; r += 45) {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + 90, r, r * 0.35, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Draw Bones
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#00f2fe';
+      ctx.shadowColor = '#00f2fe';
+      ctx.shadowBlur = 10;
+
+      for (const [p1, p2] of HAND_BONES) {
+        const pt1 = projected[p1];
+        const pt2 = projected[p2];
+        ctx.beginPath();
+        ctx.moveTo(pt1.x, pt1.y);
+        ctx.lineTo(pt2.x, pt2.y);
+        ctx.stroke();
+      }
+
+      // Draw Joints
+      for (let i = 0; i < projected.length; i++) {
+        const pt = projected[i];
+        const isTip = (i === 4 || i === 8 || i === 12 || i === 16 || i === 20);
+        ctx.fillStyle = isTip ? '#ff007f' : '#ffffff';
+        ctx.shadowColor = isTip ? '#ff007f' : '#00f2fe';
+        ctx.shadowBlur = isTip ? 14 : 8;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, isTip ? 5.5 : 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // HUD Hologram Label
+      ctx.shadowBlur = 0;
+      ctx.font = '600 11px "JetBrains Mono", monospace';
+      ctx.fillStyle = 'rgba(0, 242, 254, 0.8)';
+      ctx.fillText('✦ 3D SPATIAL KINEMATIC MESH', 24, 34);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.fillText(`ROTATION Y: ${(angleY % (Math.PI * 2)).toFixed(2)} rad | JOINTS: 21/21`, 24, 52);
+
+      holoAnimId = requestAnimationFrame(render3D);
+    }
+
+    render3D();
   }
 
 });

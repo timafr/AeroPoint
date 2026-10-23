@@ -43,6 +43,9 @@ class GestureType(Enum):
     SCROLL = "SCROLL"                        # ✌️ Index + Middle (V-sign)
     DRAG = "DRAG & DROP"                     # ✊ Closed fist
     PAUSE = "PAUSE (NEUTRAL)"                # 🖐️ Open palm safety mode
+    AIR_TAP = "3D AIR-TAP (PUSH CLICK)"      # 👉 Vision Pro Depth Tap
+    SWIPE_LEFT = "SWIPE LEFT (PREV)"         # 👈 Presentation / Media Prev
+    SWIPE_RIGHT = "SWIPE RIGHT (NEXT)"       # 👉 Presentation / Media Next
 
 
 def calc_euclidean_distance(pt1: Tuple[float, ...], pt2: Tuple[float, ...]) -> float:
@@ -103,6 +106,16 @@ class GestureRecognizer:
 
         # Scroll reference tracking
         self.prev_scroll_y: Optional[float] = None
+
+        # 3D Depth Air-Tap tracking
+        self.is_air_tap_active = False
+        self.air_tap_start_time = 0.0
+        self.last_air_tap_time = 0.0
+        self.z_history: List[Tuple[float, float]] = []  # (timestamp, z)
+
+        # Presentation Air-Swipe tracking
+        self.x_history: List[Tuple[float, float]] = []  # (timestamp, x)
+        self.last_swipe_time = 0.0
 
         # Bimanual action hand state tracking
         self.is_action_thumb_bend_active = False
@@ -264,6 +277,8 @@ class GestureRecognizer:
             "trigger_task_switch": False,
             "trigger_alt_tab": False,
             "trigger_show_desktop": False,
+            "trigger_next_slide": False,
+            "trigger_prev_slide": False,
             "drag_active": False,
             "scroll_delta": 0,
             "cursor_target": self.map_to_screen(blended_tip, cam_shape),
@@ -275,6 +290,7 @@ class GestureRecognizer:
             "thumb_ip_angle": round(thumb_ip_angle, 1),
             "pinch_proximity_pct": round(primary_gauge_pct, 1),
             "thumb_bend_pct": round(thumb_bend_pct, 1),
+            "air_tap_pct": 0.0,
             "click_mode": self.config.click_mode,
             "finger_states": finger_states,
         }
@@ -466,6 +482,57 @@ class GestureRecognizer:
             if self.is_pinch_active:
                 self.current_gesture = GestureType.PINCH_CLICK
                 return self.current_gesture, events
+
+        elif self.config.click_mode == "air_tap":
+            # 3D Depth Air-Tap (Push-to-Click like Apple Vision Pro)
+            cur_z = pts_3d[INDEX_TIP][2] if len(pts_3d[INDEX_TIP]) > 2 else 0.0
+            self.z_history = [(t, z) for t, z in self.z_history if now - t <= 0.35]
+            self.z_history.append((now, cur_z))
+
+            if len(self.z_history) >= 3 and finger_states["index"] and not finger_states["middle"]:
+                # In vision coordinates, forward thrust means depth drops relative to recent baseline
+                z_baseline = max(z for t, z in self.z_history)
+                penetration = (z_baseline - cur_z) / max(0.04, palm)
+                events["air_tap_pct"] = round(min(100.0, max(0.0, (penetration / 0.14) * 100.0)), 1)
+
+                if self.is_air_tap_active:
+                    if penetration < 0.07:  # retract finger releases click
+                        self.is_air_tap_active = False
+                else:
+                    if penetration >= 0.14:
+                        if (now - self.last_left_click_time) > self.config.click_debounce_sec:
+                            self.is_air_tap_active = True
+                            self.last_left_click_time = now
+                            events["trigger_left_click"] = True
+                            self.current_gesture = GestureType.AIR_TAP
+                            return self.current_gesture, events
+
+                if self.is_air_tap_active:
+                    self.current_gesture = GestureType.AIR_TAP
+                    return self.current_gesture, events
+
+        # --- E2. PRESENTATION / MEDIA AIR-SWIPE (Optional) ---
+        if getattr(self.config, 'presentation_mode_enabled', False) and (now - self.last_swipe_time > 0.50):
+            cur_x = pts_2d[INDEX_TIP][0]
+            self.x_history = [(t, x) for t, x in self.x_history if now - t <= 0.35]
+            self.x_history.append((now, cur_x))
+
+            if len(self.x_history) >= 4 and finger_states["index"]:
+                t_old, x_old = self.x_history[0]
+                dt = now - t_old
+                if 0.08 <= dt <= 0.30:
+                    cam_w = cam_shape[1]
+                    norm_dx = (cur_x - x_old) / max(1.0, cam_w)
+                    velocity = abs(norm_dx) / dt
+                    if velocity > 1.1 and abs(norm_dx) > 0.16:
+                        self.last_swipe_time = now
+                        if norm_dx > 0:
+                            events["trigger_next_slide"] = True
+                            self.current_gesture = GestureType.SWIPE_RIGHT
+                        else:
+                            events["trigger_prev_slide"] = True
+                            self.current_gesture = GestureType.SWIPE_LEFT
+                        return self.current_gesture, events
 
         # --- F. HOVER / MOVE (☝️ Index pointing) ---
         if finger_states["index"]:

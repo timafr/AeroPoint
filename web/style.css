@@ -1617,3 +1617,248 @@ input:checked + .slider:before {
   color: #f59e0b;
   border: 1px solid rgba(245, 158, 11, 0.35);
 }
+
+/* ==========================================================================
+   Viewport 3D Switcher & Hologram Canvas
+   ========================================================================== */
+.viewport-mode-pill {
+  display: flex;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+  margin-left: 6px;
+}
+
+.vp-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s var(--smooth-ease);
+}
+
+.vp-btn.active {
+  background: linear-gradient(135deg, var(--aero-cyan), var(--aero-violet));
+  color: #fff;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+}
+
+.hologram-3d-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #0f0a22 0%, #06040d 100%);
+  border-radius: 18px;
+  z-index: 4;
+}
+
+/* ==========================================================================
+   Auto-Calibration Wizard
+   ========================================================================== */
+.calibration-wizard-card {
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.09), rgba(138, 43, 226, 0.12));
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.cw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cw-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.cw-badge {
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(0, 242, 254, 0.15);
+  color: var(--aero-cyan);
+  border: 1px solid rgba(0, 242, 254, 0.3);
+}
+
+.cw-desc {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.cw-progress-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.cw-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--aero-cyan), var(--aero-violet));
+  border-radius: 3px;
+  transition: width 0.1s linear;
+}
+
+/* ==========================================================================
+   View 6: Air-Keys & Presentation Remote
+   ========================================================================== */
+.airkeys-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.airkeys-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.numpad-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--surface-border-subtle);
+}
+
+.numpad-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.np-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+}
+
+.np-buffer {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--aero-cyan);
+  min-width: 120px;
+  text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+}
+
+.virtual-key-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.v-key {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 16px 8px;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.18s var(--smooth-ease);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.v-key:hover {
+  background: rgba(0, 242, 254, 0.18);
+  border-color: var(--aero-cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 242, 254, 0.3);
+}
+
+.v-key:active {
+  transform: translateY(1px);
+  background: rgba(0, 242, 254, 0.35);
+}
+
+.v-key.op-key {
+  font-size: 12px;
+  background: rgba(138, 43, 226, 0.12);
+  border-color: rgba(138, 43, 226, 0.28);
+  color: #c084fc;
+}
+
+.v-key.enter-key {
+  font-size: 12.5px;
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(138, 43, 226, 0.3));
+  border-color: var(--aero-cyan);
+  color: #fff;
+  font-weight: 800;
+}
+
+.dpad-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.dpad-mid-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dpad-btn {
+  width: 58px;
+  height: 52px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s var(--smooth-ease);
+}
+
+.dpad-btn:hover {
+  background: rgba(0, 242, 254, 0.2);
+  border-color: var(--aero-cyan);
+  transform: scale(1.06);
+  box-shadow: 0 0 14px rgba(0, 242, 254, 0.4);
+}
+
+.dpad-btn.dpad-center {
+  background: rgba(138, 43, 226, 0.2);
+  border-color: var(--aero-violet);
+  font-size: 12px;
+}
+
+.remote-action-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+

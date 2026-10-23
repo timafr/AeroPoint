@@ -55,6 +55,16 @@ if IS_WINDOWS:
     VK_VOLUME_DOWN = 0xAE
     VK_VOLUME_UP = 0xAF
     VK_MEDIA_PLAY_PAUSE = 0xB3
+    VK_MEDIA_NEXT_TRACK = 0xB0
+    VK_MEDIA_PREV_TRACK = 0xB1
+    VK_LEFT = 0x25
+    VK_UP = 0x26
+    VK_RIGHT = 0x27
+    VK_DOWN = 0x28
+    VK_RETURN = 0x0D
+    VK_BACK = 0x08
+    VK_SPACE = 0x20
+    VK_ESCAPE = 0x1B
 else:
     import pyautogui
     pyautogui.PAUSE = 0.0
@@ -231,6 +241,53 @@ class MouseController:
             pyautogui.keyDown('ctrl')
             pyautogui.scroll(amount * 100)
             pyautogui.keyUp('ctrl')
+
+    def next_slide(self):
+        """Advances presentation slide or next media track."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_RIGHT, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.press('right')
+
+    def prev_slide(self):
+        """Returns to previous presentation slide or previous track."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_LEFT, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.press('left')
+
+    def press_key(self, key: str):
+        """Presses an on-screen / virtual key by name."""
+        key_lower = key.lower()
+        if IS_WINDOWS:
+            vk_map = {
+                'enter': VK_RETURN,
+                'backspace': VK_BACK,
+                'space': VK_SPACE,
+                'escape': VK_ESCAPE,
+                'esc': VK_ESCAPE,
+                'tab': VK_TAB,
+                'left': VK_LEFT,
+                'right': VK_RIGHT,
+                'up': VK_UP,
+                'down': VK_DOWN,
+            }
+            if key_lower in vk_map:
+                vk = vk_map[key_lower]
+                user32.keybd_event(vk, 0, 0, 0)
+                time.sleep(0.02)
+                user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
+            elif len(key) == 1:
+                char_code = ord(key.upper())
+                user32.keybd_event(char_code, 0, 0, 0)
+                time.sleep(0.02)
+                user32.keybd_event(char_code, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.press(key)
 
     def double_click(self, button: str = "left"):
         """Performs a precise rapid double-click on current pixel coordinates."""

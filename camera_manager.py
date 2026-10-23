@@ -352,7 +352,7 @@ class CameraManager:
                 raw_target_x, raw_target_y = events["cursor_target"]
 
                 # Process through AeroPrecisionEngine with Click Anchor & Double-Click stabilization
-                is_click_gesture = (effective_gesture in (GestureType.THUMB_CLICK, GestureType.PINCH_CLICK))
+                is_click_gesture = (effective_gesture in (GestureType.THUMB_CLICK, GestureType.PINCH_CLICK, GestureType.AIR_TAP))
                 smooth_x, smooth_y = self.precision_engine.process(
                     target_x=raw_target_x,
                     target_y=raw_target_y,
@@ -418,6 +418,16 @@ class CameraManager:
                         self.scroll_engine.brake()
                         self.mouse.show_desktop()
                         self.hud.trigger_click_ripple(ripple_hand.landmarks_px[PINKY_TIP], is_right=False)
+
+                    if events.get("trigger_next_slide"):
+                        self.scroll_engine.brake()
+                        self.mouse.next_slide()
+                        self.hud.trigger_click_ripple(ripple_hand.landmarks_px[INDEX_TIP], is_right=False)
+
+                    if events.get("trigger_prev_slide"):
+                        self.scroll_engine.brake()
+                        self.mouse.prev_slide()
+                        self.hud.trigger_click_ripple(ripple_hand.landmarks_px[INDEX_TIP], is_right=False)
 
                 scroll_delta = events.get("scroll_delta", 0)
                 if scroll_delta != 0:

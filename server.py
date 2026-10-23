@@ -165,8 +165,10 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                     manager.config.dominant_hand = dom
             if "click_mode" in data:
                 mode = str(data["click_mode"])
-                if mode in ("thumb_bend", "pinch"):
+                if mode in ("thumb_bend", "pinch", "air_tap"):
                     manager.config.click_mode = mode
+            if "presentation_mode_enabled" in data:
+                manager.config.presentation_mode_enabled = bool(data["presentation_mode_enabled"])
             if "margin_x" in data:
                 manager.config.margin_x = float(data["margin_x"])
             if "margin_y" in data:
@@ -222,9 +224,26 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 mouse.zoom(-1)
             elif action == 'double_click':
                 mouse.double_click('left')
+            elif action in ('next_slide', 'next'):
+                mouse.next_slide()
+            elif action in ('prev_slide', 'prev'):
+                mouse.prev_slide()
             else:
                 return {"status": "error", "message": f"Unknown action: {action}"}
             return {"status": "ok", "action": action}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/keyboard/press', method='POST')
+    def keyboard_press():
+        try:
+            data = bottle.request.json or {}
+            key = str(data.get('key', '')).strip()
+            if not key:
+                return {"status": "error", "message": "Key parameter required"}
+            manager.mouse.press_key(key)
+            return {"status": "ok", "key": key}
         except Exception as e:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}

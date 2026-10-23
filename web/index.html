@@ -133,6 +133,12 @@
           <span class="dock-indicator"></span>
         </button>
 
+        <button class="dock-btn" data-view="view-airkeys" title="Голографическая клавиатура & Презентации">
+          <span class="dock-icon">⌨️</span>
+          <span class="dock-label">Air-Keys</span>
+          <span class="dock-indicator"></span>
+        </button>
+
         <button class="dock-btn" data-view="view-audio" title="Звуковой Синтезатор Sci-Fi FX">
           <span class="dock-icon">🔊</span>
           <span class="dock-label">Звуки FX</span>
@@ -178,15 +184,20 @@
                   <span class="t-label">Суставы:</span>
                   <span id="badge-joints" class="t-val">21/21</span>
                 </div>
+                <div class="viewport-mode-pill">
+                  <button class="vp-btn active" id="btn-vp-video" title="Обычное видео">📺 2D</button>
+                  <button class="vp-btn" id="btn-vp-3d" title="3D Пространственная Голограмма">🌐 3D</button>
+                </div>
               </div>
 
-              <!-- Live Video Stream -->
+              <!-- Live Video Stream & 3D WebGL Hologram -->
               <div class="video-container">
                 <div id="camera-loading-overlay" class="camera-loading-overlay">
                   <div class="quantum-spinner"></div>
                   <span class="loading-text" id="loading-status-text">Инициализация видеопотока...</span>
                 </div>
                 <img id="video-stream" src="/video_feed" alt="Video Stream" />
+                <canvas id="hologram-3d-canvas" class="hologram-3d-canvas" style="display: none;"></canvas>
               </div>
 
               <!-- Bottom Gesture Feedback & Kinetic Gauge Banner -->
@@ -237,6 +248,9 @@
                   </button>
                   <button class="seg-btn" id="btn-mode-pinch" data-mode="pinch">
                     <span>🤏 Щипок (Pinch)</span>
+                  </button>
+                  <button class="seg-btn" id="btn-mode-airtap" data-mode="air_tap">
+                    <span>👉 3D Air-Tap</span>
                   </button>
                 </div>
                 <div class="hint-caption" id="mode-hint-text">
@@ -637,6 +651,34 @@
                   </label>
                 </div>
 
+                <div class="toggle-row">
+                  <div class="tr-text">
+                    <span class="tr-title">Режим презентаций & медиа (Air-Swipe)</span>
+                    <span class="tr-sub">Быстрый взмах кистью в воздухе влево/вправо переключает слайды и треки</span>
+                  </div>
+                  <label class="q-switch">
+                    <input type="checkbox" id="switch-presentation">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <!-- Auto-Calibration Wizard Card -->
+                <div class="calibration-wizard-card">
+                  <div class="cw-header">
+                    <span class="cw-title">🪄 Умная авто-калибровка руки</span>
+                    <span class="cw-badge" id="cw-status-badge">ГОТОВ</span>
+                  </div>
+                  <div class="cw-desc" id="cw-desc-text">
+                    Система измерит ваш естественный тремор в покое и силу щипка за 3 секунды, автоматически подобрав идеальные параметры сглаживания и мертвой зоны.
+                  </div>
+                  <button class="q-btn primary" id="btn-start-calibration">
+                    <span>Запустить калибровку (3 сек) ⚡</span>
+                  </button>
+                  <div class="cw-progress-wrap hidden" id="cw-progress-wrap">
+                    <div class="cw-progress-fill" id="cw-progress-fill" style="width: 0%;"></div>
+                  </div>
+                </div>
+
               </div>
 
             </div>
@@ -742,7 +784,86 @@
           </div>
         </section>
 
-        <!-- View 6: Sonic Synthesizer FX Studio -->
+        <!-- View 6: Air-Keys & Presentation Remote -->
+        <section class="quantum-view" id="view-airkeys">
+          <div class="airkeys-view-container">
+            <div class="view-header-bar">
+              <div>
+                <h2>⌨️ Голографический Air-Keys & Пульт Презентаций</h2>
+                <p class="section-lead">Ввод цифр, горячих клавиш и управление слайдами/медиа прямо в воздухе с мгновенной передачей в Windows.</p>
+              </div>
+            </div>
+
+            <div class="airkeys-grid">
+              
+              <!-- Holographic Numpad -->
+              <div class="q-glass-card numpad-card">
+                <div class="numpad-header">
+                  <div class="numpad-display">
+                    <span class="np-label">ВВОД:</span>
+                    <span class="np-buffer" id="numpad-buffer">_</span>
+                  </div>
+                  <button class="q-btn small" id="btn-clear-buffer">Очистить</button>
+                </div>
+
+                <div class="virtual-key-grid">
+                  <button class="v-key" data-key="7">7</button>
+                  <button class="v-key" data-key="8">8</button>
+                  <button class="v-key" data-key="9">9</button>
+                  <button class="v-key op-key" data-key="backspace">⌫ Back</button>
+
+                  <button class="v-key" data-key="4">4</button>
+                  <button class="v-key" data-key="5">5</button>
+                  <button class="v-key" data-key="6">6</button>
+                  <button class="v-key op-key" data-key="escape">Esc</button>
+
+                  <button class="v-key" data-key="1">1</button>
+                  <button class="v-key" data-key="2">2</button>
+                  <button class="v-key" data-key="3">3</button>
+                  <button class="v-key op-key" data-key="tab">Tab ⇥</button>
+
+                  <button class="v-key" data-key="0">0</button>
+                  <button class="v-key" data-key=".">.</button>
+                  <button class="v-key" data-key="space">Space ␣</button>
+                  <button class="v-key enter-key" data-key="enter">Enter ↵</button>
+                </div>
+              </div>
+
+              <!-- Presentation & Navigation Remote -->
+              <div class="q-glass-card remote-card">
+                <h3>Пульт Слайдов & Навигации</h3>
+                <p class="config-desc">Управляйте PowerPoint, PDF, YouTube и медиаплеерами жестами или кликом:</p>
+
+                <!-- D-Pad Directional Cluster -->
+                <div class="dpad-container">
+                  <button class="dpad-btn dpad-up" data-key="up" title="Стрелка Вверх">▲</button>
+                  <div class="dpad-mid-row">
+                    <button class="dpad-btn dpad-left" data-key="left" title="Предыдущий слайд / Назад">◄</button>
+                    <button class="dpad-btn dpad-center" data-key="enter" title="Enter / Выбор">OK</button>
+                    <button class="dpad-btn dpad-right" data-key="right" title="Следующий слайд / Вперед">►</button>
+                  </div>
+                  <button class="dpad-btn dpad-down" data-key="down" title="Стрелка Вниз">▼</button>
+                </div>
+
+                <!-- Media Action Bar -->
+                <div class="remote-action-buttons">
+                  <button class="q-btn primary" id="btn-remote-prev">
+                    <span>⏪ Предыдущий</span>
+                  </button>
+                  <button class="q-btn primary" id="btn-remote-play">
+                    <span>⏯️ Play / Pause</span>
+                  </button>
+                  <button class="q-btn primary" id="btn-remote-next">
+                    <span>⏩ Следующий</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- View 7: Sonic Synthesizer FX Studio -->
         <section class="quantum-view" id="view-audio">
           <div class="audio-view-container">
             <div class="view-header-bar">
