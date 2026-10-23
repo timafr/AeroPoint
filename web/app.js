@@ -2137,6 +2137,51 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Export Session Telemetry Timeline to CSV
+  const btnExportCsv = document.getElementById('btn-export-telemetry-csv');
+  if (btnExportCsv) {
+    btnExportCsv.addEventListener('click', async () => {
+      try {
+        appendDiagLog('[EXPORT] Запрос хронологической истории телеметрии сессии для экспорта в CSV...');
+        const resp = await fetch('/api/session/export');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        const samples = data.samples || [];
+        if (samples.length === 0) {
+          appendDiagLog('[WARN] История телеметрии пока пуста (требуется несколько секунд активности).');
+          return;
+        }
+
+        const headers = ['time_sec', 'fps', 'latency_ms', 'gesture', 'hand_detected', 'pinch_pct', 'distance_cm', 'tilt_deg'];
+        const csvRows = [headers.join(',')];
+
+        samples.forEach(s => {
+          csvRows.push([
+            s.t ?? '',
+            s.fps ?? '',
+            s.lat ?? '',
+            `"${s.gest || ''}"`,
+            s.hand ? 1 : 0,
+            s.pinch ?? '',
+            s.dist ?? '',
+            s.tilt ?? ''
+          ].join(','));
+        });
+
+        const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvRows.join('\n'));
+        const link = document.createElement('a');
+        link.download = `aeropoint_telemetry_${Date.now()}.csv`;
+        link.href = csvContent;
+        link.click();
+
+        soundSynth.playChord();
+        appendDiagLog(`[EXPORT] ${samples.length} записей телеметрии успешно экспортированы в файл CSV.`);
+      } catch (e) {
+        appendDiagLog(`[ERR] Сбой экспорта CSV: ${e.message}`);
+      }
+    });
+  }
+
   // Periodically refresh diagnostics when diagnostics view is active
   setInterval(() => {
     const diagView = document.getElementById('view-diagnostics');
