@@ -238,6 +238,12 @@ class TestMultiMonitorManagement(unittest.TestCase):
         dist_far = round(max(15.0, min(300.0, 4700.0 / max(12.0, palm_far))), 1)
         self.assertGreater(dist_far, 150.0)
 
+    def test_keyboard_type_unicode(self):
+        mc = MouseController()
+        # Validates that Unicode typing and key presses execute without errors
+        mc.type_text("Aero")
+        mc.press_key("esc")
+
 
 class TestDynamicPowerSaver(unittest.TestCase):
     """Tests adaptive standby throttling and zero-latency turbo wake-up."""

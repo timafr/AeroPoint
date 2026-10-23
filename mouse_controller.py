@@ -478,6 +478,22 @@ class MouseController:
         else:
             pyautogui.doubleClick(button=button)
 
+    def type_text(self, text: str):
+        """Types Unicode text directly into the focused Windows application."""
+        if not text:
+            return
+        if IS_WINDOWS:
+            KEYEVENTF_UNICODE = 0x0004
+            KEYEVENTF_KEYUP = 0x0002
+            for ch in text:
+                code = ord(ch)
+                user32.keybd_event(0, code, KEYEVENTF_UNICODE, 0)
+                time.sleep(0.004)
+                user32.keybd_event(0, code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0)
+                time.sleep(0.004)
+        else:
+            pyautogui.write(text)
+
     def mouse_down(self, button: str = "left"):
         """Presses and holds the mouse button down."""
         if button == "left":

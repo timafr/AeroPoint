@@ -294,6 +294,19 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}
 
+    @app.route('/api/keyboard/type', method='POST')
+    def keyboard_type():
+        try:
+            data = bottle.request.json or {}
+            text = str(data.get('text', ''))
+            if not text:
+                return {"status": "error", "message": "Text parameter required"}
+            manager.mouse.type_text(text)
+            return {"status": "ok", "length": len(text)}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
     @app.route('/api/spatial/mirror', method='POST')
     def toggle_spatial_mirror():
         try:

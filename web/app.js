@@ -1343,6 +1343,64 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Air-Typer Text Broadcaster
+  const typerTextInput = document.getElementById('typer-text-input');
+  const btnTyperSend = document.getElementById('btn-typer-send');
+  const btnTyperEnter = document.getElementById('btn-typer-enter');
+
+  function sendTyperText(withEnter = false) {
+    if (!typerTextInput) return;
+    const text = typerTextInput.value;
+    if (!text) return;
+    soundSynth.playClick();
+    flashActionCapsule('⌨️', `Ввод: "${text.length > 20 ? text.slice(0, 17) + '...' : text}"`);
+    fetch('/api/keyboard/type', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text })
+    })
+    .then(() => {
+      if (withEnter) {
+        setTimeout(() => {
+          fetch('/api/keyboard/press', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: 'enter' })
+          });
+          soundSynth.playChord();
+        }, 30);
+      }
+    })
+    .catch(err => console.error('[!] Typer error:', err));
+  }
+
+  btnTyperSend?.addEventListener('click', () => sendTyperText(false));
+  btnTyperEnter?.addEventListener('click', () => sendTyperText(true));
+  typerTextInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      sendTyperText(true);
+    }
+  });
+
+  document.querySelectorAll('.chip-btn').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const typeText = chip.getAttribute('data-type');
+      const pressKey = chip.getAttribute('data-key');
+      soundSynth.playClick();
+      if (typeText) {
+        if (typerTextInput) typerTextInput.value = typeText;
+        sendTyperText(false);
+      } else if (pressKey) {
+        fetch('/api/keyboard/press', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: pressKey })
+        });
+        flashActionCapsule('⌨️', `Клавиша: ${pressKey.toUpperCase()}`);
+      }
+    });
+  });
+
   // =========================================================================
   // 11. Interactive Auto-Calibration Wizard
   // =========================================================================

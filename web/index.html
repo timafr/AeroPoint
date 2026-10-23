@@ -1091,6 +1091,41 @@
                 </div>
               </div>
 
+              <!-- Spatial Text Typer Card -->
+              <div class="q-glass-card typer-card" style="grid-column: 1 / -1; margin-top: 14px;">
+                <div class="card-title-row">
+                  <div>
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #fff;">⌨️ Пространственный Ввод Текста (Air-Typer)</h3>
+                    <p style="margin: 4px 0 0; font-size: 0.82rem; color: rgba(255, 255, 255, 0.65);">
+                      Отправляйте любой текст или ссылки прямо в активное окно Windows без клавиатуры
+                    </p>
+                  </div>
+                  <span class="badge-status-neon">UNICODE</span>
+                </div>
+
+                <div class="typer-input-row" style="display: flex; gap: 10px; margin-top: 14px;">
+                  <input type="text" id="typer-text-input" class="camera-select-input" style="flex: 1; padding: 10px 14px; font-size: 0.95rem;" placeholder="Введите текст или URL для отправки в ПК...">
+                  <button class="q-btn primary" id="btn-typer-send" style="white-space: nowrap;">
+                    <span>🚀 Напечатать</span>
+                  </button>
+                  <button class="q-btn small" id="btn-typer-enter" title="Напечатать и нажать Enter">
+                    <span>↵ Send + Enter</span>
+                  </button>
+                </div>
+
+                <!-- Quick Launcher Chips -->
+                <div class="quick-chips-row" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;">
+                  <button class="q-btn small chip-btn" data-type="https://youtube.com">🎬 YouTube</button>
+                  <button class="q-btn small chip-btn" data-type="https://github.com">🐙 GitHub</button>
+                  <button class="q-btn small chip-btn" data-type="calc">🧮 Калькулятор</button>
+                  <button class="q-btn small chip-btn" data-type="notepad">📝 Блокнот</button>
+                  <button class="q-btn small chip-btn" data-key="enter">↵ Enter</button>
+                  <button class="q-btn small chip-btn" data-key="backspace">⌫ Backspace</button>
+                  <button class="q-btn small chip-btn" data-key="space">␣ Пробел</button>
+                  <button class="q-btn small chip-btn" data-key="esc">Esc</button>
+                </div>
+              </div>
+
             </div>
           </div>
         </section>
