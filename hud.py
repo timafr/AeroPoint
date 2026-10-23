@@ -159,10 +159,36 @@ class CyberHUD:
         cv2.putText(frame, role_label, (max(10, w_pt[0] - 50), w_pt[1]),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.42, bone_col, 1, cv2.LINE_AA)
 
-        # Pinch distance guide line
-        thumb_pt = (pts[THUMB_TIP][0], pts[THUMB_TIP][1])
-        index_pt = (pts[INDEX_TIP][0], pts[INDEX_TIP][1])
-        cv2.line(frame, thumb_pt, index_pt, (255, 255, 255), 1, cv2.LINE_AA)
+        # Interactive Pinch Proximity Halo & Magnetic Snap Spark
+        thumb_pt = (int(pts[THUMB_TIP][0]), int(pts[THUMB_TIP][1]))
+        index_pt = (int(pts[INDEX_TIP][0]), int(pts[INDEX_TIP][1]))
+        dist_px = math.hypot(thumb_pt[0] - index_pt[0], thumb_pt[1] - index_pt[1])
+        prox = max(0.0, min(1.0, 1.0 - (dist_px / 75.0)))
+
+        # Dynamic color transitions from cyan to neon gold to magenta
+        if prox > 0.82 or gesture in (GestureType.PINCH_CLICK, GestureType.THUMB_CLICK):
+            guide_color = (255, 0, 128)  # Hot magenta
+            line_thick = 2
+        elif prox > 0.45:
+            guide_color = (0, 215, 255)  # Gold/amber
+            line_thick = 1
+        else:
+            guide_color = (180, 240, 255)
+            line_thick = 1
+
+        cv2.line(frame, thumb_pt, index_pt, guide_color, line_thick, cv2.LINE_AA)
+
+        # Proximity magnetic halos
+        halo_r = int(7 + 10 * prox)
+        cv2.circle(frame, thumb_pt, halo_r, guide_color, 1, cv2.LINE_AA)
+        cv2.circle(frame, index_pt, halo_r, guide_color, 1, cv2.LINE_AA)
+
+        # Midpoint spark when approaching click threshold
+        if prox > 0.65:
+            mid_x = (thumb_pt[0] + index_pt[0]) // 2
+            mid_y = (thumb_pt[1] + index_pt[1]) // 2
+            cv2.circle(frame, (mid_x, mid_y), int(3 + 4 * prox), (255, 255, 255), -1, cv2.LINE_AA)
+            cv2.circle(frame, (mid_x, mid_y), int(5 + 6 * prox), guide_color, 1, cv2.LINE_AA)
 
     def draw_ripples(self, frame: np.ndarray):
         """Renders click shockwave rings with optimized local ROI blending (zero full-frame copying)."""

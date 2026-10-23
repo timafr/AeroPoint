@@ -51,6 +51,10 @@ if IS_WINDOWS:
     VK_SHIFT = 0x10  # Shift key
     VK_S = 0x53      # 'S' key
     VK_CONTROL = 0x11
+    VK_C = 0x43
+    VK_V = 0x56
+    VK_Z = 0x5A
+    VK_F5 = 0x74
     VK_VOLUME_MUTE = 0xAD
     VK_VOLUME_DOWN = 0xAE
     VK_VOLUME_UP = 0xAF
@@ -318,6 +322,59 @@ class MouseController:
             user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0)
         else:
             pyautogui.hotkey('win', 'ctrl', 'left')
+
+    def copy(self):
+        """Dispatches Ctrl + C."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_CONTROL, 0, 0, 0)
+            user32.keybd_event(VK_C, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_C, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.hotkey('ctrl', 'c')
+
+    def paste(self):
+        """Dispatches Ctrl + V."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_CONTROL, 0, 0, 0)
+            user32.keybd_event(VK_V, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_V, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.hotkey('ctrl', 'v')
+
+    def undo(self):
+        """Dispatches Ctrl + Z."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_CONTROL, 0, 0, 0)
+            user32.keybd_event(VK_Z, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_Z, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.hotkey('ctrl', 'z')
+
+    def search_spotlight(self):
+        """Dispatches Win + S for system search."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_LWIN, 0, 0, 0)
+            user32.keybd_event(VK_S, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_S, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.hotkey('win', 's')
+
+    def browser_refresh(self):
+        """Dispatches F5 refresh."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_F5, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_F5, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.press('f5')
 
     def press_key(self, key: str):
         """Presses an on-screen / virtual key by name."""

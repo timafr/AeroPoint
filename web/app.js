@@ -1061,6 +1061,11 @@ document.addEventListener('DOMContentLoaded', () => {
     { id: 'btn-snap-right', action: 'snap_right', label: 'Прикрепить вправо' },
     { id: 'btn-desk-prev', action: 'desktop_prev', label: 'Предыдущий стол' },
     { id: 'btn-desk-next', action: 'desktop_next', label: 'Следующий стол' },
+    { id: 'btn-macro-copy', action: 'copy', label: 'Копировать (Ctrl+C)' },
+    { id: 'btn-macro-paste', action: 'paste', label: 'Вставить (Ctrl+V)' },
+    { id: 'btn-macro-undo', action: 'undo', label: 'Отмена (Ctrl+Z)' },
+    { id: 'btn-macro-search', action: 'search', label: 'Поиск Windows (Win+S)' },
+    { id: 'btn-macro-refresh', action: 'refresh', label: 'Обновить страницу (F5)' },
   ];
 
   snapActions.forEach(({ id, action, label }) => {

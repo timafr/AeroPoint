@@ -242,6 +242,16 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 mouse.switch_desktop_next()
             elif action in ('desktop_prev', 'workspace_prev'):
                 mouse.switch_desktop_prev()
+            elif action in ('copy', 'ctrl_c'):
+                mouse.copy()
+            elif action in ('paste', 'ctrl_v'):
+                mouse.paste()
+            elif action in ('undo', 'ctrl_z'):
+                mouse.undo()
+            elif action in ('search', 'win_s'):
+                mouse.search_spotlight()
+            elif action in ('refresh', 'f5', 'browser_refresh'):
+                mouse.browser_refresh()
             else:
                 return {"status": "error", "message": f"Unknown action: {action}"}
             return {"status": "ok", "action": action}
