@@ -223,6 +223,11 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}
 
+    @app.route('/api/radial/toggle', method='POST')
+    def toggle_radial_menu():
+        manager.toggle_radial_menu()
+        return {"status": "ok", "radial_open": manager.radial_menu_open}
+
     @app.route('/api/radial/action', method='POST')
     def radial_action():
         try:

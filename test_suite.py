@@ -229,6 +229,12 @@ class TestCyberHUD(unittest.TestCase):
         rendered = self.hud.render_clean(frame, calibration_progress=0.75, air_tap_pct=45.0)
         self.assertIsNotNone(rendered)
 
+    def test_render_clean_with_radial_menu(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        rendered = self.hud.render_clean(frame, radial_menu_active=True, active_radial_sector=2)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+
 
 class TestMultiMonitorManagement(unittest.TestCase):
     """Verifies DPI-aware physical display enumeration and bounds clamping."""

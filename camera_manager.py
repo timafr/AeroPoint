@@ -101,6 +101,9 @@ class CameraManager:
         self.cpu_percent = 0.0
         self.is_power_saver = False
         self.last_hand_seen_time = time.time()
+        self.radial_menu_open: bool = False
+        self.active_radial_sector: Optional[int] = None
+        self.last_radial_action_time: float = 0.0
 
         # Video capture handle & double-buffering
         self.cap: Optional[cv2.VideoCapture] = None
@@ -261,6 +264,31 @@ class CameraManager:
         self.calibration_active_until = now + duration
         self.precision_engine.reset()
         print(f"[*] Calibration triggered: active for {duration}s")
+
+    def toggle_radial_menu(self):
+        """Toggles in-air holographic 8-sector Quick-Dial radial menu overlay."""
+        self.radial_menu_open = not self.radial_menu_open
+        if not self.radial_menu_open:
+            self.active_radial_sector = None
+        state = "OPEN" if self.radial_menu_open else "CLOSED"
+        print(f"[*] Radial Quick-Dial: {state}")
+
+    def _execute_radial_sector(self, sector: int):
+        """Executes the macro corresponding to selected radial sector."""
+        actions = [
+            ("WIN+TAB", self.mouse.task_view),
+            ("SNIP", self.mouse.snipping_tool),
+            ("VOL+", self.mouse.volume_up),
+            ("VOL-", self.mouse.volume_down),
+            ("PLAY", self.mouse.play_pause),
+            ("DESK", self.mouse.show_desktop),
+            ("ALT+TAB", self.mouse.alt_tab),
+            ("LOCK", self.mouse.lock_workstation),
+        ]
+        if 0 <= sector < len(actions):
+            label, fn = actions[sector]
+            print(f"[⚡] Radial Executed: {label} (Sector #{sector})")
+            fn()
 
     def start(self):
         """Starts background capture and processing threads."""
@@ -442,8 +470,32 @@ class CameraManager:
             self.pinch_ratio = events.get("thumb_idx_ratio", 0.0) if events else 0.0
             self.pinch_pct = events.get("pinch_proximity_pct", 0.0) if events else 0.0
 
-            # Execute mouse actions only if control is enabled
-            if self.control_enabled and pointer_hand and effective_gesture not in (GestureType.PAUSE, GestureType.NONE):
+            # Radial In-Air Sector Selection & Execution
+            if self.radial_menu_open and pointer_hand:
+                ix, iy = pointer_hand.landmarks_px[INDEX_TIP]
+                fh, fw = frame.shape[:2]
+                cx, cy = fw // 2, fh // 2
+                dx, dy = ix - cx, iy - cy
+                dist = math.hypot(dx, dy)
+                if dist > 28.0:
+                    angle = (math.degrees(math.atan2(dy, dx)) + 90.0 + 360.0) % 360.0
+                    self.active_radial_sector = int((angle + 22.5) % 360.0 // 45.0)
+                else:
+                    self.active_radial_sector = None
+
+                is_click = (effective_gesture in (GestureType.THUMB_CLICK, GestureType.PINCH_CLICK, GestureType.AIR_TAP)) or events.get("trigger_left_click", False)
+                if is_click and self.active_radial_sector is not None:
+                    now_click = time.time()
+                    if now_click - self.last_radial_action_time > 0.4:
+                        self.last_radial_action_time = now_click
+                        self._execute_radial_sector(self.active_radial_sector)
+                        self.hud.trigger_click_ripple((ix, iy), is_right=False)
+                        self.radial_menu_open = False
+                        self.active_radial_sector = None
+                        self.precision_engine.reset()
+
+            # Execute mouse actions only if control is enabled and radial menu is not active
+            if self.control_enabled and not self.radial_menu_open and pointer_hand and effective_gesture not in (GestureType.PAUSE, GestureType.NONE):
                 hand_was_present = True
                 raw_target_x, raw_target_y = events["cursor_target"]
 
@@ -571,7 +623,9 @@ class CameraManager:
                         show_skeleton=self.config.show_skeleton,
                         laser_pointer_mode=getattr(self.config, 'laser_pointer_mode', False),
                         calibration_progress=calibration_prog,
-                        air_tap_pct=events.get("air_tap_pct", 0.0)
+                        air_tap_pct=events.get("air_tap_pct", 0.0),
+                        radial_menu_active=self.radial_menu_open,
+                        active_radial_sector=self.active_radial_sector
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)
@@ -654,6 +708,8 @@ class CameraManager:
             "active_monitor": self.mouse.active_monitor_index,
             "monitors": self.mouse.monitors,
             "distance_cm": round(getattr(self.pointer_hand or (self.current_hands[0] if self.current_hands else None), 'estimated_distance_cm', 50.0), 1) if (self.pointer_hand or self.current_hands) else 0.0,
+            "radial_menu_open": self.radial_menu_open,
+            "active_radial_sector": self.active_radial_sector,
             "active_tab": self.active_tab,
             "iphone_status": self.spatial_receiver.get_status()
         }

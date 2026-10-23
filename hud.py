@@ -550,6 +550,75 @@ class CyberHUD:
         tag = f"DEPTH {int(air_tap_pct)}%"
         cv2.putText(frame, tag, (ix + 16, iy + 14), cv2.FONT_HERSHEY_PLAIN, 0.8, ring_col, 1, cv2.LINE_AA)
 
+    def draw_radial_hud(
+        self,
+        frame: np.ndarray,
+        active_sector: Optional[int] = None
+    ):
+        """
+        Renders a futuristic holographic 8-sector Quick-Dial radial overlay in the center of the frame.
+        """
+        h, w, _ = frame.shape
+        cx, cy = w // 2, h // 2
+        r_inner = 34
+        r_outer = 135
+
+        overlay = frame.copy()
+        # Darkened semi-transparent circular backdrop
+        cv2.circle(overlay, (cx, cy), r_outer + 8, (14, 12, 10), -1)
+
+        # 8 Sectors definitions (clockwise from top)
+        sectors = [
+            ("WIN+TAB", (0, -1)),
+            ("SNIP", (1, -1)),
+            ("VOL+", (1, 0)),
+            ("VOL-", (1, 1)),
+            ("PLAY", (0, 1)),
+            ("DESK", (-1, 1)),
+            ("ALT+TAB", (-1, 0)),
+            ("LOCK", (-1, -1)),
+        ]
+
+        # Draw sector background wedges
+        for idx in range(8):
+            start_angle = -90 + idx * 45 - 22.5
+            end_angle = start_angle + 45
+            is_active = (active_sector == idx)
+
+            if is_active:
+                wedge_col = (0, 242, 254) if idx % 2 == 0 else (255, 0, 128)
+                cv2.ellipse(overlay, (cx, cy), (r_outer, r_outer), 0, start_angle, end_angle, wedge_col, -1)
+
+        cv2.addWeighted(overlay, 0.68, frame, 0.32, 0, frame)
+
+        # Draw divider lines and text
+        for idx, (label, vec) in enumerate(sectors):
+            div_angle = math.radians(-90 + idx * 45 - 22.5)
+            x1 = int(cx + r_inner * math.cos(div_angle))
+            y1 = int(cy + r_inner * math.sin(div_angle))
+            x2 = int(cx + r_outer * math.cos(div_angle))
+            y2 = int(cy + r_outer * math.sin(div_angle))
+            cv2.line(frame, (x1, y1), (x2, y2), (255, 255, 255), 1, cv2.LINE_AA)
+
+            mid_angle = math.radians(-90 + idx * 45)
+            tx = int(cx + 85 * math.cos(mid_angle))
+            ty = int(cy + 85 * math.sin(mid_angle))
+            is_active = (active_sector == idx)
+            text_col = (10, 10, 10) if is_active else (255, 255, 255)
+            font_scale = 0.85 if is_active else 0.75
+            thick = 2 if is_active else 1
+
+            off_x = len(label) * 4
+            cv2.putText(frame, label, (tx - off_x, ty + 4), cv2.FONT_HERSHEY_PLAIN, font_scale, text_col, thick, cv2.LINE_AA)
+
+        # Outer & Inner rings
+        cv2.circle(frame, (cx, cy), r_outer, self.config.COLOR_CYAN, 2, cv2.LINE_AA)
+        cv2.circle(frame, (cx, cy), r_inner, (255, 255, 255), 2, cv2.LINE_AA)
+
+        # Center core orb
+        cv2.circle(frame, (cx, cy), r_inner - 2, (20, 16, 24), -1)
+        cv2.putText(frame, "AERO", (cx - 18, cy + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.45, self.config.COLOR_CYAN, 1, cv2.LINE_AA)
+
     def render_clean(
         self,
         frame: np.ndarray,
@@ -562,7 +631,9 @@ class CyberHUD:
         show_skeleton: bool = True,
         laser_pointer_mode: bool = False,
         calibration_progress: Optional[float] = None,
-        air_tap_pct: float = 0.0
+        air_tap_pct: float = 0.0,
+        radial_menu_active: bool = False,
+        active_radial_sector: Optional[int] = None
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
         if show_skeleton:
@@ -592,6 +663,10 @@ class CyberHUD:
         # Holographic Auto-Calibration Countdown
         if calibration_progress is not None:
             self.draw_calibration_target(frame, progress_pct=calibration_progress)
+
+        # Holographic 8-Sector Radial Menu Dial
+        if radial_menu_active:
+            self.draw_radial_hud(frame, active_sector=active_radial_sector)
 
         self.draw_ripples(frame)
         return frame

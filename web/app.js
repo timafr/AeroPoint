@@ -471,8 +471,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-open-radial-modal')?.addEventListener('click', () => {
-    const radialDockBtn = document.querySelector('.dock-btn[data-view="view-radial"]');
-    if (radialDockBtn) radialDockBtn.click();
+    fetch('/api/radial/toggle', { method: 'POST' })
+      .then(r => r.json())
+      .then(d => {
+        soundSynth.playRadialChime();
+        flashActionCapsule('⭕', d.radial_open ? 'Quick-Dial в эфире: ВКЛ (Наведите руку на сектор)' : 'Quick-Dial: ЗАКРЫТ');
+      })
+      .catch(() => {
+        const radialDockBtn = document.querySelector('.dock-btn[data-view="view-radial"]');
+        if (radialDockBtn) radialDockBtn.click();
+      });
   });
 
   // =========================================================================

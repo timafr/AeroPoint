@@ -35,6 +35,7 @@ if IS_WINDOWS:
     VK_L = 0x4C
     VK_Z = 0x5A
     VK_M = 0x4D
+    VK_R = 0x52
     VK_ESCAPE = 0x1B
 
 
@@ -54,6 +55,7 @@ class GlobalHotkeyService:
             "ctrl_alt_l": False,
             "ctrl_alt_z": False,
             "ctrl_alt_m": False,
+            "ctrl_alt_r": False,
         }
 
     def register_callback(self, hotkey: str, callback: Callable[[], None]):
@@ -148,6 +150,14 @@ class GlobalHotkeyService:
                     elif not m_down:
                         self.key_states["ctrl_alt_m"] = False
 
+                    # 9. Ctrl + Alt + R -> Toggle In-Air Radial Menu
+                    r_down = bool(user32.GetAsyncKeyState(VK_R) & 0x8000)
+                    if r_down and not self.key_states["ctrl_alt_r"]:
+                        self.key_states["ctrl_alt_r"] = True
+                        self._trigger("ctrl_alt_r", self._toggle_radial_menu)
+                    elif not r_down:
+                        self.key_states["ctrl_alt_r"] = False
+
                 else:
                     for k in self.key_states:
                         self.key_states[k] = False
@@ -213,4 +223,9 @@ class GlobalHotkeyService:
     def _cycle_monitor(self):
         if self.manager and hasattr(self.manager, 'cycle_monitor'):
             new_idx = self.manager.cycle_monitor()
+            print(f"[*] Hotkey [Ctrl+Alt+M]: Target Monitor Cycled -> #{new_idx}")
+
+    def _toggle_radial_menu(self):
+        if self.manager and hasattr(self.manager, 'toggle_radial_menu'):
+            self.manager.toggle_radial_menu()
             print(f"[*] Hotkey [Ctrl+Alt+M]: Cycled to Monitor #{new_idx}")
