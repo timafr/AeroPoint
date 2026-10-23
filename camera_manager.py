@@ -563,6 +563,8 @@ class CameraManager:
             "sound_volume": getattr(self.config, 'sound_volume', 0.65),
             "enable_legacy_shortcuts": getattr(self.config, 'enable_legacy_shortcuts', False),
             "laser_pointer_mode": getattr(self.config, 'laser_pointer_mode', False),
+            "enable_corner_snap": getattr(self.config, 'enable_corner_snap', True),
+            "enable_distance_adaptation": getattr(self.config, 'enable_distance_adaptation', True),
             "enable_anchor": self.precision_engine.enable_click_anchor,
             "enable_acceleration": self.precision_engine.enable_acceleration,
             "deadzone": self.precision_engine.deadzone_radius,

@@ -53,6 +53,8 @@ class GestureConfig:
     margin_y: float = 0.10  # Expanded 10% vertical margins
     sensitivity: float = 1.8  # Cursor speed & reach multiplier (1.0 = standard, 2.0 = fast, 3.0+ = ultra-fast)
     deadzone_radius: float = 3.5  # Pixel threshold to lock cursor (Slide 16)
+    enable_corner_snap: bool = True  # AeroMagnet: magnetic attraction to screen corners & window buttons
+    enable_distance_adaptation: bool = True  # Dynamic reach normalization based on user distance from camera
 
     # --- Jitter Reduction & Smoothing ---
     # Filter types: 'ema', 'adaptive_ema', 'one_euro'

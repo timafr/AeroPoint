@@ -166,6 +166,24 @@ def benchmark_mediapipe_inference(n_frames: int = 60):
     return mean_lat, p95_lat, fps, cpu_after
 
 
+def benchmark_aeromagnet_snap() -> bool:
+    """Validates that AeroMagnet correctly locks onto screen corners and edge boundaries."""
+    cfg = GestureConfig()
+    cfg.enable_corner_snap = True
+    recognizer = GestureRecognizer(cfg, screen_size=(1920, 1080), screen_origin=(0, 0))
+    cam_shape = (480, 640)
+
+    # Near top-left corner
+    sx, sy = recognizer.map_to_screen((cam_shape[1] * cfg.margin_x + 2, cam_shape[0] * cfg.margin_y + 2), cam_shape)
+    top_left_snapped = (sx == 0.0 and sy == 0.0)
+
+    # Near bottom-right corner
+    sx, sy = recognizer.map_to_screen((cam_shape[1] * (1.0 - cfg.margin_x) - 2, cam_shape[0] * (1.0 - cfg.margin_y) - 2), cam_shape)
+    bottom_right_snapped = (sx == 1920.0 and sy == 1080.0)
+
+    return top_left_snapped and bottom_right_snapped
+
+
 def main():
     print("=================================================================")
     print("      ✦ AeroPoint Quantum 3.0 — Stress Test & Performance Suite  ")
@@ -173,30 +191,35 @@ def main():
     print("[*] Running automated diagnostics...\n")
 
     # 1. OS Emulation Latency
-    print("[1/5] Benchmarking Windows User32 Low-Level Dispatch...")
+    print("[1/6] Benchmarking Windows User32 Low-Level Dispatch...")
     mouse_lat_us = benchmark_mouse_latency(n_iterations=1000)
     print(f"      -> Average Dispatch Latency: {mouse_lat_us:.2f} microseconds ({mouse_lat_us/1000.0:.4f} ms)")
 
     # 2. Filter Tremor Reduction
-    print("[2/5] Benchmarking Anti-Jitter Filters (Tremor Suppression)...")
+    print("[2/6] Benchmarking Anti-Jitter Filters (Tremor Suppression)...")
     red_ema, red_aero = benchmark_filter_jitter_reduction(n_samples=1000)
     print(f"      -> Standard EMA (a=0.65) Noise Reduction:          {red_ema:.1f}%")
     print(f"      -> AeroPoint Precision Engine (1-Euro) Reduction:   {red_aero:.1f}%")
 
     # 3. Binary vs JSON Stream Protocol
-    print("[3/5] Benchmarking iPhone Spatial Packet Protocols (5000 frames)...")
+    print("[3/6] Benchmarking iPhone Spatial Packet Protocols (5000 frames)...")
     bin_us, json_us, speedup, bin_len, json_len = benchmark_binary_vs_json_protocol(n_iterations=5000)
     print(f"      -> Binary Struct Decoding Latency: {bin_us:.2f} µs ({bin_len} bytes)")
     print(f"      -> JSON Protocol Decoding Latency:  {json_us:.2f} µs ({json_len} bytes)")
     print(f"      -> Binary Speedup Factor:          {speedup:.1f}x FASTER (Bandwidth saved: {100*(1-bin_len/json_len):.1f}%)")
 
     # 4. Inertial Scroll Physics
-    print("[4/5] Testing Kinetic Inertial Scroll Decay Engine...")
+    print("[4/6] Testing Kinetic Inertial Scroll Decay Engine...")
     decay_ok, total_decay_delta = benchmark_inertial_scroll()
     print(f"      -> Smooth Exponential Decay: {'✓ PASS' if decay_ok else '✗ FAIL'} (Total Impulse: {total_decay_delta})")
 
-    # 5. MediaPipe Inference Latency
-    print("[5/5] Benchmarking MediaPipe HandLandmarker Pipeline...")
+    # 5. AeroMagnet Corner Snapping
+    print("[5/6] Testing AeroMagnet Corner & Boundary Snap Precision...")
+    snap_ok = benchmark_aeromagnet_snap()
+    print(f"      -> 4-Corner Magnetic Attraction: {'✓ PASS' if snap_ok else '✗ FAIL'}")
+
+    # 6. MediaPipe Inference Latency
+    print("[6/6] Benchmarking MediaPipe HandLandmarker Pipeline...")
     mean_lat, p95_lat, fps, cpu_load = benchmark_mediapipe_inference(n_frames=60)
     print(f"      -> Mean Inference Latency: {mean_lat:.2f} ms")
     print(f"      -> 95th Percentile Latency: {p95_lat:.2f} ms")

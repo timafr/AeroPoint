@@ -187,9 +187,10 @@ class GestureRecognizer:
     def map_to_screen(
         self,
         point_px: Tuple[float, float, ...],
-        cam_shape: Tuple[int, int]
+        cam_shape: Tuple[int, int],
+        palm_scale: float = 60.0
     ) -> Tuple[float, float]:
-        """Maps coordinates within the Active Tracking Zone to Screen Resolution with sensitivity multiplier."""
+        """Maps coordinates within the Active Tracking Zone to Screen Resolution with sensitivity multiplier and AeroMagnet corner snapping."""
         cam_h, cam_w = cam_shape
         x, y = point_px[0], point_px[1]
 
@@ -203,8 +204,13 @@ class GestureRecognizer:
         norm_x = (x - x_min) / max(1.0, (x_max - x_min))
         norm_y = (y - y_min) / max(1.0, (y_max - y_min))
 
-        # Sensitivity speed scaling (expands range from center [0.5, 0.5])
+        # Sensitivity speed scaling with optional dynamic distance adaptation
         sens = getattr(self.config, 'sensitivity', 1.8)
+        if getattr(self.config, 'enable_distance_adaptation', True) and palm_scale > 20.0:
+            # Nominal hand palm at 60cm is ~60px in 640x480. If farther (smaller px), increase reach
+            dist_factor = max(0.80, min(1.35, 62.0 / palm_scale))
+            sens *= dist_factor
+
         if sens != 1.0:
             norm_x = 0.5 + (norm_x - 0.5) * sens
             norm_y = 0.5 + (norm_y - 0.5) * sens
@@ -214,6 +220,21 @@ class GestureRecognizer:
 
         screen_x = self.x_origin + norm_x * self.screen_width
         screen_y = self.y_origin + norm_y * self.screen_height
+
+        # AeroMagnet: Magnetic attraction to corners & screen edges
+        if getattr(self.config, 'enable_corner_snap', True):
+            snap_margin = 16.0
+            # Snap to left/right bounds
+            if abs(screen_x - self.x_origin) < snap_margin:
+                screen_x = float(self.x_origin)
+            elif abs(screen_x - (self.x_origin + self.screen_width)) < snap_margin:
+                screen_x = float(self.x_origin + self.screen_width)
+
+            # Snap to top/bottom bounds
+            if abs(screen_y - self.y_origin) < snap_margin:
+                screen_y = float(self.y_origin)
+            elif abs(screen_y - (self.y_origin + self.screen_height)) < snap_margin:
+                screen_y = float(self.y_origin + self.screen_height)
 
         return screen_x, screen_y
 
@@ -292,7 +313,7 @@ class GestureRecognizer:
             "trigger_prev_slide": False,
             "drag_active": False,
             "scroll_delta": 0,
-            "cursor_target": self.map_to_screen(blended_tip, cam_shape),
+            "cursor_target": self.map_to_screen(blended_tip, cam_shape, getattr(hand, 'palm_size_px', 60.0)),
             "thumb_idx_ratio": thumb_idx_dist,
             "thumb_mid_ratio": thumb_mid_dist,
             "thumb_ring_ratio": thumb_ring_dist,
@@ -326,7 +347,7 @@ class GestureRecognizer:
                 self.current_gesture = GestureType.DRAG
                 self.is_fist_active = True
                 events["drag_active"] = True
-                events["cursor_target"] = self.map_to_screen(pts_2d[INDEX_MCP], cam_shape)
+                events["cursor_target"] = self.map_to_screen(pts_2d[INDEX_MCP], cam_shape, getattr(hand, 'palm_size_px', 60.0))
                 self.prev_scroll_y = None
                 return self.current_gesture, events
             # In fist posture, suppress all discrete clicks

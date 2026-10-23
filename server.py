@@ -178,6 +178,10 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             if "pinch_activate_ratio" in data:
                 manager.config.pinch_activate_ratio = float(data["pinch_activate_ratio"])
                 manager.config.pinch_release_ratio = manager.config.pinch_activate_ratio + 0.12
+            if "enable_corner_snap" in data:
+                manager.config.enable_corner_snap = bool(data["enable_corner_snap"])
+            if "enable_distance_adaptation" in data:
+                manager.config.enable_distance_adaptation = bool(data["enable_distance_adaptation"])
             if "enable_legacy_shortcuts" in data:
                 manager.config.enable_legacy_shortcuts = bool(data["enable_legacy_shortcuts"])
             if "laser_pointer_mode" in data:

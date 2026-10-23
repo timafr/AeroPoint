@@ -285,6 +285,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const valReach = document.getElementById('val-reach');
   const switchAnchor = document.getElementById('switch-anchor');
   const switchAcceleration = document.getElementById('switch-acceleration');
+  const switchCornerSnap = document.getElementById('switch-corner-snap');
+  const switchDistanceAdaptation = document.getElementById('switch-distance-adaptation');
   const switchLaser = document.getElementById('switch-laser');
   const switchClahe = document.getElementById('switch-clahe');
   const valLaserStatus = document.getElementById('val-laser-status');
@@ -493,6 +495,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Toggles
   switchAnchor?.addEventListener('change', (e) => postSettings({ enable_anchor: e.target.checked }));
   switchAcceleration?.addEventListener('change', (e) => postSettings({ enable_acceleration: e.target.checked }));
+  switchCornerSnap?.addEventListener('change', (e) => postSettings({ enable_corner_snap: e.target.checked }));
+  switchDistanceAdaptation?.addEventListener('change', (e) => postSettings({ enable_distance_adaptation: e.target.checked }));
   switchClahe?.addEventListener('change', (e) => postSettings({ use_clahe: e.target.checked }));
   switchLegacyGestures?.addEventListener('change', (e) => postSettings({ enable_legacy_shortcuts: e.target.checked }));
   
@@ -717,6 +721,29 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleStatusData(data) {
     if (!data) return;
     loadingOverlay.style.display = 'none';
+
+    // Initial settings sync on first telemetry packet
+    if (!window._initialSettingsLoaded) {
+      window._initialSettingsLoaded = true;
+      if (switchCornerSnap && typeof data.enable_corner_snap === 'boolean') {
+        switchCornerSnap.checked = data.enable_corner_snap;
+      }
+      if (switchDistanceAdaptation && typeof data.enable_distance_adaptation === 'boolean') {
+        switchDistanceAdaptation.checked = data.enable_distance_adaptation;
+      }
+      if (switchAnchor && typeof data.enable_anchor === 'boolean') {
+        switchAnchor.checked = data.enable_anchor;
+      }
+      if (switchAcceleration && typeof data.enable_acceleration === 'boolean') {
+        switchAcceleration.checked = data.enable_acceleration;
+      }
+      if (switchLaser && typeof data.laser_pointer_mode === 'boolean') {
+        switchLaser.checked = data.laser_pointer_mode;
+      }
+      if (switchClahe && typeof data.use_clahe === 'boolean') {
+        switchClahe.checked = data.use_clahe;
+      }
+    }
 
     // Telemetry top badges
     badgeFps.textContent = `${data.fps || 0} FPS`;
