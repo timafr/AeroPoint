@@ -114,11 +114,15 @@ class AeroPrecisionEngine:
         # Telemetry
         self.current_gain = 1.0
         self.is_anchor_active = False
+        self.dynamic_deadzone = deadzone_radius
+        self.current_velocity = 0.0
+        self.last_time: Optional[float] = None
 
     def reset(self):
         self.one_euro.reset()
         self.prev_out_x = None
         self.prev_out_y = None
+        self.last_time = None
         self.is_anchored = False
         self.anchor_x = None
         self.anchor_y = None
@@ -216,14 +220,28 @@ class AeroPrecisionEngine:
         dy = filt_y - self.prev_out_y
         dist = math.hypot(dx, dy)
 
-        # --- 3. Deadzone filter ---
-        # If hand is barely moving, lock in place (removes micro-tremor completely)
-        if dist < self.deadzone_radius:
+        # --- 3. Kinetic Velocity-Adaptive Deadzone ---
+        # When hand is stationary, full deadzone removes micro-tremor.
+        # When user deliberately initiates movement (> 18 px/frame), deadzone smoothly collapses to 0.0 for zero initial resistance.
+        dt = max(0.001, min(0.1, (now - self.last_time) if self.last_time is not None else 0.016))
+        self.last_time = now
+        inst_speed = dist / dt
+        self.current_velocity = self.current_velocity * 0.65 + inst_speed * 0.35
+
+        if self.current_velocity > 40.0:
+            target_deadzone = 0.0
+        elif self.current_velocity < 15.0:
+            target_deadzone = self.deadzone_radius
+        else:
+            t = (self.current_velocity - 15.0) / 25.0
+            target_deadzone = self.deadzone_radius * (1.0 - t)
+
+        self.dynamic_deadzone = self.dynamic_deadzone * 0.60 + target_deadzone * 0.40
+
+        if dist < self.dynamic_deadzone:
             return self.prev_out_x, self.prev_out_y
 
         # --- 4. Precision Positioning & Jitter Damping ---
-        # 1-Euro filter dynamically adapts: min_cutoff dings micro-jitter at slow speeds,
-        # while beta provides zero-lag instantaneous response during fast flicks.
         self.current_gain = 1.0
         out_x = filt_x
         out_y = filt_y
