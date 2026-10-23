@@ -193,6 +193,9 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             if "sound_volume" in data:
                 manager.config.sound_volume = float(data["sound_volume"])
 
+            # Auto-persist user settings to disk
+            manager.config.save_to_file()
+
             return {"status": "ok"}
         except Exception as e:
             bottle.response.status = 400

@@ -46,7 +46,7 @@ def get_system_camera_names() -> List[str]:
 class CameraManager:
     """Thread-safe multi-camera and gesture processing orchestrator."""
     def __init__(self, config: Optional[GestureConfig] = None):
-        self.config = config or GestureConfig()
+        self.config = config or GestureConfig.load_from_file()
         self.mouse = MouseController(enable_sound=self.config.enable_sound_feedback)
         self.screen_size = (self.mouse.screen_width, self.mouse.screen_height)
         self.screen_origin = (self.mouse.x_origin, self.mouse.y_origin)

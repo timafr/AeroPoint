@@ -51,6 +51,29 @@ class TestOneEuroFilter(unittest.TestCase):
         self.assertEqual(v, 100.0)  # Should return last valid coordinate
 
 
+class TestConfigPersistence(unittest.TestCase):
+    """Tests JSON serialization and disk persistence of GestureConfig."""
+
+    def test_save_and_load_config(self):
+        import os
+        test_file = "test_config_temp.json"
+        try:
+            cfg = GestureConfig()
+            cfg.sensitivity = 2.75
+            cfg.click_mode = "pinch"
+            cfg.enable_corner_snap = True
+            cfg.save_to_file(test_file)
+
+            self.assertTrue(os.path.exists(test_file))
+            loaded = GestureConfig.load_from_file(test_file)
+            self.assertEqual(loaded.sensitivity, 2.75)
+            self.assertEqual(loaded.click_mode, "pinch")
+            self.assertEqual(loaded.enable_corner_snap, True)
+        finally:
+            if os.path.exists(test_file):
+                os.remove(test_file)
+
+
 class TestAeroPrecisionEngine(unittest.TestCase):
     """Tests click anchor locking, micro-movement deadzones, and boundary magnets."""
 

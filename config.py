@@ -107,3 +107,51 @@ class GestureConfig:
     COLOR_WHITE: Tuple[int, int, int] = (255, 255, 255)
     COLOR_DARK_BG: Tuple[int, int, int] = (10, 7, 6)     # #06070a
     COLOR_RED: Tuple[int, int, int] = (85, 0, 255)       # Raw jitter noise color
+
+    def to_dict(self) -> dict:
+        """Serializes current configuration properties to JSON-compatible dictionary."""
+        return {
+            "camera_id": self.camera_id,
+            "use_clahe": self.use_clahe,
+            "enable_two_hands": self.enable_two_hands,
+            "dominant_hand": self.dominant_hand,
+            "click_mode": self.click_mode,
+            "margin_x": self.margin_x,
+            "margin_y": self.margin_y,
+            "sensitivity": self.sensitivity,
+            "deadzone_radius": self.deadzone_radius,
+            "enable_corner_snap": self.enable_corner_snap,
+            "enable_distance_adaptation": self.enable_distance_adaptation,
+            "enable_legacy_shortcuts": self.enable_legacy_shortcuts,
+            "laser_pointer_mode": self.laser_pointer_mode,
+            "sound_enabled": self.sound_enabled,
+            "sound_theme": self.sound_theme,
+            "sound_volume": self.sound_volume,
+            "show_skeleton": self.show_skeleton,
+            "show_hud": self.show_hud,
+        }
+
+    def save_to_file(self, filepath: str = "config.json"):
+        """Persists current user configuration to JSON file on disk."""
+        import json
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(self.to_dict(), f, indent=2)
+        except Exception:
+            pass
+
+    @classmethod
+    def load_from_file(cls, filepath: str = "config.json") -> "GestureConfig":
+        """Loads configuration from JSON file with graceful fallback to defaults."""
+        import json
+        cfg = cls()
+        if os.path.exists(filepath):
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    for k, v in data.items():
+                        if hasattr(cfg, k):
+                            setattr(cfg, k, v)
+            except Exception:
+                pass
+        return cfg
