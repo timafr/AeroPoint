@@ -2206,6 +2206,41 @@ document.addEventListener('DOMContentLoaded', () => {
     diagTerminalLog.scrollTop = diagTerminalLog.scrollHeight;
   }
 
+  const fpsSparkHistory = [];
+  const cpuSparkHistory = [];
+  const sparkFps = document.getElementById('spark-fps');
+  const sparkCpu = document.getElementById('spark-cpu');
+
+  function renderSparkline(canvas, history, strokeCol, fillCol) {
+    if (!canvas || history.length < 2) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const min = Math.min(...history) * 0.85;
+    const max = Math.max(...history) * 1.15 || 1.0;
+    const range = max - min || 1.0;
+
+    ctx.beginPath();
+    for (let i = 0; i < history.length; i++) {
+      const x = (i / (history.length - 1)) * w;
+      const y = h - ((history[i] - min) / range) * (h - 6) - 3;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = strokeCol;
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fillStyle = fillCol;
+    ctx.fill();
+  }
+
   async function fetchSystemDiagnostics(isManualTest = false) {
     const tStart = performance.now();
     try {
@@ -2233,15 +2268,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const barCpu = document.getElementById('diag-bar-cpu');
       if (elCpu) elCpu.textContent = `${cpuPct}%`;
       if (barCpu) barCpu.style.width = `${Math.min(100, Math.max(5, cpuPct * 2))}%`;
+      cpuSparkHistory.push(cpuPct);
+      if (cpuSparkHistory.length > 30) cpuSparkHistory.shift();
+      renderSparkline(sparkCpu, cpuSparkHistory, '#00f2fe', 'rgba(0, 242, 254, 0.15)');
 
       // Update Camera & FPS
       const cam = data.subsystems?.camera_pipeline || {};
       const elFps = document.getElementById('diag-val-fps');
       const elLat = document.getElementById('diag-val-lat');
       const barFps = document.getElementById('diag-bar-fps');
-      if (elFps) elFps.textContent = `${cam.fps || 0} FPS`;
+      const fpsVal = cam.fps || 0;
+      if (elFps) elFps.textContent = `${fpsVal} FPS`;
       if (elLat) elLat.textContent = cam.latency_ms || 0;
-      if (barFps) barFps.style.width = `${Math.min(100, ((cam.fps || 0) / 60) * 100)}%`;
+      if (barFps) barFps.style.width = `${Math.min(100, (fpsVal / 60) * 100)}%`;
+      fpsSparkHistory.push(fpsVal);
+      if (fpsSparkHistory.length > 30) fpsSparkHistory.shift();
+      renderSparkline(sparkFps, fpsSparkHistory, '#00e676', 'rgba(0, 230, 118, 0.15)');
 
       const elSaver = document.getElementById('diag-val-saver');
       if (elSaver) {
