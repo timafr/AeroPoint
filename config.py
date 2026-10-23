@@ -49,6 +49,8 @@ class GestureConfig:
     air_draw_color: str = "cyan"            # "cyan", "magenta", "green", "gold", "white"
     enable_ergonomic_alerts: bool = True    # Ergonomic rest alerts after prolonged mid-air hand elevation
     ergonomic_alert_interval_sec: float = 1500.0 # 25 minutes threshold
+    enable_virtual_touch_surface: bool = False # Virtual Touchscreen Desk surface plane in 3D air
+    virtual_surface_z: float = -0.045       # Calibrated virtual surface depth plane (meters)
 
     # --- Audio & Sonic Synthesizer ---
     sound_enabled: bool = True
@@ -170,6 +172,8 @@ class GestureConfig:
             "laser_pointer_mode": self.laser_pointer_mode,
             "presentation_spotlight_mode": self.presentation_spotlight_mode,
             "spotlight_radius": self.spotlight_radius,
+            "enable_virtual_touch_surface": self.enable_virtual_touch_surface,
+            "virtual_surface_z": self.virtual_surface_z,
             "enable_power_saver": self.enable_power_saver,
             "sound_enabled": self.sound_enabled,
             "sound_theme": self.sound_theme,

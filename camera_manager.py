@@ -816,7 +816,9 @@ class CameraManager:
                         snap_zone=self.active_snap_zone,
                         spotlight_mode=getattr(self.config, 'presentation_spotlight_mode', False),
                         spotlight_radius=getattr(self.config, 'spotlight_radius', 85),
-                        confidence_pct=self.tracking_confidence_pct
+                        confidence_pct=self.tracking_confidence_pct,
+                        virtual_surface_mode=getattr(self.config, 'enable_virtual_touch_surface', False),
+                        virtual_surface_touch=events.get("virtual_surface_touch", False)
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)

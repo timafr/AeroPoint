@@ -1230,6 +1230,55 @@ class CyberHUD:
         pct_text = f"{int(confidence_pct)}%"
         cv2.putText(frame, pct_text, (mx + bw - 28, my + 15), cv2.FONT_HERSHEY_PLAIN, 0.70, fill_col, 1, cv2.LINE_AA)
 
+    def draw_virtual_touch_plane(
+        self,
+        frame: np.ndarray,
+        hand: Optional[HandData] = None,
+        is_touching: bool = False
+    ):
+        """
+        Renders a futuristic holographic 3D perspective grid plane in the lower frame,
+        with joint drop-shadow projection lines and surface ripple on touch contact.
+        """
+        h, w, _ = frame.shape
+        horizon_y = int(h * 0.65)
+        plane_bot_y = h - 6
+
+        # Translucent perspective grid
+        overlay = frame.copy()
+        grid_col = (0, 242, 254) if is_touching else (140, 150, 165)
+
+        # Draw horizontal depth lines
+        for step in [0.0, 0.25, 0.55, 0.82, 1.0]:
+            ly = int(horizon_y + step * (plane_bot_y - horizon_y))
+            half_w = int((w * 0.35) + step * (w * 0.60))
+            x1 = max(0, w // 2 - half_w)
+            x2 = min(w, w // 2 + half_w)
+            cv2.line(overlay, (x1, ly), (x2, ly), grid_col, 1, cv2.LINE_AA)
+
+        # Draw converging perspective lines toward center vanishing point
+        vanish_x, vanish_y = w // 2, int(horizon_y * 0.70)
+        for fx in [-0.45, -0.22, 0.0, 0.22, 0.45]:
+            bx = int(w // 2 + fx * w)
+            cv2.line(overlay, (vanish_x, vanish_y), (bx, plane_bot_y), grid_col, 1, cv2.LINE_AA)
+
+        alpha = 0.35 if not is_touching else 0.55
+        cv2.addWeighted(overlay, alpha, frame, 1.0 - alpha, 0, frame)
+
+        # Draw glowing horizon line
+        cv2.line(frame, (int(w * 0.15), horizon_y), (int(w * 0.85), horizon_y), grid_col, 1, cv2.LINE_AA)
+
+        # Drop line from index fingertip to virtual plane
+        if hand and hasattr(hand, 'landmarks_px') and len(hand.landmarks_px) > INDEX_TIP:
+            tx, ty = int(hand.landmarks_px[INDEX_TIP][0]), int(hand.landmarks_px[INDEX_TIP][1])
+            proj_y = max(horizon_y, min(plane_bot_y, ty + 35))
+            cv2.line(frame, (tx, ty), (tx, proj_y), (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.circle(frame, (tx, proj_y), 4, grid_col, -1, cv2.LINE_AA)
+            if is_touching:
+                cv2.circle(frame, (tx, proj_y), 16, (0, 242, 254), 2, cv2.LINE_AA)
+                cv2.circle(frame, (tx, proj_y), 26, (255, 255, 255), 1, cv2.LINE_AA)
+                cv2.putText(frame, "TOUCH SURFACE", (tx + 12, proj_y + 4), cv2.FONT_HERSHEY_PLAIN, 0.75, (0, 242, 254), 1, cv2.LINE_AA)
+
     def render_clean(
         self,
         frame: np.ndarray,
@@ -1251,9 +1300,15 @@ class CyberHUD:
         snap_zone: Optional[str] = None,
         spotlight_mode: bool = False,
         spotlight_radius: int = 85,
-        confidence_pct: Optional[float] = None
+        confidence_pct: Optional[float] = None,
+        virtual_surface_mode: bool = False,
+        virtual_surface_touch: bool = False
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
+        if virtual_surface_mode:
+            target_h = pointer_hand or (hands[0] if hands else hand)
+            self.draw_virtual_touch_plane(frame, hand=target_h, is_touching=virtual_surface_touch)
+
         if confidence_pct is not None and confidence_pct > 0.0:
             self.draw_tracking_confidence_meter(frame, confidence_pct)
         # Keynote Presentation Spotlight Vignette Dimming

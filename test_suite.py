@@ -306,6 +306,14 @@ class TestCyberHUD(unittest.TestCase):
         self.assertIsNotNone(rendered)
         self.assertEqual(rendered.shape, (480, 640, 3))
 
+    def test_render_virtual_touch_plane(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        self.hud.draw_virtual_touch_plane(frame, is_touching=False)
+        self.hud.draw_virtual_touch_plane(frame, is_touching=True)
+        rendered = self.hud.render_clean(frame, virtual_surface_mode=True, virtual_surface_touch=True)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+
     def test_render_clean_with_calibration_and_ripples(self):
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
         self.hud.trigger_click_ripple((320, 240), is_right=False)
@@ -721,7 +729,51 @@ class TestSpatialAirCanvas(unittest.TestCase):
                     self.assertTrue(cm.config.presentation_spotlight_mode)
                     self.assertEqual(cm.config.spotlight_radius, 95)
 
+                    # Test virtual surface calibration
+                    status, res = make_request('/api/surface/calibrate', 'POST', {})
+                    self.assertTrue(status.startswith("200"))
+                    self.assertTrue(res['enabled'])
+                    self.assertIn("virtual_surface_z", res)
+                    self.assertTrue(cm.config.enable_virtual_touch_surface)
+
                     cm.stop()
+
+
+class TestVirtualTouchSurface(unittest.TestCase):
+    """Verifies Virtual Touch Surface: plane penetration, hysteresis, and touch contact events."""
+
+    def test_virtual_touch_plane_hysteresis(self):
+        from gestures import VirtualTouchPlane
+        plane = VirtualTouchPlane(plane_z=-0.045, hysteresis=0.010)
+
+        # Above surface
+        is_t, down, up = plane.update(tip_z=0.0, now=1.0)
+        self.assertFalse(is_t)
+        self.assertFalse(down)
+        self.assertFalse(up)
+
+        # Penetrate surface
+        is_t, down, up = plane.update(tip_z=-0.050, now=1.05)
+        self.assertTrue(is_t)
+        self.assertTrue(down)
+        self.assertFalse(up)
+
+        # Keep touching
+        is_t, down, up = plane.update(tip_z=-0.048, now=1.10)
+        self.assertTrue(is_t)
+        self.assertFalse(down)
+        self.assertFalse(up)
+
+        # Retract within hysteresis zone (-0.045 + 0.010 = -0.035, so -0.040 still touches)
+        is_t, down, up = plane.update(tip_z=-0.040, now=1.15)
+        self.assertTrue(is_t)
+        self.assertFalse(up)
+
+        # Release past hysteresis (> -0.035)
+        is_t, down, up = plane.update(tip_z=-0.030, now=1.20)
+        self.assertFalse(is_t)
+        self.assertFalse(down)
+        self.assertTrue(up)
 
 
 class TestBimanualAirClap(unittest.TestCase):

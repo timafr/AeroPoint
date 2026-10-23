@@ -222,6 +222,12 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.enable_air_draw_stream = bool(data["enable_air_draw_stream"])
             if "air_draw_color" in data:
                 manager.config.air_draw_color = str(data["air_draw_color"])
+            if "enable_virtual_touch_surface" in data:
+                manager.config.enable_virtual_touch_surface = bool(data["enable_virtual_touch_surface"])
+            if "virtual_surface_z" in data:
+                manager.config.virtual_surface_z = float(data["virtual_surface_z"])
+                if hasattr(manager.recognizer, 'touch_plane'):
+                    manager.recognizer.touch_plane.plane_z = manager.config.virtual_surface_z
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()
@@ -286,6 +292,24 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 "presentation_spotlight_mode": new_state,
                 "spotlight_radius": getattr(manager.config, 'spotlight_radius', 85)
             }
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/surface/calibrate', method='POST')
+    def calibrate_surface():
+        try:
+            cal_z = -0.045
+            if manager.pointer_hand and hasattr(manager.pointer_hand, 'landmarks_world') and len(manager.pointer_hand.landmarks_world) > 8:
+                cal_z = float(manager.pointer_hand.landmarks_world[8][2])
+            elif manager.pointer_hand and hasattr(manager.pointer_hand, 'landmarks_norm') and len(manager.pointer_hand.landmarks_norm) > 8:
+                cal_z = float(manager.pointer_hand.landmarks_norm[8][2])
+            manager.config.virtual_surface_z = cal_z
+            manager.config.enable_virtual_touch_surface = True
+            if hasattr(manager.recognizer, 'touch_plane'):
+                manager.recognizer.touch_plane.plane_z = cal_z
+            manager.config.save_to_file()
+            return {"status": "ok", "virtual_surface_z": round(cal_z, 4), "enabled": True}
         except Exception as e:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}

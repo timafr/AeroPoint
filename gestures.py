@@ -76,6 +76,40 @@ def calc_joint_angle(
     return math.degrees(math.acos(cosine))
 
 
+class VirtualTouchPlane:
+    """
+    Simulates a virtual holographic touch desk plane in 3D air.
+    When index finger penetrates Z <= plane_z, triggers direct surface contact.
+    """
+    def __init__(self, plane_z: float = -0.045, hysteresis: float = 0.012):
+        self.plane_z = plane_z
+        self.hysteresis = hysteresis
+        self.is_touching = False
+        self.touch_start_time = 0.0
+
+    def update(self, tip_z: float, now: float) -> Tuple[bool, bool, bool]:
+        """
+        Updates touch plane state with hysteresis.
+        Returns: (is_touching, touch_down_event, touch_up_event)
+        """
+        down_event = False
+        up_event = False
+
+        if self.is_touching:
+            # Release threshold (hysteresis prevents contact chatter)
+            if tip_z > (self.plane_z + self.hysteresis):
+                self.is_touching = False
+                up_event = True
+        else:
+            # Contact threshold
+            if tip_z <= self.plane_z:
+                self.is_touching = True
+                self.touch_start_time = now
+                down_event = True
+
+        return self.is_touching, down_event, up_event
+
+
 class GestureRecognizer:
     """Classifies hand poses and tracks gesture state transitions with hysteresis & multi-monitor awareness."""
     def __init__(self, config: GestureConfig, screen_size: Tuple[int, int], screen_origin: Tuple[int, int] = (0, 0)):
@@ -116,6 +150,9 @@ class GestureRecognizer:
         # Presentation Air-Swipe tracking
         self.x_history: List[Tuple[float, float]] = []  # (timestamp, x)
         self.last_swipe_time = 0.0
+
+        # Virtual Touchscreen Desk surface plane
+        self.touch_plane = VirtualTouchPlane(plane_z=getattr(self.config, 'virtual_surface_z', -0.045))
 
         # Bimanual action hand state tracking
         self.is_action_thumb_bend_active = False
@@ -329,6 +366,7 @@ class GestureRecognizer:
             "pinch_proximity_pct": round(primary_gauge_pct, 1),
             "thumb_bend_pct": round(thumb_bend_pct, 1),
             "air_tap_pct": 0.0,
+            "virtual_surface_touch": False,
             "click_mode": self.config.click_mode,
             "finger_states": finger_states,
         }
@@ -463,6 +501,18 @@ class GestureRecognizer:
             z_baseline = max(z for t, z in self.z_history)
             penetration = (z_baseline - cur_z) / max(0.04, palm)
             events["air_tap_pct"] = round(min(100.0, max(0.0, (penetration / 0.14) * 100.0)), 1)
+
+        # --- Virtual Touch Surface Desk Plane ---
+        if getattr(self.config, 'enable_virtual_touch_surface', False):
+            is_touch, touch_down, touch_up = self.touch_plane.update(cur_z, now)
+            events["virtual_surface_touch"] = is_touch
+            if touch_down:
+                events["trigger_left_click"] = True
+                events["drag_active"] = True
+            elif is_touch:
+                events["drag_active"] = True
+            elif touch_up:
+                events["drag_active"] = False
 
         if self.config.click_mode == "thumb_bend":
             # Release hysteresis: releases if thumb unbends OR extends OR user stops pointing

@@ -419,6 +419,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Presentation & Air-Swipe Switch
   const switchPresentation = document.getElementById('switch-presentation');
   const switchSpotlight = document.getElementById('switch-spotlight');
+  const switchVirtualSurface = document.getElementById('switch-virtual-surface');
+  const btnCalibrateSurface = document.getElementById('btn-calibrate-surface');
 
   // Legacy Gestures Switch
   const switchLegacyGestures = document.getElementById('switch-legacy-gestures');
@@ -1017,6 +1019,25 @@ document.addEventListener('DOMContentLoaded', () => {
     flashActionCapsule('💡', e.target.checked ? 'Spotlight включен' : 'Spotlight выключен');
   });
 
+  switchVirtualSurface?.addEventListener('change', (e) => {
+    soundSynth.playRadialChime();
+    postSettings({ enable_virtual_touch_surface: e.target.checked });
+    flashActionCapsule('🪟', e.target.checked ? 'Виртуальный стол ВКЛ' : 'Виртуальный стол ВЫКЛ');
+  });
+
+  btnCalibrateSurface?.addEventListener('click', () => {
+    soundSynth.playLaserFx();
+    fetch('/api/surface/calibrate', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          if (switchVirtualSurface) switchVirtualSurface.checked = true;
+          flashActionCapsule('🪟', `Плоскость откалибрована: Z = ${data.virtual_surface_z}м`);
+        }
+      })
+      .catch(() => {});
+  });
+
   // Two-Hand Dominant Hand
   switchTwoHands?.addEventListener('change', (e) => postSettings({ enable_two_hands: e.target.checked }));
   btnDomRight?.addEventListener('click', () => {
@@ -1228,6 +1249,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (switchSpotlight && typeof data.presentation_spotlight_mode === 'boolean') {
         switchSpotlight.checked = data.presentation_spotlight_mode;
+      }
+      if (switchVirtualSurface && typeof data.enable_virtual_touch_surface === 'boolean') {
+        switchVirtualSurface.checked = data.enable_virtual_touch_surface;
       }
       if (switchDistanceAdaptation && typeof data.enable_distance_adaptation === 'boolean') {
         switchDistanceAdaptation.checked = data.enable_distance_adaptation;
