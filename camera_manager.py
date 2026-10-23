@@ -16,6 +16,7 @@ os.environ["OPENCV_VIDEOIO_PRIORITY_FFMPEG"] = "0"
 
 import time
 import threading
+import collections
 import cv2
 import numpy as np
 from typing import List, Dict, Optional, Tuple
@@ -135,6 +136,18 @@ class CameraManager:
 
         # Camera discovery
         self.discovered_cameras: List[Dict[str, any]] = self.discover_cameras()
+
+        # Telemetry history logger (records past 1000 samples for diagnostics & export)
+        self.telemetry_history = collections.deque(maxlen=1000)
+        self.last_telemetry_sample_time = 0.0
+
+    def get_session_telemetry(self) -> dict:
+        """Returns historical session timeline for diagnostics, telemetry export, and ergonomic analysis."""
+        return {
+            "session_duration_sec": round(time.time() - self.start_time, 1),
+            "total_samples": len(self.telemetry_history),
+            "samples": list(self.telemetry_history)
+        }
 
     def _generate_placeholder(self, text: str) -> bytes:
         """Generates a stylish dark placeholder frame."""
@@ -692,8 +705,25 @@ class CameraManager:
             elif getattr(self.config, 'enable_air_draw_stream', False):
                 self.hud.finish_air_draw_stroke()
 
-            # Render clean video stream for GUI only when client is actively viewing
             loop_now = time.time()
+
+            # Telemetry History Sampling (every 150ms)
+            if (loop_now - self.last_telemetry_sample_time) >= 0.15:
+                self.last_telemetry_sample_time = loop_now
+                sample = {
+                    "t": round(loop_now - self.start_time, 2),
+                    "fps": round(self.fps, 1),
+                    "lat": round(self.latency_ms, 1),
+                    "gest": self.current_gesture.value,
+                    "hand": bool(self.hand_detected),
+                    "pinch": round(self.pinch_pct, 1),
+                }
+                if pointer_hand:
+                    sample["dist"] = round(getattr(pointer_hand, 'estimated_distance_cm', 50.0), 1)
+                    sample["tilt"] = round(getattr(pointer_hand, 'roll_deg', 0.0), 1)
+                self.telemetry_history.append(sample)
+
+            # Render clean video stream for GUI only when client is actively viewing
             client_active = (loop_now - self.last_client_request_time) < 4.0
             if client_active and (loop_now - self.last_jpeg_time) >= 0.033:
                 if self.active_tab == "iphone":

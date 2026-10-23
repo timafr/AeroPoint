@@ -445,6 +445,12 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}
 
+    @app.route('/api/session/export', method='GET')
+    def export_session_telemetry():
+        """Exports historical session timeline for diagnostics, telemetry export, and ergonomic analysis."""
+        bottle.response.headers['Content-Type'] = 'application/json'
+        return manager.get_session_telemetry()
+
     @app.route('/api/diagnostics', method='GET')
     def get_diagnostics():
         """Returns deep real-time system diagnostic report across hardware, filters, and OS APIs."""

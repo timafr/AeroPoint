@@ -516,6 +516,44 @@ class TestDiagnosticsAPI(unittest.TestCase):
                     self.assertIn("spatial_receiver", data["subsystems"])
                     cm.stop()
 
+    def test_session_export_endpoint(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    # Add mock telemetry samples
+                    cm.telemetry_history.append({"t": 0.5, "fps": 59.8, "lat": 16.5, "gest": "HOVER", "hand": True})
+                    cm.telemetry_history.append({"t": 0.65, "fps": 60.1, "lat": 15.9, "gest": "PINCH", "hand": True})
+
+                    environ = {
+                        'PATH_INFO': '/api/session/export',
+                        'REQUEST_METHOD': 'GET',
+                        'wsgi.input': io.BytesIO(),
+                        'wsgi.errors': io.StringIO(),
+                        'SERVER_NAME': 'localhost',
+                        'SERVER_PORT': '5000'
+                    }
+                    status_captured = []
+                    def start_response(status, headers, *args):
+                        status_captured.append(status)
+
+                    body = b"".join(app(environ, start_response))
+                    self.assertTrue(status_captured[0].startswith("200"))
+                    data = json.loads(body.decode('utf-8'))
+                    self.assertIn("session_duration_sec", data)
+                    self.assertEqual(data["total_samples"], 2)
+                    self.assertEqual(len(data["samples"]), 2)
+                    self.assertEqual(data["samples"][0]["gest"], "HOVER")
+                    cm.stop()
+
 
 class TestSpatialAirCanvas(unittest.TestCase):
     """Verifies Spatial Air-Canvas Stream Annotator: stroke persistence, rendering, and API control."""
