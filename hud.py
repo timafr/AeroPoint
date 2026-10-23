@@ -995,6 +995,47 @@ class CyberHUD:
         cv2.circle(frame, (cx, cy), r_inner - 2, (20, 16, 24), -1)
         cv2.putText(frame, "AERO", (cx - 18, cy + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.45, self.config.COLOR_CYAN, 1, cv2.LINE_AA)
 
+    def draw_spatial_depth_gauge(self, frame: np.ndarray, distance_cm: float):
+        """Renders a sleek visionOS-style vertical depth tape on the frame margin."""
+        h, w, _ = frame.shape
+        gw = 12
+        gh = 130
+        gx = w - gw - 14
+        gy = h // 2 - gh // 2
+
+        overlay = frame.copy()
+        # Glass backdrop capsule
+        cv2.rectangle(overlay, (gx - 4, gy - 16), (gx + gw + 4, gy + gh + 16), (14, 12, 18), -1)
+        cv2.rectangle(overlay, (gx - 4, gy - 16), (gx + gw + 4, gy + gh + 16), (60, 50, 70), 1, cv2.LINE_AA)
+
+        # Optimal range highlight bracket: 35cm to 75cm
+        min_d, max_d = 20.0, 110.0
+        opt_top = gy + int(gh * (35.0 - min_d) / (max_d - min_d))
+        opt_bot = gy + int(gh * (75.0 - min_d) / (max_d - min_d))
+        cv2.rectangle(overlay, (gx, opt_top), (gx + gw, opt_bot), (0, 180, 100), -1)
+
+        # Distance indicator pip
+        clamped_d = max(min_d, min(max_d, distance_cm))
+        pip_y = gy + int(gh * (clamped_d - min_d) / (max_d - min_d))
+
+        # Color based on zone
+        if 35.0 <= distance_cm <= 75.0:
+            pip_col = (0, 242, 254)   # Cyan (Sweet spot)
+        elif distance_cm < 35.0:
+            pip_col = (50, 80, 255)   # Coral warning (too close)
+        else:
+            pip_col = (255, 100, 200) # Lavender warning (too far)
+
+        cv2.addWeighted(overlay, 0.70, frame, 0.30, 0, frame)
+
+        # Pip line & circle
+        cv2.circle(frame, (gx + gw // 2, pip_y), 4, pip_col, -1, cv2.LINE_AA)
+        cv2.circle(frame, (gx + gw // 2, pip_y), 6, (255, 255, 255), 1, cv2.LINE_AA)
+
+        # Labels
+        cv2.putText(frame, "DEPTH", (gx - 10, gy - 4), cv2.FONT_HERSHEY_PLAIN, 0.65, (180, 180, 180), 1, cv2.LINE_AA)
+        cv2.putText(frame, f"{int(distance_cm)}cm", (gx - 10, gy + gh + 13), cv2.FONT_HERSHEY_PLAIN, 0.70, pip_col, 1, cv2.LINE_AA)
+
     def render_clean(
         self,
         frame: np.ndarray,
@@ -1055,6 +1096,13 @@ class CyberHUD:
 
         if edge_snap_flags:
             self.draw_proximity_edge_glow(frame, edge_snap_flags)
+
+        # Spatial 3D Distance Depth Gauge Tape
+        active_target = pointer_hand or (hands[0] if hands else hand)
+        if active_target is not None:
+            dist_val = getattr(active_target, 'estimated_distance_cm', 50.0)
+            if dist_val > 0.0:
+                self.draw_spatial_depth_gauge(frame, dist_val)
 
         self.draw_air_canvas(frame)
         self.draw_ripples(frame)

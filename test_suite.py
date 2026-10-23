@@ -311,6 +311,28 @@ class TestCyberHUD(unittest.TestCase):
         self.assertIsNotNone(rendered)
         self.assertEqual(rendered.shape, (480, 640, 3))
 
+    def test_render_spatial_depth_gauge(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        self.hud.draw_spatial_depth_gauge(frame, distance_cm=48.0)
+        self.assertGreater(int(np.sum(frame)), 0)
+
+        # Warnings: too close and too far
+        self.hud.draw_spatial_depth_gauge(frame, distance_cm=22.0)
+        self.hud.draw_spatial_depth_gauge(frame, distance_cm=105.0)
+
+        # Integration in render_clean
+        hand = HandData(
+            landmarks_norm=[(0.5, 0.5, 0.0) for _ in range(21)],
+            landmarks_px=[(320, 240, 0.0) for _ in range(21)],
+            landmarks_world=[(0.0, 0.0, 0.0) for _ in range(21)],
+            palm_size=0.15,
+            handedness="Right",
+            estimated_distance_cm=46.5
+        )
+        rendered = self.hud.render_clean(frame, pointer_hand=hand)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+
 
 class TestNightVisionBooster(unittest.TestCase):
     """Verifies low-light CLAHE and zero-latency LUT gamma boost."""
