@@ -1469,6 +1469,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chip.addEventListener('click', () => {
       const typeText = chip.getAttribute('data-type');
       const pressKey = chip.getAttribute('data-key');
+      const snapAction = chip.getAttribute('data-action');
       soundSynth.playClick();
       if (typeText) {
         if (typerTextInput) typerTextInput.value = typeText;
@@ -1480,6 +1481,9 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify({ key: pressKey })
         });
         flashActionCapsule('⌨️', `Клавиша: ${pressKey.toUpperCase()}`);
+      } else if (snapAction) {
+        fetch(`/api/action/${snapAction}`, { method: 'POST' });
+        flashActionCapsule('🪟', `Окно: ${snapAction.replace('snap_', '').toUpperCase()}`);
       }
     });
   });

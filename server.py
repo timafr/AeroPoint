@@ -268,6 +268,8 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 mouse.snap_window_right()
             elif action in ('snap_maximize', 'maximize'):
                 mouse.snap_window_maximize()
+            elif action in ('snap_minimize', 'minimize'):
+                mouse.snap_window_minimize()
             elif action in ('desktop_next', 'workspace_next'):
                 mouse.switch_desktop_next()
             elif action in ('desktop_prev', 'workspace_prev'):

@@ -358,6 +358,17 @@ class MouseController:
         else:
             pyautogui.hotkey('win', 'up')
 
+    def snap_window_minimize(self):
+        """Minimizes active window (Win + Down)."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_LWIN, 0, 0, 0)
+            user32.keybd_event(VK_DOWN, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.hotkey('win', 'down')
+
     def switch_desktop_next(self):
         """Switches to next virtual desktop (Win + Ctrl + Right)."""
         if IS_WINDOWS:

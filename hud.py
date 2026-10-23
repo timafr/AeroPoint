@@ -412,6 +412,29 @@ class CyberHUD:
         beam_color = (0, 242, 254) if not is_clicking else (50, 50, 255)
         glow_color = (0, 180, 255) if not is_clicking else (80, 80, 255)
 
+        # 0. Ephemeral Glowing Plasma Ribbon Trail
+        now = time.time()
+        if not hasattr(self, 'laser_trail'):
+            self.laser_trail = []
+        self.laser_trail.append((tx, ty, now))
+        self.laser_trail = [(x, y, ts) for (x, y, ts) in self.laser_trail if (now - ts) <= 0.35]
+
+        if len(self.laser_trail) > 1:
+            trail_overlay = frame.copy()
+            for idx in range(len(self.laser_trail) - 1):
+                p1 = (self.laser_trail[idx][0], self.laser_trail[idx][1])
+                p2 = (self.laser_trail[idx + 1][0], self.laser_trail[idx + 1][1])
+                age = now - self.laser_trail[idx][2]
+                alpha = max(0.05, 1.0 - (age / 0.35))
+                thickness = max(1, int(3 * alpha))
+                seg_col = (
+                    int(glow_color[0] * alpha),
+                    int(glow_color[1] * alpha),
+                    int(glow_color[2] * alpha)
+                )
+                cv2.line(trail_overlay, p1, p2, seg_col, thickness, cv2.LINE_AA)
+            cv2.addWeighted(trail_overlay, 0.50, frame, 0.50, 0, frame)
+
         # 1. Outer glowing beam (alpha blended)
         overlay = frame.copy()
         cv2.line(overlay, (tip[0], tip[1]), (tx, ty), glow_color, 5, cv2.LINE_AA)

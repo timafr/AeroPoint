@@ -245,6 +245,22 @@ class TestCyberHUD(unittest.TestCase):
         self.hud.draw_scroll_cylinder(frame, (320, 240), velocity=2.5)
         self.hud.draw_scroll_cylinder(frame, (320, 240), velocity=-2.5)
 
+    def test_render_laser_pointer_plasma_trail(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        # Create mock hand with landmarks
+        hand = HandData(
+            landmarks_norm=[(0.5, 0.5, 0.0) for _ in range(21)],
+            landmarks_px=[(320, 240, 0.0) for _ in range(21)],
+            landmarks_world=[(0.0, 0.0, 0.0) for _ in range(21)],
+            palm_size=0.15,
+            handedness="Right"
+        )
+        hand.landmarks_px[5] = (300, 300, 0.0)   # INDEX_MCP
+        hand.landmarks_px[8] = (320, 260, 0.0)   # INDEX_TIP
+        self.hud.draw_laser_pointer(frame, hand, is_clicking=False)
+        self.hud.draw_laser_pointer(frame, hand, is_clicking=True)
+        self.assertGreater(len(self.hud.laser_trail), 0)
+
 
 class TestNightVisionBooster(unittest.TestCase):
     """Verifies low-light CLAHE and zero-latency LUT gamma boost."""
@@ -295,6 +311,17 @@ class TestMultiMonitorManagement(unittest.TestCase):
             mc.type_text("Aero")
             mc.press_key("esc")
             self.assertGreater(mock_keybd.call_count, 0)
+
+    def test_window_snapping(self):
+        from unittest.mock import patch
+        mc = MouseController()
+        with patch('mouse_controller.user32.keybd_event') as mock_keybd:
+            mc.snap_window_left()
+            mc.snap_window_right()
+            mc.snap_window_maximize()
+            mc.snap_window_minimize()
+            # 4 actions * 2 keys * 2 events (down + up) = 16 events
+            self.assertEqual(mock_keybd.call_count, 16)
 
 
 class TestDynamicPowerSaver(unittest.TestCase):
