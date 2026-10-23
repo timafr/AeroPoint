@@ -200,6 +200,47 @@ class CyberHUD:
         cv2.putText(frame, "ACTIVE CONTROL REGION", (x1 + 6, y1 - 8),
                     self.font_mono, 0.8, col, 1, cv2.LINE_AA)
 
+    def draw_proximity_edge_glow(
+        self,
+        frame: np.ndarray,
+        edge_flags: Tuple[bool, bool, bool, bool]
+    ):
+        """
+        Renders tactile glowing edge bars and magnetic corner sparks when cursor hits screen borders.
+        edge_flags: (left, top, right, bottom)
+        """
+        if not edge_flags or not any(edge_flags):
+            return
+        left, top, right, bottom = edge_flags
+        h, w, _ = frame.shape
+        col = (0, 242, 254)
+
+        overlay = frame.copy()
+        if left:
+            cv2.rectangle(overlay, (0, 0), (8, h), col, -1)
+        if right:
+            cv2.rectangle(overlay, (w - 8, 0), (w, h), col, -1)
+        if top:
+            cv2.rectangle(overlay, (0, 0), (w, 8), col, -1)
+        if bottom:
+            cv2.rectangle(overlay, (0, h - 8), (w, h), col, -1)
+
+        cv2.addWeighted(overlay, 0.65, frame, 0.35, 0, frame)
+
+        # Draw magnetic snap spark if corner reached
+        corners = [
+            (left and top, (14, 14)),
+            (right and top, (w - 14, 14)),
+            (left and bottom, (14, h - 14)),
+            (right and bottom, (w - 14, h - 14))
+        ]
+        for is_corner, (cx, cy) in corners:
+            if is_corner:
+                cv2.circle(frame, (cx, cy), 6, (255, 255, 255), -1, cv2.LINE_AA)
+                cv2.circle(frame, (cx, cy), 12, col, 2, cv2.LINE_AA)
+                cv2.line(frame, (cx - 16, cy), (cx + 16, cy), (255, 255, 255), 1, cv2.LINE_AA)
+                cv2.line(frame, (cx, cy - 16), (cx, cy + 16), (255, 255, 255), 1, cv2.LINE_AA)
+
     def draw_skeleton(
         self,
         frame: np.ndarray,
@@ -850,7 +891,8 @@ class CyberHUD:
         air_tap_pct: float = 0.0,
         radial_menu_active: bool = False,
         active_radial_sector: Optional[int] = None,
-        scroll_velocity: float = 0.0
+        scroll_velocity: float = 0.0,
+        edge_snap_flags: Optional[Tuple[bool, bool, bool, bool]] = None
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
         if show_skeleton:
@@ -891,6 +933,9 @@ class CyberHUD:
         # Holographic 8-Sector Radial Menu Dial
         if radial_menu_active:
             self.draw_radial_hud(frame, active_sector=active_radial_sector)
+
+        if edge_snap_flags:
+            self.draw_proximity_edge_glow(frame, edge_snap_flags)
 
         self.draw_ripples(frame)
         self.draw_slide_chevrons(frame)

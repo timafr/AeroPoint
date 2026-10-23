@@ -224,6 +224,13 @@ class TestCyberHUD(unittest.TestCase):
         self.assertIsNotNone(rendered)
         self.assertEqual(rendered.shape, (480, 640, 3))
 
+    def test_render_proximity_edge_glow(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        self.hud.draw_proximity_edge_glow(frame, (True, True, False, False))
+        rendered = self.hud.render_clean(frame, edge_snap_flags=(False, False, True, True))
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+
     def test_render_clean_with_calibration_and_ripples(self):
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
         self.hud.trigger_click_ripple((320, 240), is_right=False)

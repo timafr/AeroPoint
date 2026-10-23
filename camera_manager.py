@@ -655,6 +655,16 @@ class CameraManager:
                         total = max(0.1, self.calibration_active_until - self.calibration_start_time)
                         calibration_prog = min(1.0, elapsed / total)
 
+                    edge_flags = None
+                    if 'smooth_x' in locals() and 'smooth_y' in locals():
+                        sw, sh = self.screen_size
+                        e_l = (smooth_x <= 16)
+                        e_r = (smooth_x >= sw - 16)
+                        e_t = (smooth_y <= 16)
+                        e_b = (smooth_y >= sh - 16)
+                        if e_l or e_r or e_t or e_b:
+                            edge_flags = (e_l, e_t, e_r, e_b)
+
                     rendered = self.hud.render_clean(
                         frame=frame,
                         hands=all_hands,
@@ -668,7 +678,8 @@ class CameraManager:
                         air_tap_pct=events.get("air_tap_pct", 0.0),
                         radial_menu_active=self.radial_menu_open,
                         active_radial_sector=self.active_radial_sector,
-                        scroll_velocity=getattr(self.scroll_engine, 'velocity', 0.0)
+                        scroll_velocity=getattr(self.scroll_engine, 'velocity', 0.0),
+                        edge_snap_flags=edge_flags
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)
