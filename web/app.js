@@ -534,6 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modeHintText.innerHTML = 'Наведите курсор указательным пальцем и <strong>согните большой палец</strong> для клика без смещения мыши.';
     gaugeLabelTitle.textContent = 'Сгиб большого пальца';
     soundSynth.playPinch();
+    try { localStorage.setItem('aeropoint_click_mode', 'thumb_bend'); } catch (e) {}
     postSettings({ click_mode: 'thumb_bend' });
   });
 
@@ -544,6 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modeHintText.innerHTML = 'Сведите <strong>кончики большого и указательного пальцев</strong> (щипок) для клика, удерживайте для Drag & Drop.';
     gaugeLabelTitle.textContent = 'Сила щипка (Pinch)';
     soundSynth.playPinch();
+    try { localStorage.setItem('aeropoint_click_mode', 'pinch'); } catch (e) {}
     postSettings({ click_mode: 'pinch' });
   });
 
@@ -554,8 +556,23 @@ document.addEventListener('DOMContentLoaded', () => {
     modeHintText.innerHTML = 'Направьте указательный палец и <strong>толкните воздух вперед</strong> (Vision Pro Push-to-Click)!';
     gaugeLabelTitle.textContent = 'Глубина нажатия (Z-Push)';
     soundSynth.playPinch();
+    try { localStorage.setItem('aeropoint_click_mode', 'air_tap'); } catch (e) {}
     postSettings({ click_mode: 'air_tap' });
   });
+
+  // Restore saved preferences on startup
+  try {
+    const savedMode = localStorage.getItem('aeropoint_click_mode');
+    if (savedMode === 'pinch') btnModePinch?.click();
+    else if (savedMode === 'air_tap') btnModeAirTap?.click();
+
+    const savedVol = localStorage.getItem('aeropoint_sound_vol');
+    if (savedVol && sliderSoundVolume) {
+      sliderSoundVolume.value = savedVol;
+      soundSynth.volume = parseFloat(savedVol) / 100.0;
+      if (valSoundVolume) valSoundVolume.textContent = `${savedVol}%`;
+    }
+  } catch (e) {}
 
   switchPresentation?.addEventListener('change', (e) => {
     soundSynth.playPinch();

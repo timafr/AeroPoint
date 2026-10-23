@@ -321,26 +321,36 @@ class SpatialReceiver:
         for h in hands:
             pts = h.landmarks_px
 
-            # Neon depth gradient connections
+            # Chromatic Depth-Graded Connections
             for p1, p2 in HAND_CONNECTIONS:
                 pt1 = (pts[p1][0], pts[p1][1])
                 pt2 = (pts[p2][0], pts[p2][1])
-                cv2.line(frame, pt1, pt2, (255, 80, 200), 2, cv2.LINE_AA)
-                cv2.line(frame, pt1, pt2, (255, 200, 240), 1, cv2.LINE_AA)
+                avg_z = (pts[p1][2] + pts[p2][2]) / 2.0
+                if avg_z < 350:
+                    line_color = (254, 242, 0)   # Close: Electric Cyan (BGR)
+                elif avg_z < 600:
+                    line_color = (255, 80, 200)  # Mid: Neon Violet
+                else:
+                    line_color = (180, 50, 100)  # Far: Deep Navy
 
-            # Draw joints with 3D depth halos
+                cv2.line(frame, pt1, pt2, line_color, 2, cv2.LINE_AA)
+                cv2.line(frame, pt1, pt2, (255, 255, 255), 1, cv2.LINE_AA)
+
+            # Draw joints with 3D depth halos & distance rings
             for idx, pt in enumerate(pts):
                 coord = (pt[0], pt[1])
                 z_depth = pt[2]  # mm
-                # Depth halo: radius reflects proximity
                 halo_rad = max(4, min(14, int(18 - (z_depth / 80.0))))
+                is_tip = idx in (4, 8, 12, 16, 20)
+                joint_color = (0, 0, 255) if is_tip else (0, 242, 254)
                 cv2.circle(frame, coord, halo_rad + 2, (180, 50, 255), 1, cv2.LINE_AA)
-                cv2.circle(frame, coord, halo_rad, (0, 242, 254), -1, cv2.LINE_AA)
+                cv2.circle(frame, coord, halo_rad, joint_color, -1, cv2.LINE_AA)
 
-            # Depth badge at wrist
+            # Draw metric distance caliper at wrist
             wx, wy = pts[WRIST][0], pts[WRIST][1]
             depth_str = f"Z: {self.depth_mm:4.0f} mm (Physical {self.sensor_type})"
-            cv2.putText(frame, depth_str, (max(20, wx - 70), max(30, wy - 20)),
+            cv2.ellipse(frame, (wx, wy), (40, 16), 0, 0, 360, (0, 242, 254), 1, cv2.LINE_AA)
+            cv2.putText(frame, depth_str, (max(20, wx - 70), max(30, wy - 24)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 242, 254), 1, cv2.LINE_AA)
 
         # Header Badge

@@ -273,10 +273,18 @@ class CameraManager:
 
                 if not ret or raw_frame is None:
                     consecutive_fails += 1
-                    if consecutive_fails > 10:
-                        time.sleep(0.1)
-                    else:
-                        time.sleep(0.01)
+                    if consecutive_fails % 30 == 0:
+                        print(f"[!] Camera #{self.active_camera_id} lost frames ({consecutive_fails}). Auto-reconnecting DirectShow...")
+                        with self.lock:
+                            if self.cap:
+                                try:
+                                    self.cap.release()
+                                except Exception:
+                                    pass
+                                self.cap = None
+                            time.sleep(0.15)
+                            self.cap = self._open_capture(self.active_camera_id)
+                    time.sleep(0.033)
                     continue
 
                 consecutive_fails = 0
