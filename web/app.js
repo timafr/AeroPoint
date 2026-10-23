@@ -846,6 +846,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update active gesture card
     updateCoreGestureHighlight(data.gesture);
 
+    // Mid-air drawing sync
+    if (typeof updateAirDrawFromTelemetry === 'function') {
+      updateAirDrawFromTelemetry(data);
+    }
+
     // iPhone Sensor telemetry
     const iph = data.iphone_status;
     if (iph) {
@@ -1304,10 +1309,60 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnVpDraw = document.getElementById('btn-vp-draw');
   const airDrawCanvas = document.getElementById('air-draw-canvas');
   const airDrawToolbar = document.getElementById('air-draw-toolbar');
+  const airBrushCursor = document.getElementById('air-brush-cursor');
   let isAirDrawActive = false;
   let currentColor = '#00f2fe';
   let isPainting = false;
   let lastPaintPos = null;
+  let airTipPrevPos = null;
+
+  function updateAirDrawFromTelemetry(data) {
+    if (!isAirDrawActive || !airDrawCanvas) {
+      if (airBrushCursor) airBrushCursor.style.display = 'none';
+      return;
+    }
+
+    if (!data.hand_detected || !data.landmarks_3d || data.landmarks_3d.length < 9) {
+      if (airBrushCursor) airBrushCursor.style.display = 'none';
+      airTipPrevPos = null;
+      return;
+    }
+
+    // Index fingertip is landmark 8: [x, y, z]
+    const tip = data.landmarks_3d[8];
+    const curX = tip[0] * airDrawCanvas.width;
+    const curY = tip[1] * airDrawCanvas.height;
+
+    if (airBrushCursor) {
+      airBrushCursor.style.display = 'block';
+      airBrushCursor.style.left = `${(tip[0] * 100).toFixed(2)}%`;
+      airBrushCursor.style.top = `${(tip[1] * 100).toFixed(2)}%`;
+      airBrushCursor.style.borderColor = currentColor;
+    }
+
+    // Mid-air draw condition: pinch gesture or pinch force > 65% or air_tap
+    const isDrawing = (data.gesture === 'pinch' || data.gesture === 'air_tap' || (data.pinch_pct && data.pinch_pct > 65));
+    if (isDrawing) {
+      if (airBrushCursor) airBrushCursor.classList.add('drawing');
+      const dCtx = airDrawCanvas.getContext('2d');
+      if (airTipPrevPos) {
+        dCtx.strokeStyle = currentColor;
+        dCtx.shadowColor = currentColor;
+        dCtx.shadowBlur = 14;
+        dCtx.lineWidth = 5;
+        dCtx.lineCap = 'round';
+        dCtx.lineJoin = 'round';
+        dCtx.beginPath();
+        dCtx.moveTo(airTipPrevPos.x, airTipPrevPos.y);
+        dCtx.lineTo(curX, curY);
+        dCtx.stroke();
+      }
+      airTipPrevPos = { x: curX, y: curY };
+    } else {
+      if (airBrushCursor) airBrushCursor.classList.remove('drawing');
+      airTipPrevPos = null;
+    }
+  }
 
   btnVpDraw?.addEventListener('click', () => {
     isAirDrawActive = true;
@@ -1332,12 +1387,16 @@ document.addEventListener('DOMContentLoaded', () => {
     btnVpDraw?.classList.remove('active');
     if (airDrawCanvas) airDrawCanvas.style.display = 'none';
     if (airDrawToolbar) airDrawToolbar.style.display = 'none';
+    if (airBrushCursor) airBrushCursor.style.display = 'none';
   });
 
   btnVp3d?.addEventListener('click', () => {
     isAirDrawActive = false;
     btnVpDraw?.classList.remove('active');
     if (airDrawCanvas) airDrawCanvas.style.display = 'none';
+    if (airDrawToolbar) airDrawToolbar.style.display = 'none';
+    if (airBrushCursor) airBrushCursor.style.display = 'none';
+  });
     if (airDrawToolbar) airDrawToolbar.style.display = 'none';
   });
 
