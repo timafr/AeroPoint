@@ -21,6 +21,7 @@ import bottle
 from config import GestureConfig
 from camera_manager import CameraManager
 from server import create_app, ThreadingAdapter
+from tray_service import WindowsTrayService
 
 if sys.platform.startswith("win"):
     try:
@@ -34,6 +35,7 @@ def parse_args():
     parser.add_argument("--camera", type=int, default=0, help="Initial camera ID (default: 0)")
     parser.add_argument("--port", type=int, default=5055, help="Local server port (default: 5055)")
     parser.add_argument("--browser", action="store_true", help="Open in standard browser instead of native window")
+    parser.add_argument("--no-tray", action="store_true", help="Disable Windows System Tray icon")
     return parser.parse_args()
 
 
@@ -51,6 +53,15 @@ def main():
 
     # Start camera and ML inference
     manager.start()
+
+    # Start Windows System Tray service
+    tray = None
+    if not args.no_tray and sys.platform.startswith("win"):
+        try:
+            tray = WindowsTrayService(manager, port=args.port)
+            tray.start()
+        except Exception as e:
+            print(f"[!] System tray init warning: {e}")
 
     # Create bottle app
     app = create_app(manager)
@@ -98,7 +109,9 @@ def main():
                 pass
 
     # Cleanup
-    print("[*] Stopping camera manager and releasing devices...")
+    print("[*] Stopping system tray and camera manager...")
+    if tray:
+        tray.stop()
     manager.stop()
     print("[✓] AeroPoint Studio shut down cleanly.")
 

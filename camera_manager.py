@@ -97,9 +97,13 @@ class CameraManager:
         self.latency_ms = 0.0
         self.cpu_percent = 0.0
 
-        # Video capture handle
+        # Video capture handle & double-buffering
         self.cap: Optional[cv2.VideoCapture] = None
         self.worker_thread: Optional[threading.Thread] = None
+        self.grabber_thread: Optional[threading.Thread] = None
+        self.frame_lock = threading.Lock()
+        self.latest_raw_frame: Optional[np.ndarray] = None
+        self.frame_available_event = threading.Event()
 
         # Camera discovery
         self.discovered_cameras: List[Dict[str, any]] = self.discover_cameras()
@@ -183,6 +187,8 @@ class CameraManager:
                 if old_cap:
                     old_cap.release()
                     self.cap = None
+                with self.frame_lock:
+                    self.latest_raw_frame = None
 
                 # Short delay to allow Windows DirectShow filter graph to unbind
                 time.sleep(0.12)
@@ -218,20 +224,27 @@ class CameraManager:
             return False
 
     def start(self):
-        """Starts background capture and processing thread."""
+        """Starts background capture and processing threads."""
         if self.running:
             return
         self.running = True
+        with self.lock:
+            self.cap = self._open_capture(self.active_camera_id)
         self.hotkeys.start()
-        self.worker_thread = threading.Thread(target=self._capture_loop, daemon=True)
+        self.grabber_thread = threading.Thread(target=self._frame_grabber_loop, daemon=True, name="AeroPoint-Grabber")
+        self.grabber_thread.start()
+        self.worker_thread = threading.Thread(target=self._capture_loop, daemon=True, name="AeroPoint-Inference")
         self.worker_thread.start()
 
     def stop(self):
-        """Stops background loop and releases devices."""
+        """Stops background loops and releases devices."""
         self.running = False
+        self.frame_available_event.set()
         self.hotkeys.stop()
+        if self.grabber_thread:
+            self.grabber_thread.join(timeout=1.0)
         if self.worker_thread:
-            self.worker_thread.join(timeout=2.0)
+            self.worker_thread.join(timeout=1.5)
         with self.lock:
             if self.cap:
                 self.cap.release()
@@ -240,13 +253,49 @@ class CameraManager:
             self.mouse.mouse_up("left")
         self.spatial_receiver.stop()
 
+    def _frame_grabber_loop(self):
+        """Dedicated high-speed thread to drain DirectShow buffer and prevent queue lag."""
+        consecutive_fails = 0
+        while self.running:
+            if self.active_tab == "iphone":
+                time.sleep(0.02)
+                continue
+
+            cap = None
+            with self.lock:
+                cap = self.cap
+
+            if not cap or not cap.isOpened():
+                time.sleep(0.04)
+                continue
+
+            try:
+                ret, frame = cap.read()
+                if ret and frame is not None:
+                    consecutive_fails = 0
+                    with self.frame_lock:
+                        self.latest_raw_frame = frame
+                    self.frame_available_event.set()
+                else:
+                    consecutive_fails += 1
+                    if consecutive_fails % 30 == 0:
+                        print(f"[!] DirectShow grabber lost frames ({consecutive_fails}). Reconnecting...")
+                        with self.lock:
+                            if self.cap:
+                                try:
+                                    self.cap.release()
+                                except Exception:
+                                    pass
+                                self.cap = None
+                            time.sleep(0.12)
+                            self.cap = self._open_capture(self.active_camera_id)
+                    time.sleep(0.01)
+            except Exception:
+                time.sleep(0.01)
+
     def _capture_loop(self):
         """Continuous camera capture and gesture execution loop."""
-        with self.lock:
-            self.cap = self._open_capture(self.active_camera_id)
-
         hand_was_present = False
-        consecutive_fails = 0
 
         while self.running:
             if self.active_tab == "iphone":
@@ -259,35 +308,20 @@ class CameraManager:
                 self.fps = self.spatial_receiver.remote_fps if self.spatial_receiver.is_connected else 60.0
                 self.latency_ms = self.spatial_receiver.latency_ms
             else:
-                raw_frame = None
-                ret = False
-                with self.lock:
-                    if not self.cap or not self.cap.isOpened():
-                        time.sleep(0.05)
-                        continue
-                    try:
-                        ret, raw_frame = self.cap.read()
-                    except Exception:
-                        ret = False
-                        raw_frame = None
-
-                if not ret or raw_frame is None:
-                    consecutive_fails += 1
-                    if consecutive_fails % 30 == 0:
-                        print(f"[!] Camera #{self.active_camera_id} lost frames ({consecutive_fails}). Auto-reconnecting DirectShow...")
-                        with self.lock:
-                            if self.cap:
-                                try:
-                                    self.cap.release()
-                                except Exception:
-                                    pass
-                                self.cap = None
-                            time.sleep(0.15)
-                            self.cap = self._open_capture(self.active_camera_id)
-                    time.sleep(0.033)
+                # Wait for fresh frame from grabber thread (zero-latency double buffering)
+                got_frame = self.frame_available_event.wait(timeout=0.04)
+                if not got_frame:
+                    time.sleep(0.005)
                     continue
 
-                consecutive_fails = 0
+                self.frame_available_event.clear()
+                raw_frame = None
+                with self.frame_lock:
+                    if self.latest_raw_frame is not None:
+                        raw_frame = self.latest_raw_frame.copy()
+
+                if raw_frame is None:
+                    continue
 
                 # Process frame through MediaPipe (supports 1 or 2 hands)
                 frame, primary_hand, all_hands = self.tracker.process(raw_frame)

@@ -22,6 +22,15 @@
 
   <div class="quantum-shell" id="main-app-window">
     
+    <!-- Zen Mode Floating Exit Pill -->
+    <div class="zen-exit-pill" id="zen-exit-pill" title="Выйти из Zen-режима (Esc / F11)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+      <span>Выход из Zen (F11 / Esc)</span>
+    </div>
+
     <!-- Top Floating Capsule Header -->
     <header class="quantum-header">
       <div class="header-left">
@@ -78,6 +87,14 @@
       </div>
 
       <div class="header-right">
+        <!-- Zen Mode HUD Toggle -->
+        <button id="btn-zen-mode" class="q-btn pill-btn" title="Zen-режим: Полноэкранный HUD (F11)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+          </svg>
+          <span class="zen-btn-label">Zen HUD</span>
+        </button>
+
         <!-- Safety Pause Button -->
         <button id="btn-safety-pause" class="q-btn pill-btn" title="Заблокировать управление курсором (Пауза)">
           <span class="status-indicator" id="pause-indicator"></span>

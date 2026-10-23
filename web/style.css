@@ -1939,3 +1939,140 @@ input:checked + .slider:before {
   border-color: var(--aero-cyan);
 }
 
+/* ==========================================================================
+   Zen Mode / Fullscreen Spatial HUD
+   ========================================================================== */
+.zen-exit-pill {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  position: fixed;
+  top: 18px;
+  right: 28px;
+  z-index: 99999;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(14, 12, 22, 0.85);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(0, 242, 254, 0.45);
+  color: #fff;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.7), 0 0 18px rgba(0, 242, 254, 0.25);
+  transition: all 0.25s var(--smooth-ease);
+  animation: fadeInDown 0.3s ease-out;
+}
+
+.zen-exit-pill:hover {
+  background: rgba(0, 242, 254, 0.18);
+  border-color: var(--aero-cyan);
+  box-shadow: 0 12px 42px rgba(0, 242, 254, 0.4);
+  transform: translateY(-2px) scale(1.03);
+}
+
+.zen-exit-pill svg {
+  stroke: var(--aero-cyan);
+  transition: transform 0.2s ease;
+}
+
+.zen-exit-pill:hover svg {
+  transform: rotate(90deg);
+}
+
+#btn-zen-mode {
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+}
+
+#btn-zen-mode:hover {
+  color: var(--aero-cyan);
+  border-color: rgba(0, 242, 254, 0.4);
+  background: rgba(0, 242, 254, 0.08);
+}
+
+.zen-btn-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* Zen Mode Active Layout Transformations */
+body.zen-mode {
+  background: #000;
+}
+
+body.zen-mode .zen-exit-pill {
+  display: inline-flex;
+}
+
+body.zen-mode .quantum-shell {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+body.zen-mode .quantum-header {
+  padding-right: 220px; /* Room for the floating exit pill */
+  background: rgba(10, 10, 16, 0.6);
+  backdrop-filter: blur(20px);
+}
+
+body.zen-mode .quantum-dock {
+  position: fixed;
+  left: 0;
+  top: 90px;
+  bottom: 30px;
+  z-index: 1000;
+  transform: translateX(-78%);
+  opacity: 0.35;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  background: rgba(14, 12, 22, 0.92);
+  backdrop-filter: blur(32px);
+  border-radius: 0 24px 24px 0;
+  box-shadow: 10px 0 40px rgba(0, 0, 0, 0.8);
+}
+
+body.zen-mode .quantum-dock:hover {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+body.zen-mode .workspace-layout {
+  height: calc(100vh - 68px);
+}
+
+body.zen-mode .viewfinder-column {
+  flex: 1 1 100%;
+}
+
+body.zen-mode .viewfinder-card {
+  height: 100%;
+  border-radius: 20px;
+}
+
+body.zen-mode .stream-wrapper {
+  height: calc(100% - 100px);
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+

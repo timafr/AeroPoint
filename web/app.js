@@ -526,6 +526,37 @@ document.addEventListener('DOMContentLoaded', () => {
     postSettings({ manual_pause: newPauseState });
   });
 
+  // Zen Mode (Fullscreen Spatial HUD) Toggle
+  const btnZenMode = document.getElementById('btn-zen-mode');
+  const zenExitPill = document.getElementById('zen-exit-pill');
+
+  function toggleZenMode() {
+    const isZen = document.body.classList.toggle('zen-mode');
+    soundSynth.playRadialChime();
+
+    if (isZen) {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } else {
+      if (document.exitFullscreen && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  }
+
+  btnZenMode?.addEventListener('click', toggleZenMode);
+  zenExitPill?.addEventListener('click', toggleZenMode);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'F11') {
+      e.preventDefault();
+      toggleZenMode();
+    } else if (e.key === 'Escape' && document.body.classList.contains('zen-mode')) {
+      toggleZenMode();
+    }
+  });
+
   // Click Mode (Thumb Bend vs Pinch vs Air-Tap)
   btnModeThumb?.addEventListener('click', () => {
     btnModeThumb.classList.add('active');
