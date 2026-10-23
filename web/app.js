@@ -425,6 +425,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let previousGesture = 'NO HAND';
 
+  const actionCapsule = document.getElementById('action-capsule');
+  const actionCapsuleIcon = document.getElementById('action-capsule-icon');
+  const actionCapsuleText = document.getElementById('action-capsule-text');
+  let capsuleTimer = null;
+
+  function flashActionCapsule(icon, text, soundFn = null) {
+    if (!actionCapsule) return;
+    if (actionCapsuleIcon) actionCapsuleIcon.textContent = icon;
+    if (actionCapsuleText) actionCapsuleText.textContent = text;
+    actionCapsule.classList.add('show');
+    if (soundFn) soundFn();
+
+    clearTimeout(capsuleTimer);
+    capsuleTimer = setTimeout(() => {
+      actionCapsule.classList.remove('show');
+    }, 1300);
+  }
+
   function updateCoreGestureHighlight(gestureName) {
     const cleanName = (gestureName || 'NO HAND').trim();
     let info = coreGestureCards[cleanName];
@@ -438,11 +456,15 @@ document.addEventListener('DOMContentLoaded', () => {
       else info = coreGestureCards['NO HAND'];
     }
 
-    // Audio triggers on gesture transition
+    // Audio triggers & Dynamic Action Capsule on gesture transition
     if (cleanName !== previousGesture) {
       if (cleanName.includes('PINCH') || cleanName.includes('THUMB')) soundSynth.playPinch();
       else if (cleanName.includes('RIGHT')) soundSynth.playRightClick();
       else if (cleanName.includes('DRAG')) soundSynth.playDragStart();
+
+      if (cleanName !== 'NO HAND' && !cleanName.includes('HOVER')) {
+        flashActionCapsule(info.icon, info.title);
+      }
       previousGesture = cleanName;
     }
 
@@ -504,6 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
     valLaserStatus.textContent = e.target.checked ? 'ЛАЗЕР ВКЛ' : 'Обычный';
     valLaserStatus.style.color = e.target.checked ? '#ff007f' : 'var(--aero-cyan)';
     soundSynth.playLaserFx();
+    flashActionCapsule('🎯', e.target.checked ? 'Лазерный прицел ВКЛ' : 'Обычный курсор');
     postSettings({ laser_pointer_mode: e.target.checked });
   });
 
@@ -522,9 +545,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (newPauseState) {
       pauseIndicator.classList.add('paused');
       pauseBtnText.textContent = 'Возобновить';
+      flashActionCapsule('⏸️', 'Пауза управления');
     } else {
       pauseIndicator.classList.remove('paused');
       pauseBtnText.textContent = 'Пауза';
+      flashActionCapsule('▶️', 'Управление возобновлено');
     }
     soundSynth.playPinch();
     postSettings({ manual_pause: newPauseState });
@@ -537,6 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function toggleZenMode() {
     const isZen = document.body.classList.toggle('zen-mode');
     soundSynth.playRadialChime();
+    flashActionCapsule('🧘', isZen ? 'Zen HUD: Полный экран' : 'Оконный режим');
 
     if (isZen) {
       if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
@@ -976,6 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Remote Presentation Buttons
   document.getElementById('btn-remote-prev')?.addEventListener('click', () => {
     soundSynth.playClick();
+    flashActionCapsule('⏪', 'Предыдущий слайд');
     fetch('/api/radial/action', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -985,6 +1012,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-remote-play')?.addEventListener('click', () => {
     soundSynth.playChord();
+    flashActionCapsule('⏯️', 'Play / Pause');
     fetch('/api/radial/action', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -994,6 +1022,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-remote-next')?.addEventListener('click', () => {
     soundSynth.playClick();
+    flashActionCapsule('⏩', 'Следующий слайд');
     fetch('/api/radial/action', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1003,16 +1032,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Windows Aero Snap & Desktop Switcher Controls
   const snapActions = [
-    { id: 'btn-snap-left', action: 'snap_left' },
-    { id: 'btn-snap-max', action: 'snap_maximize' },
-    { id: 'btn-snap-right', action: 'snap_right' },
-    { id: 'btn-desk-prev', action: 'desktop_prev' },
-    { id: 'btn-desk-next', action: 'desktop_next' },
+    { id: 'btn-snap-left', action: 'snap_left', label: 'Прикрепить влево' },
+    { id: 'btn-snap-max', action: 'snap_maximize', label: 'Развернуть окно' },
+    { id: 'btn-snap-right', action: 'snap_right', label: 'Прикрепить вправо' },
+    { id: 'btn-desk-prev', action: 'desktop_prev', label: 'Предыдущий стол' },
+    { id: 'btn-desk-next', action: 'desktop_next', label: 'Следующий стол' },
   ];
 
-  snapActions.forEach(({ id, action }) => {
+  snapActions.forEach(({ id, action, label }) => {
     document.getElementById(id)?.addEventListener('click', () => {
       soundSynth.playPinch();
+      flashActionCapsule('🪟', label);
       fetch('/api/radial/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

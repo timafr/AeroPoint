@@ -349,10 +349,14 @@ class InertialScrollEngine:
         self.is_active = False
 
     def push(self, delta: float):
-        """Called on active scroll frame to update momentum."""
+        """Called on active scroll frame to update momentum with kinetic flick amplification."""
         now = time.time()
         self.last_update = now
-        self.velocity = self.velocity * 0.35 + delta * 0.65
+        # Detect rapid flick (> 2.0 scroll ticks) and amplify glide momentum
+        flick_boost = 1.45 if abs(delta) >= 2.0 else 1.0
+        self.velocity = (self.velocity * 0.30 + delta * 0.70) * flick_boost
+        # Clamp velocity to avoid uncontrolled spinning
+        self.velocity = max(-16.0, min(16.0, self.velocity))
         self.is_active = True
 
     def brake(self):
