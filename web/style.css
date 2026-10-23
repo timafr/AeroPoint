@@ -905,6 +905,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .card-header {
@@ -1248,12 +1250,23 @@ body {
 }
 
 .iphone-hero-card {
-  background: linear-gradient(135deg, rgba(127, 0, 255, 0.12), rgba(0, 242, 254, 0.08));
-  border: 1px solid rgba(127, 0, 255, 0.35);
+  background: linear-gradient(135deg, rgba(127, 0, 255, 0.15), rgba(0, 242, 254, 0.08));
+  border: 1px solid rgba(127, 0, 255, 0.45);
   border-radius: var(--radius-card);
   padding: 16px;
   position: relative;
-  overflow: hidden;
+  overflow: visible !important;
+  flex-shrink: 0 !important;
+  min-height: fit-content;
+  box-shadow: 0 8px 32px rgba(127, 0, 255, 0.16);
+}
+
+.iphone-hero-card .card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
 
 .iphone-status-row {

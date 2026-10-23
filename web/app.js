@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tabBtnIphone.classList.add('active');
       tabBtnWebcam.classList.remove('active');
       if (cameraPickerWrap) cameraPickerWrap.style.display = 'none';
-      if (iphoneDashboardCard) iphoneDashboardCard.style.display = 'block';
+      if (iphoneDashboardCard) iphoneDashboardCard.style.display = 'flex';
       await fetch('/api/switch_tab', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -192,6 +192,78 @@
       <!-- Right: Inspector & Kinetic Tuning Pane -->
       <aside class="inspector-section">
         
+        <!-- iPhone Spatial Dashboard Card (Promoted to Top) -->
+        <div class="glass-card kinetic-card iphone-hero-card" id="iphone-dashboard-card" style="display: none;" data-tilt>
+          <div class="card-header" style="margin-bottom: 8px;">
+            <div class="card-title-group">
+              <span class="card-dot-decor" style="background: var(--aero-violet);"></span>
+              <h3>iPhone Spatial Sensor</h3>
+            </div>
+            <span class="sensor-badge disconnected" id="badge-iphone-conn">ОЖИДАНИЕ</span>
+          </div>
+
+          <div class="mode-hint" style="margin-bottom: 10px;">
+            📡 <strong>Физическая 3D глубина:</strong> чип A15–A18 Bionic считывает 21 сустав кисти с миллиметровой точностью на 60 FPS.
+          </div>
+
+          <div class="spatial-metrics-grid">
+            <div class="sp-card">
+              <div class="sp-label">Сенсор</div>
+              <div class="sp-value" id="val-iphone-sensor" style="color: var(--aero-cyan);">TrueDepth</div>
+            </div>
+            <div class="sp-card">
+              <div class="sp-label">Задержка</div>
+              <div class="sp-value" id="val-iphone-ping">0.8 ms</div>
+            </div>
+            <div class="sp-card">
+              <div class="sp-label">Батарея</div>
+              <div class="sp-value" id="val-iphone-battery">95%</div>
+            </div>
+          </div>
+
+          <div class="z-depth-card">
+            <div class="z-depth-header">
+              <span>Физическая дистанция (Z-Depth)</span>
+              <span id="val-iphone-depth" style="font-family: var(--font-mono); font-weight: 700;">420 mm</span>
+            </div>
+            <div class="z-depth-track">
+              <div class="z-depth-bar" id="bar-iphone-depth" style="width: 45%;"></div>
+            </div>
+          </div>
+
+          <!-- Quick Safari Connect (Zero-Install) -->
+          <div style="background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.22); border-radius: 14px; padding: 12px; margin-top: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 700; color: var(--aero-cyan); display: flex; align-items: center; gap: 6px;">
+                <span>⚡</span> Мгновенный запуск в Safari (Без .IPA):
+              </span>
+              <span class="badge-mini" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border-color: rgba(0, 230, 118, 0.3);">0 УСТАНОВКИ</span>
+            </div>
+            
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <div style="background: #ffffff; padding: 4px; border-radius: 10px; flex-shrink: 0; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">
+                <img id="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=http://192.168.1.194:5000/mobile" alt="QR Code" style="width: 86px; height: 86px; display: block;" />
+              </div>
+              <div style="flex: 1; font-size: 11.5px; color: var(--text-secondary); line-height: 1.45;">
+                <div>Наведите камеру iPhone на QR-код или откройте в Safari:</div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                  <code id="mobile-url-text" style="background: rgba(255,255,255,0.08); padding: 3px 6px; border-radius: 6px; color: #ffffff; font-family: var(--font-mono); font-size: 10.5px; word-break: break-all;">http://192.168.1.194:5000/mobile</code>
+                  <button class="aero-btn small" id="btn-copy-url" title="Скопировать ссылку" style="padding: 3px 8px; font-size: 11px;">📋</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button class="aero-btn small" id="btn-open-ios-guide" style="flex: 1; justify-content: center; background: rgba(127, 0, 255, 0.22); border-color: rgba(127, 0, 255, 0.45); color: #ffffff;">
+              <span>📦 Как собрать и установить .IPA</span>
+            </button>
+            <a href="/mobile" target="_blank" class="aero-btn small" style="text-decoration: none; display: flex; align-items: center; justify-content: center; padding: 0 12px; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: #fff;" title="Открыть Web Controller в браузере">
+              <span>🌐</span>
+            </a>
+          </div>
+        </div>
+
         <!-- Two-Handed (Bimanual) Control Card -->
         <div class="glass-card kinetic-card" data-tilt>
           <div class="card-header">
@@ -353,78 +425,6 @@
               </div>
               <span class="g-indicator"></span>
             </div>
-          </div>
-        </div>
-
-        <!-- iPhone Spatial Dashboard Card -->
-        <div class="glass-card kinetic-card iphone-hero-card" id="iphone-dashboard-card" style="display: none;" data-tilt>
-          <div class="card-header" style="margin-bottom: 8px;">
-            <div class="card-title-group">
-              <span class="card-dot-decor" style="background: var(--aero-violet);"></span>
-              <h3>iPhone Spatial Sensor</h3>
-            </div>
-            <span class="sensor-badge disconnected" id="badge-iphone-conn">ОЖИДАНИЕ</span>
-          </div>
-
-          <div class="mode-hint" style="margin-bottom: 10px;">
-            📡 <strong>Физическая 3D глубина:</strong> чип A15–A18 Bionic считывает 21 сустав кисти с миллиметровой точностью на 60 FPS.
-          </div>
-
-          <div class="spatial-metrics-grid">
-            <div class="sp-card">
-              <div class="sp-label">Сенсор</div>
-              <div class="sp-value" id="val-iphone-sensor" style="color: var(--aero-cyan);">TrueDepth</div>
-            </div>
-            <div class="sp-card">
-              <div class="sp-label">Задержка</div>
-              <div class="sp-value" id="val-iphone-ping">0.8 ms</div>
-            </div>
-            <div class="sp-card">
-              <div class="sp-label">Батарея</div>
-              <div class="sp-value" id="val-iphone-battery">95%</div>
-            </div>
-          </div>
-
-          <div class="z-depth-card">
-            <div class="z-depth-header">
-              <span>Физическая дистанция (Z-Depth)</span>
-              <span id="val-iphone-depth" style="font-family: var(--font-mono); font-weight: 700;">420 mm</span>
-            </div>
-            <div class="z-depth-track">
-              <div class="z-depth-bar" id="bar-iphone-depth" style="width: 45%;"></div>
-            </div>
-          </div>
-
-          <!-- Quick Safari Connect (Zero-Install) -->
-          <div style="background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.22); border-radius: 14px; padding: 12px; margin-top: 12px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-size: 12px; font-weight: 700; color: var(--aero-cyan); display: flex; align-items: center; gap: 6px;">
-                <span>⚡</span> Мгновенный запуск в Safari (Без .IPA):
-              </span>
-              <span class="badge-mini" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border-color: rgba(0, 230, 118, 0.3);">0 УСТАНОВКИ</span>
-            </div>
-            
-            <div style="display: flex; gap: 12px; align-items: center;">
-              <div style="background: #ffffff; padding: 4px; border-radius: 10px; flex-shrink: 0; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">
-                <img id="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=http://192.168.1.194:5000/mobile" alt="QR Code" style="width: 86px; height: 86px; display: block;" />
-              </div>
-              <div style="flex: 1; font-size: 11.5px; color: var(--text-secondary); line-height: 1.45;">
-                <div>Наведите камеру iPhone на QR-код или откройте в Safari:</div>
-                <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
-                  <code id="mobile-url-text" style="background: rgba(255,255,255,0.08); padding: 3px 6px; border-radius: 6px; color: #ffffff; font-family: var(--font-mono); font-size: 10.5px; word-break: break-all;">http://192.168.1.194:5000/mobile</code>
-                  <button class="aero-btn small" id="btn-copy-url" title="Скопировать ссылку" style="padding: 3px 8px; font-size: 11px;">📋</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 8px; margin-top: 12px;">
-            <button class="aero-btn small" id="btn-open-ios-guide" style="flex: 1; justify-content: center; background: rgba(127, 0, 255, 0.22); border-color: rgba(127, 0, 255, 0.45); color: #ffffff;">
-              <span>📦 Как собрать и установить .IPA</span>
-            </button>
-            <a href="/mobile" target="_blank" class="aero-btn small" style="text-decoration: none; display: flex; align-items: center; justify-content: center; padding: 0 12px; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: #fff;" title="Открыть Web Controller в браузере">
-              <span>🌐</span>
-            </a>
           </div>
         </div>
 
