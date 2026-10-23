@@ -416,6 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Presentation & Air-Swipe Switch
   const switchPresentation = document.getElementById('switch-presentation');
+  const switchSpotlight = document.getElementById('switch-spotlight');
 
   // Legacy Gestures Switch
   const switchLegacyGestures = document.getElementById('switch-legacy-gestures');
@@ -884,6 +885,16 @@ document.addEventListener('DOMContentLoaded', () => {
     postSettings({ presentation_mode_enabled: e.target.checked });
   });
 
+  switchSpotlight?.addEventListener('change', (e) => {
+    soundSynth.playLaserFx();
+    fetch('/api/spotlight/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: e.target.checked })
+    }).catch(() => {});
+    flashActionCapsule('💡', e.target.checked ? 'Spotlight включен' : 'Spotlight выключен');
+  });
+
   // Two-Hand Dominant Hand
   switchTwoHands?.addEventListener('change', (e) => postSettings({ enable_two_hands: e.target.checked }));
   btnDomRight?.addEventListener('click', () => {
@@ -1092,6 +1103,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (switchWindowSnap && typeof data.enable_window_snap_zones === 'boolean') {
         switchWindowSnap.checked = data.enable_window_snap_zones;
+      }
+      if (switchSpotlight && typeof data.presentation_spotlight_mode === 'boolean') {
+        switchSpotlight.checked = data.presentation_spotlight_mode;
       }
       if (switchDistanceAdaptation && typeof data.enable_distance_adaptation === 'boolean') {
         switchDistanceAdaptation.checked = data.enable_distance_adaptation;

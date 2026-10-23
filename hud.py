@@ -837,6 +837,45 @@ class CyberHUD:
         tag = f"L-AIM [{tx},{ty}]"
         cv2.putText(frame, tag, (tx + 12, ty - 6), cv2.FONT_HERSHEY_PLAIN, 0.75, beam_color, 1, cv2.LINE_AA)
 
+    def draw_presentation_spotlight(
+        self,
+        frame: np.ndarray,
+        center_pt: Tuple[int, int],
+        radius: int = 85,
+        dim_opacity: float = 0.65
+    ):
+        """
+        Renders Keynote-style presentation spotlight. Dims the background frame
+        while cutting out a bright, high-contrast circular aperture with glowing boundary rim.
+        """
+        h, w, _ = frame.shape
+        cx, cy = int(center_pt[0]), int(center_pt[1])
+        radius = max(30, min(min(h, w) // 2, int(radius)))
+
+        # 1. Dimmed version of frame
+        dimmed = (frame * (1.0 - dim_opacity)).astype(np.uint8)
+
+        # 2. Circular mask
+        mask = np.zeros((h, w), dtype=np.uint8)
+        cv2.circle(mask, (cx, cy), radius, 255, -1)
+
+        # 3. Soften the edge of the spotlight mask for natural vignette falloff
+        mask_feathered = cv2.GaussianBlur(mask, (21, 21), 0)
+        mask_norm = (mask_feathered.astype(np.float32) / 255.0)[:, :, np.newaxis]
+
+        # 4. Blend: spotlight area gets original frame, outside gets dimmed frame
+        np.copyto(frame, (frame * mask_norm + dimmed * (1.0 - mask_norm)).astype(np.uint8))
+
+        # 5. Glowing cyan boundary ring around spotlight
+        cv2.circle(frame, (cx, cy), radius, (0, 242, 254), 2, cv2.LINE_AA)
+        cv2.circle(frame, (cx, cy), radius + 2, (255, 255, 255), 1, cv2.LINE_AA)
+
+        # 6. Center precision crosshair
+        cv2.circle(frame, (cx, cy), 4, (0, 242, 254), -1, cv2.LINE_AA)
+        cv2.circle(frame, (cx, cy), 2, (255, 255, 255), -1, cv2.LINE_AA)
+        cv2.line(frame, (cx - 10, cy), (cx + 10, cy), (0, 242, 254), 1, cv2.LINE_AA)
+        cv2.line(frame, (cx, cy - 10), (cx, cy + 10), (0, 242, 254), 1, cv2.LINE_AA)
+
     def draw_calibration_target(
         self,
         frame: np.ndarray,
@@ -1159,9 +1198,18 @@ class CyberHUD:
         scroll_velocity: float = 0.0,
         edge_snap_flags: Optional[Tuple[bool, bool, bool, bool]] = None,
         ergonomic_minutes: Optional[int] = None,
-        snap_zone: Optional[str] = None
+        snap_zone: Optional[str] = None,
+        spotlight_mode: bool = False,
+        spotlight_radius: int = 85
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
+        # Keynote Presentation Spotlight Vignette Dimming
+        if spotlight_mode:
+            target_h = pointer_hand or (hands[0] if hands else hand)
+            if target_h and hasattr(target_h, 'landmarks_px') and len(target_h.landmarks_px) > INDEX_TIP:
+                tip = (int(target_h.landmarks_px[INDEX_TIP][0]), int(target_h.landmarks_px[INDEX_TIP][1]))
+                self.draw_presentation_spotlight(frame, tip, radius=spotlight_radius)
+
         if show_skeleton:
             if pointer_hand and action_hand:
                 self.draw_skeleton(frame, pointer_hand, gesture, is_action_hand=False)

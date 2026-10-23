@@ -260,6 +260,16 @@ class TestCyberHUD(unittest.TestCase):
             self.assertIsNotNone(rendered)
             self.assertEqual(rendered.shape, (480, 640, 3))
 
+    def test_render_presentation_spotlight(self):
+        frame = np.full((480, 640, 3), 200, dtype=np.uint8)
+        self.hud.draw_presentation_spotlight(frame, (320, 240), radius=60, dim_opacity=0.60)
+        # Outside spotlight should be dimmed significantly (< 120)
+        self.assertLess(frame[50, 50, 0], 120)
+        # Inside spotlight should be bright (> 170)
+        self.assertGreater(frame[240, 300, 0], 170)
+        rendered = self.hud.render_clean(frame, spotlight_mode=True, spotlight_radius=50)
+        self.assertIsNotNone(rendered)
+
     def test_render_clean_with_calibration_and_ripples(self):
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
         self.hud.trigger_click_ripple((320, 240), is_right=False)
@@ -666,6 +676,14 @@ class TestSpatialAirCanvas(unittest.TestCase):
                     status, res = make_request('/api/canvas/clear', 'POST', {})
                     self.assertTrue(status.startswith("200"))
                     self.assertEqual(len(cm.hud.air_draw_strokes), 0)
+
+                    # Test spotlight toggle
+                    status, res = make_request('/api/spotlight/toggle', 'POST', {'enabled': True, 'radius': 95})
+                    self.assertTrue(status.startswith("200"))
+                    self.assertTrue(res['presentation_spotlight_mode'])
+                    self.assertEqual(res['spotlight_radius'], 95)
+                    self.assertTrue(cm.config.presentation_spotlight_mode)
+                    self.assertEqual(cm.config.spotlight_radius, 95)
 
                     cm.stop()
 

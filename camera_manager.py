@@ -805,7 +805,9 @@ class CameraManager:
                         scroll_velocity=getattr(self.scroll_engine, 'velocity', 0.0),
                         edge_snap_flags=edge_flags,
                         ergonomic_minutes=ergo_min,
-                        snap_zone=self.active_snap_zone
+                        snap_zone=self.active_snap_zone,
+                        spotlight_mode=getattr(self.config, 'presentation_spotlight_mode', False),
+                        spotlight_radius=getattr(self.config, 'spotlight_radius', 85)
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)

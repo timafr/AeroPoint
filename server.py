@@ -263,6 +263,29 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
         manager.toggle_radial_menu()
         return {"status": "ok", "radial_open": manager.radial_menu_open}
 
+    @app.route('/api/spotlight/toggle', method='POST')
+    def spotlight_toggle():
+        try:
+            data = bottle.request.json or {}
+            enabled = data.get('enabled', None)
+            if enabled is None:
+                new_state = not getattr(manager.config, 'presentation_spotlight_mode', False)
+            else:
+                new_state = bool(enabled)
+            manager.config.presentation_spotlight_mode = new_state
+            rad = data.get('radius', None)
+            if rad is not None:
+                manager.config.spotlight_radius = int(rad)
+            manager.config.save_to_file()
+            return {
+                "status": "ok",
+                "presentation_spotlight_mode": new_state,
+                "spotlight_radius": getattr(manager.config, 'spotlight_radius', 85)
+            }
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
     @app.route('/api/radial/action', method='POST')
     def radial_action():
         try:
