@@ -3,6 +3,7 @@
 //  AeroPointSpatial
 //
 //  visionOS Glassmorphism Interface for iPhone Hand Tracking
+//  Dual-Hand Holographic Skeleton & Dynamic Landscape/Portrait Layout
 //
 
 import SwiftUI
@@ -41,7 +42,7 @@ struct ContentView: View {
             )
             .ignoresSafeArea()
             
-            VStack(spacing: 16) {
+            VStack(spacing: tracker.isLandscape ? 8 : 16) {
                 // Top Header Pill
                 HStack {
                     HStack(spacing: 8) {
@@ -59,6 +60,16 @@ struct ContentView: View {
                     .background(Color.white.opacity(0.12))
                     .clipShape(Capsule())
                     
+                    if tracker.isLandscape {
+                        Text(tracker.allHandLandmarks.count >= 2 ? "DUAL-HAND ACTIVE (42 JOINTS)" : (tracker.isHandDetected ? "1 HAND DETECTED" : "SEARCHING"))
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.cyan)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color.cyan.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                    
                     Spacer()
                     
                     Button(action: { isSettingsOpen.toggle() }) {
@@ -71,22 +82,24 @@ struct ContentView: View {
                     }
                 }
                 .padding(.horizontal)
-                .padding(.top, 8)
+                .padding(.top, tracker.isLandscape ? 4 : 8)
                 
-                // Sensor Mode Segmented Pill
-                Picker("Sensor", selection: $activeSensor) {
-                    ForEach(SensorMode.allCases) { mode in
-                        HStack {
-                            Image(systemName: mode.icon)
-                            Text(mode.rawValue)
+                // Sensor Mode Segmented Pill (Hidden or compact in landscape to maximize camera)
+                if !tracker.isLandscape {
+                    Picker("Sensor", selection: $activeSensor) {
+                        ForEach(SensorMode.allCases) { mode in
+                            HStack {
+                                Image(systemName: mode.icon)
+                                Text(mode.rawValue)
+                            }
+                            .tag(mode)
                         }
-                        .tag(mode)
                     }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding(.horizontal)
-                .onChange(of: activeSensor) { newMode in
-                    tracker.switchSensor(newMode == .trueDepth ? .frontTrueDepth : .backLiDAR)
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                    .onChange(of: activeSensor) { newMode in
+                        tracker.switchSensor(newMode == .trueDepth ? .frontTrueDepth : .backLiDAR)
+                    }
                 }
 
                 // Spatial Viewport / Camera & Hologram Display
@@ -106,11 +119,11 @@ struct ContentView: View {
                         )
                         .shadow(color: Color.cyan.opacity(0.2), radius: 16, x: 0, y: 8)
                     
-                    // Video & Skeleton Rendering
-                    CameraPreviewView(session: tracker.captureSession)
+                    // Video & Dual-Hand Skeleton Rendering
+                    CameraPreviewView(session: tracker.captureSession, currentOrientation: tracker.currentVideoOrientation)
                         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                     
-                    SkeletonOverlayView(landmarks: tracker.currentLandmarks)
+                    SkeletonOverlayView(allHands: tracker.allHandLandmarks)
                         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                     
                     // Reticle Corner Accents
@@ -151,10 +164,10 @@ struct ContentView: View {
                             HStack(spacing: 6) {
                                 Image(systemName: "hand.raised.fill")
                                     .font(.system(size: 11))
-                                    .foregroundColor(.green)
-                                Text(tracker.isHandDetected ? "21 JOINTS" : "SEARCHING...")
+                                    .foregroundColor(tracker.allHandLandmarks.count >= 2 ? .cyan : (tracker.isHandDetected ? .green : .gray))
+                                Text(tracker.allHandLandmarks.count >= 2 ? "2 HANDS (42 JOINTS)" : (tracker.isHandDetected ? "1 HAND (21 JOINTS)" : "SEARCHING..."))
                                     .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                    .foregroundColor(tracker.isHandDetected ? .green : .gray)
+                                    .foregroundColor(tracker.allHandLandmarks.count >= 2 ? .cyan : (tracker.isHandDetected ? .green : .gray))
                             }
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
@@ -164,14 +177,14 @@ struct ContentView: View {
                         .padding(16)
                     }
                 }
-                .aspectRatio(3.0 / 4.0, contentMode: .fit)
+                .aspectRatio(tracker.isLandscape ? (4.0 / 3.0) : (3.0 / 4.0), contentMode: .fit)
                 .padding(.horizontal)
 
-                // Live Metrics Bar (FPS, Ping, Device)
+                // Live Metrics Bar (FPS, Ping, Packets)
                 HStack(spacing: 12) {
                     MetricCard(title: "RATE", value: "\(Int(tracker.actualFPS)) FPS", color: .green)
                     MetricCard(title: "PING", value: "\(String(format: "%.1f", broadcaster.pingMs)) ms", color: .cyan)
-                    MetricCard(title: "PACKETS", value: "\(broadcaster.packetsSent)", color: .purple)
+                    MetricCard(title: "HANDS", value: "\(tracker.allHandLandmarks.count)", color: .purple)
                 }
                 .padding(.horizontal)
                 
@@ -191,7 +204,7 @@ struct ContentView: View {
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
+                    .padding(.vertical, tracker.isLandscape ? 10 : 14)
                     .background(
                         broadcaster.isStreaming
                             ? LinearGradient(colors: [Color.red, Color.orange], startPoint: .leading, endPoint: .trailing)
@@ -201,7 +214,7 @@ struct ContentView: View {
                     .shadow(color: (broadcaster.isStreaming ? Color.red : Color.cyan).opacity(0.4), radius: 10, y: 4)
                 }
                 .padding(.horizontal)
-                .padding(.bottom, 8)
+                .padding(.bottom, tracker.isLandscape ? 4 : 8)
             }
         }
         .sheet(isPresented: $isSettingsOpen) {
@@ -238,7 +251,7 @@ struct MetricCard: View {
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
         .background(Color.white.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
@@ -318,6 +331,7 @@ struct SettingsSheetView: View {
 // Camera Preview Platform View
 struct CameraPreviewView: UIViewRepresentable {
     let session: AVCaptureSession?
+    let currentOrientation: AVCaptureVideoOrientation
     
     func makeUIView(context: Context) -> UIView {
         let view = UIView(frame: .zero)
@@ -325,7 +339,7 @@ struct CameraPreviewView: UIViewRepresentable {
         let preview = AVCaptureVideoPreviewLayer(session: session)
         preview.videoGravity = .resizeAspectFill
         if preview.connection?.isVideoOrientationSupported == true {
-            preview.connection?.videoOrientation = .portrait
+            preview.connection?.videoOrientation = currentOrientation
         }
         view.layer.addSublayer(preview)
         context.coordinator.previewLayer = preview
@@ -337,7 +351,9 @@ struct CameraPreviewView: UIViewRepresentable {
         CATransaction.setDisableActions(true)
         context.coordinator.previewLayer?.frame = uiView.bounds
         if let conn = context.coordinator.previewLayer?.connection, conn.isVideoOrientationSupported {
-            conn.videoOrientation = .portrait
+            if conn.videoOrientation != currentOrientation {
+                conn.videoOrientation = currentOrientation
+            }
         }
         CATransaction.commit()
     }
@@ -351,68 +367,80 @@ struct CameraPreviewView: UIViewRepresentable {
     }
 }
 
-// Skeleton Overlay View
+// Dual-Hand Skeleton Overlay View
 struct SkeletonOverlayView: View {
-    let landmarks: [CGPoint]
+    let allHands: [[CGPoint]]
+    
+    private let connections: [(Int, Int)] = [
+        // Thumb
+        (0,1), (1,2), (2,3), (3,4),
+        // Index
+        (0,5), (5,6), (6,7), (7,8),
+        // Middle
+        (5,9), (9,10), (10,11), (11,12),
+        // Ring
+        (9,13), (13,14), (14,15), (15,16),
+        // Little
+        (13,17), (17,18), (18,19), (19,20),
+        // Palm closure
+        (0,17)
+    ]
     
     var body: some View {
         Canvas { context, size in
-            guard landmarks.count == 21 else { return }
-            
-            // Anatomical Hand Connections (MediaPipe / Vision Topology)
-            let connections: [(Int, Int)] = [
-                // Thumb: Wrist -> CMC -> MP -> IP -> Tip
-                (0,1), (1,2), (2,3), (3,4),
-                // Index: Wrist -> MCP -> PIP -> DIP -> Tip
-                (0,5), (5,6), (6,7), (7,8),
-                // Middle: Index MCP -> Middle MCP -> PIP -> DIP -> Tip
-                (5,9), (9,10), (10,11), (11,12),
-                // Ring: Middle MCP -> Ring MCP -> PIP -> DIP -> Tip
-                (9,13), (13,14), (14,15), (15,16),
-                // Little: Ring MCP -> Little MCP -> PIP -> DIP -> Tip
-                (13,17), (17,18), (18,19), (19,20),
-                // Palm base closure: Wrist -> Little MCP
-                (0,17)
-            ]
-            
-            // 1. Draw Bones
-            for (p1, p2) in connections {
-                guard p1 < landmarks.count && p2 < landmarks.count else { continue }
-                let pt1 = landmarks[p1]
-                let pt2 = landmarks[p2]
-                guard pt1 != .zero && pt2 != .zero else { continue }
+            for (handIdx, landmarks) in allHands.enumerated() {
+                guard landmarks.count == 21 else { continue }
                 
-                let pos1 = CGPoint(x: pt1.x * size.width, y: pt1.y * size.height)
-                let pos2 = CGPoint(x: pt2.x * size.width, y: pt2.y * size.height)
+                // Hand 0: Electric Cyan & Hot Magenta
+                // Hand 1: Sunset Amber & Toxic Emerald
+                let boneGlowColor: Color = (handIdx == 0)
+                    ? Color(red: 0.54, green: 0.17, blue: 0.89).opacity(0.55)
+                    : Color(red: 0.95, green: 0.40, blue: 0.10).opacity(0.55)
                 
-                var path = Path()
-                path.move(to: pos1)
-                path.addLine(to: pos2)
+                let boneCoreColor: Color = (handIdx == 0)
+                    ? Color(red: 0.0, green: 0.95, blue: 1.0)
+                    : Color(red: 1.0, green: 0.84, blue: 0.0)
                 
-                // Outer cyber glow
-                context.stroke(path, with: .color(Color(red: 0.54, green: 0.17, blue: 0.89).opacity(0.55)), lineWidth: 4.5)
-                // Inner bright neon line
-                context.stroke(path, with: .color(Color(red: 0.0, green: 0.95, blue: 1.0)), lineWidth: 2.2)
-            }
-            
-            // 2. Draw Joints
-            for (idx, pt) in landmarks.enumerated() {
-                guard pt != .zero else { continue }
-                let pos = CGPoint(x: pt.x * size.width, y: pt.y * size.height)
-                let isTip = [4, 8, 12, 16, 20].contains(idx)
-                let isWrist = (idx == 0)
+                let tipColor: Color = (handIdx == 0)
+                    ? Color(red: 1.0, green: 0.15, blue: 0.5)
+                    : Color(red: 0.2, green: 1.0, blue: 0.5)
                 
-                if isTip {
-                    let radius: CGFloat = 6.5
-                    // Fingertip glowing magenta target
-                    context.fill(Path(ellipseIn: CGRect(x: pos.x - radius, y: pos.y - radius, width: radius * 2, height: radius * 2)), with: .color(Color(red: 1.0, green: 0.15, blue: 0.5)))
-                    context.stroke(Path(ellipseIn: CGRect(x: pos.x - radius - 2, y: pos.y - radius - 2, width: (radius + 2) * 2, height: (radius + 2) * 2)), with: .color(.cyan), lineWidth: 1.5)
-                } else if isWrist {
-                    let radius: CGFloat = 5.5
-                    context.fill(Path(ellipseIn: CGRect(x: pos.x - radius, y: pos.y - radius, width: radius * 2, height: radius * 2)), with: .color(.cyan))
-                } else {
-                    let radius: CGFloat = 3.5
-                    context.fill(Path(ellipseIn: CGRect(x: pos.x - radius, y: pos.y - radius, width: radius * 2, height: radius * 2)), with: .color(.white))
+                // 1. Draw Bones
+                for (p1, p2) in connections {
+                    guard p1 < landmarks.count && p2 < landmarks.count else { continue }
+                    let pt1 = landmarks[p1]
+                    let pt2 = landmarks[p2]
+                    guard pt1 != .zero && pt2 != .zero else { continue }
+                    
+                    let pos1 = CGPoint(x: pt1.x * size.width, y: pt1.y * size.height)
+                    let pos2 = CGPoint(x: pt2.x * size.width, y: pt2.y * size.height)
+                    
+                    var path = Path()
+                    path.move(to: pos1)
+                    path.addLine(to: pos2)
+                    
+                    context.stroke(path, with: .color(boneGlowColor), lineWidth: 4.5)
+                    context.stroke(path, with: .color(boneCoreColor), lineWidth: 2.2)
+                }
+                
+                // 2. Draw Joints
+                for (idx, pt) in landmarks.enumerated() {
+                    guard pt != .zero else { continue }
+                    let pos = CGPoint(x: pt.x * size.width, y: pt.y * size.height)
+                    let isTip = [4, 8, 12, 16, 20].contains(idx)
+                    let isWrist = (idx == 0)
+                    
+                    if isTip {
+                        let radius: CGFloat = 6.5
+                        context.fill(Path(ellipseIn: CGRect(x: pos.x - radius, y: pos.y - radius, width: radius * 2, height: radius * 2)), with: .color(tipColor))
+                        context.stroke(Path(ellipseIn: CGRect(x: pos.x - radius - 2, y: pos.y - radius - 2, width: (radius + 2) * 2, height: (radius + 2) * 2)), with: .color(boneCoreColor), lineWidth: 1.5)
+                    } else if isWrist {
+                        let radius: CGFloat = 5.5
+                        context.fill(Path(ellipseIn: CGRect(x: pos.x - radius, y: pos.y - radius, width: radius * 2, height: radius * 2)), with: .color(boneCoreColor))
+                    } else {
+                        let radius: CGFloat = 3.5
+                        context.fill(Path(ellipseIn: CGRect(x: pos.x - radius, y: pos.y - radius, width: radius * 2, height: radius * 2)), with: .color(.white))
+                    }
                 }
             }
         }

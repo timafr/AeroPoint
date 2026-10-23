@@ -4,6 +4,7 @@
 //
 //  Dual-Engine Spatial Tracking: TrueDepth (Face ID IR) & LiDAR (dToF)
 //  Powered by Apple Neural Engine (Vision Framework) at 60 FPS
+//  Supports Dual-Hand Tracking & Auto-Orientation (Portrait & Landscape)
 //
 
 import Foundation
@@ -23,6 +24,9 @@ class SpatialTrackingManager: NSObject, ObservableObject {
     @Published var currentDepthMM: Float = 420.0
     @Published var actualFPS: Double = 60.0
     @Published var currentLandmarks: [CGPoint] = []
+    @Published var allHandLandmarks: [[CGPoint]] = []
+    @Published var isLandscape: Bool = false
+    @Published var currentVideoOrientation: AVCaptureVideoOrientation = .portrait
     
     var captureSession: AVCaptureSession?
     var arSession: ARSession?
@@ -44,6 +48,82 @@ class SpatialTrackingManager: NSObject, ObservableObject {
     override init() {
         super.init()
         handPoseRequest.maximumHandCount = 2
+        
+        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleOrientationDidChange),
+            name: UIDevice.orientationDidChangeNotification,
+            object: nil
+        )
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+        UIDevice.current.endGeneratingDeviceOrientationNotifications()
+    }
+    
+    // MARK: - Device Orientation Management
+    func resolveCaptureOrientation() -> AVCaptureVideoOrientation {
+        let deviceOrientation = UIDevice.current.orientation
+        switch deviceOrientation {
+        case .portrait:
+            return .portrait
+        case .portraitUpsideDown:
+            return .portraitUpsideDown
+        case .landscapeLeft:
+            return .landscapeRight
+        case .landscapeRight:
+            return .landscapeLeft
+        default:
+            if let windowScene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+                switch windowScene.interfaceOrientation {
+                case .portrait:
+                    return .portrait
+                case .portraitUpsideDown:
+                    return .portraitUpsideDown
+                case .landscapeLeft:
+                    return .landscapeLeft
+                case .landscapeRight:
+                    return .landscapeRight
+                default:
+                    return .portrait
+                }
+            }
+            return .portrait
+        }
+    }
+    
+    @objc private func handleOrientationDidChange() {
+        updateConnectionOrientations()
+    }
+    
+    func updateConnectionOrientations() {
+        let orientation = resolveCaptureOrientation()
+        let landscapeActive = (orientation == .landscapeLeft || orientation == .landscapeRight)
+        
+        DispatchQueue.main.async {
+            self.currentVideoOrientation = orientation
+            self.isLandscape = landscapeActive
+        }
+        
+        if let vConn = videoDataOutput.connection(with: .video), vConn.isVideoOrientationSupported {
+            if vConn.videoOrientation != orientation {
+                vConn.videoOrientation = orientation
+            }
+            if vConn.isVideoMirroringSupported {
+                vConn.isVideoMirrored = (activeSensor == .frontTrueDepth)
+            }
+        }
+        
+        if let dConn = depthDataOutput.connection(with: .depthData), dConn.isVideoOrientationSupported {
+            if dConn.videoOrientation != orientation {
+                dConn.videoOrientation = orientation
+            }
+            if dConn.isVideoMirroringSupported {
+                dConn.isVideoMirrored = (activeSensor == .frontTrueDepth)
+            }
+        }
     }
     
     func startTracking() {
@@ -94,10 +174,6 @@ class SpatialTrackingManager: NSObject, ObservableObject {
             videoDataOutput.setSampleBufferDelegate(self, queue: visionQueue)
             if session.canAddOutput(videoDataOutput) { 
                 session.addOutput(videoDataOutput)
-                if let vConn = videoDataOutput.connection(with: .video) {
-                    if vConn.isVideoOrientationSupported { vConn.videoOrientation = .portrait }
-                    if vConn.isVideoMirroringSupported { vConn.isVideoMirrored = true }
-                }
             }
             
             // Synchronized Depth Output
@@ -105,11 +181,9 @@ class SpatialTrackingManager: NSObject, ObservableObject {
                 session.addOutput(depthDataOutput)
                 depthDataOutput.isFilteringEnabled = true
                 depthDataOutput.setDelegate(self, callbackQueue: visionQueue)
-                if let dConn = depthDataOutput.connection(with: .depthData) {
-                    if dConn.isVideoOrientationSupported { dConn.videoOrientation = .portrait }
-                    if dConn.isVideoMirroringSupported { dConn.isVideoMirrored = true }
-                }
             }
+            
+            updateConnectionOrientations()
             
             session.startRunning()
             self.captureSession = session
@@ -139,8 +213,9 @@ class SpatialTrackingManager: NSObject, ObservableObject {
         self.arSession = ar
     }
     
-    // MARK: - Hand Pose Extraction & Physical Depth Fusion
+    // MARK: - Hand Pose Extraction & Physical Depth Fusion (Dual-Hand 60 FPS)
     private func processHandPose(on pixelBuffer: CVPixelBuffer, depthBuffer: CVPixelBuffer?) {
+        // When video connection has dynamic orientation applied, pixelBuffer is already upright
         let visionOrientation: CGImagePropertyOrientation = (activeSensor == .frontTrueDepth) ? .up : .right
         let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: visionOrientation, options: [:])
         do {
@@ -149,11 +224,13 @@ class SpatialTrackingManager: NSObject, ObservableObject {
                 DispatchQueue.main.async {
                     self.isHandDetected = false
                     self.currentLandmarks = []
+                    self.allHandLandmarks = []
                 }
                 return
             }
             
             var handsPayload: [[String: Any]] = []
+            var allHandsUILandmarks: [[CGPoint]] = []
             
             // Strictly ordered 21 hand joints matching MediaPipe standard topology
             let jointKeys: [VNHumanHandPoseObservation.JointName] = [
@@ -165,9 +242,7 @@ class SpatialTrackingManager: NSObject, ObservableObject {
                 .littleMCP, .littlePIP, .littleDIP, .littleTip
             ]
             
-            var primaryUILandmarks: [CGPoint] = []
-            
-            for (obsIdx, obs) in observations.enumerated() {
+            for obs in observations {
                 let recognizedPoints = try obs.recognizedPoints(.all)
                 var rawPointsNorm: [[Float]] = []
                 var currentHandUILandmarks: [CGPoint] = []
@@ -197,9 +272,7 @@ class SpatialTrackingManager: NSObject, ObservableObject {
                     }
                 }
                 
-                if obsIdx == 0 {
-                    primaryUILandmarks = currentHandUILandmarks
-                }
+                allHandsUILandmarks.append(currentHandUILandmarks)
                 
                 if !samplesZ.isEmpty {
                     avgZ = samplesZ.reduce(0, +) / Float(samplesZ.count)
@@ -221,19 +294,21 @@ class SpatialTrackingManager: NSObject, ObservableObject {
             let instantFPS = dt > 0 ? (1.0 / dt) : 60.0
             
             DispatchQueue.main.async {
-                self.isHandDetected = true
+                self.isHandDetected = !allHandsUILandmarks.isEmpty
                 self.currentDepthMM = handsPayload.first?["depth_avg_mm"] as? Float ?? 420.0
                 self.actualFPS = 0.9 * self.actualFPS + 0.1 * instantFPS
-                self.currentLandmarks = primaryUILandmarks
+                self.currentLandmarks = allHandsUILandmarks.first ?? []
+                self.allHandLandmarks = allHandsUILandmarks
             }
             
-            // Build network packet
+            // Build network packet with all tracked hands
             let packet: [String: Any] = [
                 "device": UIDevice.current.name,
                 "sensor": (activeSensor == .frontTrueDepth) ? "TrueDepth (Face ID)" : "LiDAR (Back Pro)",
                 "fps": round(instantFPS * 10) / 10,
                 "battery": Int(UIDevice.current.batteryLevel * 100),
                 "timestamp": now,
+                "is_landscape": self.isLandscape,
                 "hands": handsPayload
             ]
             
@@ -250,22 +325,40 @@ class SpatialTrackingManager: NSObject, ObservableObject {
         
         let width = CVPixelBufferGetWidth(depthBuffer)
         let height = CVPixelBufferGetHeight(depthBuffer)
-        let x = max(0, min(width - 1, Int(point.x * CGFloat(width))))
-        let y = max(0, min(height - 1, Int((1.0 - point.y) * CGFloat(height))))
+        let cx = max(0, min(width - 1, Int(point.x * CGFloat(width))))
+        let cy = max(0, min(height - 1, Int((1.0 - point.y) * CGFloat(height))))
         
         guard let base = CVPixelBufferGetBaseAddress(depthBuffer) else { return 0.42 }
         let format = CVPixelBufferGetPixelFormatType(depthBuffer)
+        let rowBytes = CVPixelBufferGetBytesPerRow(depthBuffer)
         
-        if format == kCVPixelFormatType_DepthFloat32 || format == kCVPixelFormatType_DisparityFloat32 {
-            let rowBytes = CVPixelBufferGetBytesPerRow(depthBuffer)
+        // 3x3 median depth kernel to filter specular reflections and IR edge noise
+        var validDepths: [Float] = []
+        for dy in -1...1 {
+            let y = cy + dy
+            guard y >= 0 && y < height else { continue }
             let row = base.advanced(by: y * rowBytes)
-            let val = row.assumingMemoryBound(to: Float32.self)[x]
-            return val.isFinite ? val : 0.42
-        } else if format == kCVPixelFormatType_DepthFloat16 {
-            let rowBytes = CVPixelBufferGetBytesPerRow(depthBuffer)
-            let row = base.advanced(by: y * rowBytes)
-            let val = Float(row.assumingMemoryBound(to: Float16.self)[x])
-            return val.isFinite ? val : 0.42
+            
+            for dx in -1...1 {
+                let x = cx + dx
+                guard x >= 0 && x < width else { continue }
+                
+                var depthVal: Float = 0.0
+                if format == kCVPixelFormatType_DepthFloat32 || format == kCVPixelFormatType_DisparityFloat32 {
+                    depthVal = row.assumingMemoryBound(to: Float32.self)[x]
+                } else if format == kCVPixelFormatType_DepthFloat16 {
+                    depthVal = Float(row.assumingMemoryBound(to: Float16.self)[x])
+                }
+                
+                if depthVal.isFinite && depthVal > 0.05 && depthVal < 4.0 {
+                    validDepths.append(depthVal)
+                }
+            }
+        }
+        
+        if !validDepths.isEmpty {
+            validDepths.sort()
+            return validDepths[validDepths.count / 2]
         }
         return 0.42
     }

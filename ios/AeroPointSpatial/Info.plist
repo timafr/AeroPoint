@@ -6,12 +6,16 @@
     <string>com.aeropoint.spatial</string>
     <key>CFBundleName</key>
     <string>AeroPoint Spatial</string>
+    <key>CFBundleDisplayName</key>
+    <string>AeroPoint</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
     <key>NSCameraUsageDescription</key>
     <string>Необходимо для считывания 3D-глубины LiDAR и TrueDepth (Face ID) и отслеживания жестов рук в реальном времени.</string>
     <key>NSLocalNetworkUsageDescription</key>
@@ -21,6 +25,8 @@
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
 </dict>
 </plist>

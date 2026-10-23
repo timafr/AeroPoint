@@ -18,10 +18,17 @@ targets:
         CFBundleIdentifier: com.aeropoint.spatial
         CFBundleShortVersionString: "1.0.0"
         CFBundleVersion: "1"
+        CFBundleIconName: AppIcon
         NSCameraUsageDescription: "AeroPoint uses camera for LiDAR and TrueDepth spatial hand tracking"
+        NSLocalNetworkUsageDescription: "Direct low-latency spatial tracking bridge over Wi-Fi/USB"
         UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.aeropoint.spatial
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       DEVELOPMENT_TEAM: ""
       CODE_SIGNING_ALLOWED: NO
       CODE_SIGN_IDENTITY: ""
