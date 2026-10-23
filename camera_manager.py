@@ -24,7 +24,7 @@ from config import GestureConfig
 from mouse_controller import MouseController
 from hand_tracker import HandTracker, HandData, WRIST, THUMB_TIP, INDEX_TIP, MIDDLE_TIP, RING_TIP, PINKY_TIP
 from gestures import GestureRecognizer, GestureType
-from filters import AeroPrecisionEngine
+from filters import AeroPrecisionEngine, InertialScrollEngine
 from hud import CyberHUD
 from spatial_receiver import SpatialReceiver
 
@@ -48,6 +48,7 @@ class CameraManager:
         self.config = config or GestureConfig()
         self.mouse = MouseController(enable_sound=self.config.enable_sound_feedback)
         self.screen_size = (self.mouse.screen_width, self.mouse.screen_height)
+        self.screen_origin = (self.mouse.x_origin, self.mouse.y_origin)
 
         # High-precision AeroPoint cursor engine
         self.precision_engine = AeroPrecisionEngine(
@@ -57,10 +58,11 @@ class CameraManager:
             enable_acceleration=True,
             enable_click_anchor=True
         )
+        self.scroll_engine = InertialScrollEngine()
 
         # Hand tracking & recognition
         self.tracker = HandTracker(self.config)
-        self.recognizer = GestureRecognizer(self.config, self.screen_size)
+        self.recognizer = GestureRecognizer(self.config, self.screen_size, self.screen_origin)
         self.hud = CyberHUD(self.config)
 
         # State flags
@@ -380,40 +382,53 @@ class CameraManager:
                     ripple_hand = action_hand if (action_hand and events.get("action_gesture") in (GestureType.THUMB_CLICK.value, GestureType.PINCH_CLICK.value)) else pointer_hand
 
                     if events.get("trigger_double_click"):
+                        self.scroll_engine.brake()
                         self.precision_engine.lock_cursor(duration=0.25)
                         self.mouse.double_click("left")
                         click_pt = ripple_hand.landmarks_px[THUMB_TIP] if effective_gesture == GestureType.THUMB_CLICK else ripple_hand.landmarks_px[INDEX_TIP]
                         self.hud.trigger_click_ripple(click_pt, is_right=False)
                     elif events.get("trigger_left_click"):
+                        self.scroll_engine.brake()
                         self.precision_engine.lock_cursor(duration=0.25)
                         self.mouse.click("left")
                         click_pt = ripple_hand.landmarks_px[THUMB_TIP] if effective_gesture == GestureType.THUMB_CLICK else ripple_hand.landmarks_px[INDEX_TIP]
                         self.hud.trigger_click_ripple(click_pt, is_right=False)
 
                     if events.get("trigger_right_click"):
+                        self.scroll_engine.brake()
                         self.mouse.click("right")
                         self.hud.trigger_click_ripple(ripple_hand.landmarks_px[MIDDLE_TIP], is_right=True)
 
                     if events.get("trigger_middle_click"):
+                        self.scroll_engine.brake()
                         self.mouse.click("middle")
                         self.hud.trigger_click_ripple(ripple_hand.landmarks_px[RING_TIP], is_right=False)
 
                     if events.get("trigger_task_switch"):
+                        self.scroll_engine.brake()
                         self.mouse.task_view()
                         self.hud.trigger_click_ripple(ripple_hand.landmarks_px[PINKY_TIP], is_right=True)
 
                     if events.get("trigger_alt_tab"):
+                        self.scroll_engine.brake()
                         self.mouse.alt_tab()
                         self.hud.trigger_click_ripple(ripple_hand.landmarks_px[INDEX_TIP], is_right=True)
 
                     if events.get("trigger_show_desktop"):
+                        self.scroll_engine.brake()
                         self.mouse.show_desktop()
                         self.hud.trigger_click_ripple(ripple_hand.landmarks_px[PINKY_TIP], is_right=False)
 
                 scroll_delta = events.get("scroll_delta", 0)
                 if scroll_delta != 0:
                     self.mouse.scroll(scroll_delta)
+                    self.scroll_engine.push(scroll_delta)
+                else:
+                    inertial_delta = self.scroll_engine.tick()
+                    if inertial_delta != 0:
+                        self.mouse.scroll(inertial_delta)
             else:
+                self.scroll_engine.brake()
                 if self.mouse.is_dragging:
                     self.mouse.mouse_up("left")
                 if hand_was_present:

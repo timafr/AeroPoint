@@ -74,10 +74,11 @@ def calc_joint_angle(
 
 
 class GestureRecognizer:
-    """Classifies hand poses and tracks gesture state transitions with hysteresis."""
-    def __init__(self, config: GestureConfig, screen_size: Tuple[int, int]):
+    """Classifies hand poses and tracks gesture state transitions with hysteresis & multi-monitor awareness."""
+    def __init__(self, config: GestureConfig, screen_size: Tuple[int, int], screen_origin: Tuple[int, int] = (0, 0)):
         self.config = config
         self.screen_width, self.screen_height = screen_size
+        self.x_origin, self.y_origin = screen_origin
 
         # State tracking
         self.current_gesture = GestureType.NONE
@@ -187,8 +188,8 @@ class GestureRecognizer:
         norm_x = max(0.0, min(1.0, norm_x))
         norm_y = max(0.0, min(1.0, norm_y))
 
-        screen_x = norm_x * self.screen_width
-        screen_y = norm_y * self.screen_height
+        screen_x = self.x_origin + norm_x * self.screen_width
+        screen_y = self.y_origin + norm_y * self.screen_height
 
         return screen_x, screen_y
 

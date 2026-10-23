@@ -233,11 +233,12 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
     def toggle_spatial_mirror():
         try:
             data = bottle.request.json or {}
-            if "mirror" in data:
-                manager.spatial_receiver.force_mirror_x = bool(data["mirror"])
+            if "mirror" in data or "force_mirror" in data:
+                val = data.get("mirror") if "mirror" in data else data.get("force_mirror")
+                manager.spatial_receiver.force_mirror_x = bool(val)
             else:
                 cur = manager.spatial_receiver.force_mirror_x
-                manager.spatial_receiver.force_mirror_x = not cur if cur is not None else False
+                manager.spatial_receiver.force_mirror_x = not cur if cur is not None else True
             return {"status": "ok", "mirror_x": manager.spatial_receiver.force_mirror_x}
         except Exception as e:
             bottle.response.status = 400
@@ -263,10 +264,17 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
     @app.route('/api/lan_info', method='GET')
     def lan_info():
         ip = get_primary_lan_ip()
+        host_header = bottle.request.get_header('Host', '')
+        port = 5055
+        if ':' in host_header:
+            try:
+                port = int(host_header.split(':')[-1])
+            except Exception:
+                port = 5055
         return {
             "ip": ip,
-            "port": 5000,
-            "mobile_url": f"http://{ip}:5000/mobile"
+            "port": port,
+            "mobile_url": f"http://{ip}:{port}/mobile"
         }
 
     @app.route('/api/spatial_feed', method=['POST', 'OPTIONS'])

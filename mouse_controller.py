@@ -62,27 +62,32 @@ else:
 
 
 class MouseController:
-    """Ultra-low latency mouse manipulator with true DPI-aware coordinates."""
+    """Ultra-low latency mouse manipulator with true DPI-aware coordinates & multi-monitor support."""
     def __init__(self, enable_sound: bool = True):
         self.enable_sound = enable_sound
         self.is_dragging = False
-        self.screen_width, self.screen_height = self.get_screen_size()
-        self.last_pos = (self.screen_width // 2, self.screen_height // 2)
+        self.x_origin, self.y_origin, self.screen_width, self.screen_height = self.get_virtual_desktop_bounds()
+        self.last_pos = (self.x_origin + self.screen_width // 2, self.y_origin + self.screen_height // 2)
 
-    def get_screen_size(self) -> Tuple[int, int]:
-        """Returns (width, height) of display space."""
+    def get_virtual_desktop_bounds(self) -> Tuple[int, int, int, int]:
+        """Returns (x_origin, y_origin, width, height) of full multi-monitor virtual desktop."""
         if IS_WINDOWS:
-            # Check virtual screen size for multi-monitor setups
+            x_min = user32.GetSystemMetrics(76)  # SM_XVIRTUALSCREEN
+            y_min = user32.GetSystemMetrics(77)  # SM_YVIRTUALSCREEN
             w_virt = user32.GetSystemMetrics(78)  # SM_CXVIRTUALSCREEN
             h_virt = user32.GetSystemMetrics(79)  # SM_CYVIRTUALSCREEN
             if w_virt > 0 and h_virt > 0:
-                return w_virt, h_virt
+                return x_min, y_min, w_virt, h_virt
             w = user32.GetSystemMetrics(0)  # SM_CXSCREEN
             h = user32.GetSystemMetrics(1)  # SM_CYSCREEN
-            return max(1, w), max(1, h)
+            return 0, 0, max(1, w), max(1, h)
         else:
             w, h = pyautogui.size()
-            return w, h
+            return 0, 0, w, h
+
+    def get_screen_size(self) -> Tuple[int, int]:
+        """Returns (width, height) of display space."""
+        return self.screen_width, self.screen_height
 
     def get_cursor_pos(self) -> Tuple[int, int]:
         """Returns current mouse coordinates."""
@@ -95,9 +100,9 @@ class MouseController:
             return pos.x, pos.y
 
     def move_to(self, x: float, y: float):
-        """Moves cursor directly to (x, y) with clamping across entire monitor width."""
-        target_x = max(0, min(self.screen_width - 1, int(round(x))))
-        target_y = max(0, min(self.screen_height - 1, int(round(y))))
+        """Moves cursor directly to (x, y) with clamping across entire multi-monitor bounds."""
+        target_x = max(self.x_origin, min(self.x_origin + self.screen_width - 1, int(round(x))))
+        target_y = max(self.y_origin, min(self.y_origin + self.screen_height - 1, int(round(y))))
         self.last_pos = (target_x, target_y)
 
         if IS_WINDOWS:

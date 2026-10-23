@@ -318,6 +318,50 @@ class DeadzoneFilter:
         return self.locked_x, self.locked_y
 
 
+class InertialScrollEngine:
+    """
+    Kinetic momentum scroll engine (like iOS / macOS trackpad).
+    When user scrolls and releases, momentum smoothly decays over 300-600ms.
+    """
+    def __init__(self, friction: float = 0.88, min_velocity: float = 0.20):
+        self.friction = friction
+        self.min_velocity = min_velocity
+        self.velocity = 0.0
+        self.last_update = time.time()
+        self.is_active = False
+
+    def push(self, delta: float):
+        """Called on active scroll frame to update momentum."""
+        now = time.time()
+        self.last_update = now
+        self.velocity = self.velocity * 0.35 + delta * 0.65
+        self.is_active = True
+
+    def brake(self):
+        """Immediately stop inertial glide when hands disengage or click."""
+        self.velocity = 0.0
+        self.is_active = False
+
+    def tick(self) -> int:
+        """Called periodically when not actively scrolling to get inertial delta."""
+        if not self.is_active or abs(self.velocity) < self.min_velocity:
+            self.velocity = 0.0
+            self.is_active = False
+            return 0
+
+        now = time.time()
+        dt = max(0.001, min(0.1, now - self.last_update))
+        self.last_update = now
+
+        # Apply exponential decay
+        self.velocity *= math.pow(self.friction, dt * 60.0)
+        out = int(round(self.velocity))
+        if out == 0 and abs(self.velocity) >= self.min_velocity:
+            out = 1 if self.velocity > 0 else -1
+            self.velocity = 0.0
+        return out
+
+
 # Backward compatibility alias
 ApplePrecisionEngine = AeroPrecisionEngine
 
