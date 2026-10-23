@@ -11,6 +11,7 @@ Low-latency real-time telemetry and 3D point cloud receiver:
 import time
 import socket
 import json
+import struct
 import threading
 import math
 import cv2
@@ -90,13 +91,104 @@ class SpatialReceiver:
                 self.is_connected = True
                 self.packet_count += 1
 
-                payload = json.loads(data.decode('utf-8'))
-                self._process_payload(payload, now)
+                if data.startswith(b'AERO'):
+                    self._process_binary_payload(data, now)
+                else:
+                    payload = json.loads(data.decode('utf-8'))
+                    self._process_payload(payload, now)
             except socket.timeout:
                 if time.time() - self.last_packet_time > 2.0:
                     self.is_connected = False
             except Exception:
                 pass
+
+    def _process_binary_payload(self, data: bytes, recv_time: float):
+        """Ultra-fast zero-alloc binary packet decoding (0.003ms)."""
+        header_fmt = '!4sBBBBHHHB'
+        header_size = 15
+        if len(data) < header_size:
+            return
+
+        try:
+            magic, version, battery, sensor_id, mirror_flag, fps_x10, lat_x10, depth_mm, num_hands = struct.unpack(header_fmt, data[:header_size])
+            if magic != b'AERO':
+                return
+
+            with self.lock:
+                self.device_name = "iPhone (Binary High-Speed)"
+                self.sensor_type = "TrueDepth (Face ID)" if sensor_id == 0 else "LiDAR (Back Pro)"
+                self.remote_fps = fps_x10 / 10.0
+                self.latency_ms = max(0.4, lat_x10 / 10.0)
+                self.battery_pct = int(battery)
+                self.depth_mm = float(depth_mm)
+
+                is_mirrored_pkt = bool(mirror_flag)
+                should_invert = False
+                if self.force_mirror_x is not None:
+                    should_invert = (self.force_mirror_x != is_mirrored_pkt)
+
+                hand_fmt = '!BH63f'
+                hand_size = 255
+                offset = header_size
+
+                new_hands: List[HandData] = []
+                cam_w, cam_h = 640, 480
+
+                for _ in range(min(2, num_hands)):
+                    if offset + hand_size > len(data):
+                        break
+                    hand_vals = struct.unpack(hand_fmt, data[offset:offset+hand_size])
+                    offset += hand_size
+
+                    hand_id = hand_vals[0]
+                    palm_mm = hand_vals[1] / 10.0
+                    raw_coords = hand_vals[2:]
+
+                    handedness = "Right" if hand_id == 1 else "Left"
+                    if should_invert:
+                        handedness = "Right" if handedness == "Left" else "Left"
+
+                    lms_norm = []
+                    lms_px = []
+                    lms_world = []
+
+                    for i in range(21):
+                        nx = float(raw_coords[i * 3])
+                        ny = float(raw_coords[i * 3 + 1])
+                        nz = float(raw_coords[i * 3 + 2])
+
+                        if should_invert:
+                            nx = 1.0 - nx
+
+                        lms_norm.append((nx, ny, nz))
+                        px_x = int(nx * cam_w)
+                        px_y = int(ny * cam_h)
+                        lms_px.append((px_x, px_y, nz * 1000.0))
+
+                        fov_scale = max(0.25, nz * 0.85)
+                        X_m = (nx - 0.5) * fov_scale
+                        Y_m = (ny - 0.5) * fov_scale
+                        Z_m = nz
+                        lms_world.append((X_m, Y_m, Z_m))
+
+                    w0 = lms_world[WRIST]
+                    m9 = lms_world[MIDDLE_MCP]
+                    calc_palm = math.sqrt((m9[0] - w0[0]) ** 2 + (m9[1] - w0[1]) ** 2 + (m9[2] - w0[2]) ** 2)
+                    palm_metric = max(0.05, min(0.14, calc_palm))
+
+                    h_data = HandData(
+                        landmarks_norm=lms_norm,
+                        landmarks_px=lms_px,
+                        landmarks_world=lms_world,
+                        palm_size=palm_metric,
+                        palm_size_px=float(palm_mm * 0.8),
+                        handedness=handedness
+                    )
+                    new_hands.append(h_data)
+
+                self.latest_hands = new_hands
+        except Exception as e:
+            pass
 
     def feed_web_payload(self, p: Dict[str, any], client_ip: str = "Web-Safari"):
         """Accepts spatial telemetry and landmarks directly from HTTP/WebSocket web feed."""

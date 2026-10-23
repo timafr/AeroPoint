@@ -1071,4 +1071,104 @@ document.addEventListener('DOMContentLoaded', () => {
     render3D();
   }
 
+  // =========================================================================
+  // 13. Air-Draw Spatial Canvas & Drawing Studio
+  // =========================================================================
+  const btnVpDraw = document.getElementById('btn-vp-draw');
+  const airDrawCanvas = document.getElementById('air-draw-canvas');
+  const airDrawToolbar = document.getElementById('air-draw-toolbar');
+  let isAirDrawActive = false;
+  let currentColor = '#00f2fe';
+  let isPainting = false;
+  let lastPaintPos = null;
+
+  btnVpDraw?.addEventListener('click', () => {
+    isAirDrawActive = true;
+    is3DModeActive = false;
+    btnVpDraw.classList.add('active');
+    btnVpVideo?.classList.remove('active');
+    btnVp3d?.classList.remove('active');
+    streamImg.style.display = 'block';
+    if (hologramCanvas) hologramCanvas.style.display = 'none';
+    if (airDrawCanvas) {
+      airDrawCanvas.style.display = 'block';
+      airDrawCanvas.width = airDrawCanvas.clientWidth || 640;
+      airDrawCanvas.height = airDrawCanvas.clientHeight || 480;
+    }
+    if (airDrawToolbar) airDrawToolbar.style.display = 'flex';
+    soundSynth.playChord();
+  });
+
+  // When switching away to 2D or 3D, hide air draw
+  btnVpVideo?.addEventListener('click', () => {
+    isAirDrawActive = false;
+    btnVpDraw?.classList.remove('active');
+    if (airDrawCanvas) airDrawCanvas.style.display = 'none';
+    if (airDrawToolbar) airDrawToolbar.style.display = 'none';
+  });
+
+  btnVp3d?.addEventListener('click', () => {
+    isAirDrawActive = false;
+    btnVpDraw?.classList.remove('active');
+    if (airDrawCanvas) airDrawCanvas.style.display = 'none';
+    if (airDrawToolbar) airDrawToolbar.style.display = 'none';
+  });
+
+  // Color picker
+  document.querySelectorAll('.color-btn').forEach(cBtn => {
+    cBtn.addEventListener('click', () => {
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      cBtn.classList.add('active');
+      currentColor = cBtn.getAttribute('data-color') || '#00f2fe';
+      soundSynth.playClick();
+    });
+  });
+
+  // Clear Canvas
+  document.getElementById('btn-draw-clear')?.addEventListener('click', () => {
+    if (airDrawCanvas) {
+      const dCtx = airDrawCanvas.getContext('2d');
+      dCtx.clearRect(0, 0, airDrawCanvas.width, airDrawCanvas.height);
+      soundSynth.playPinch();
+    }
+  });
+
+  // Export Screenshot
+  document.getElementById('btn-draw-save')?.addEventListener('click', () => {
+    if (airDrawCanvas) {
+      const link = document.createElement('a');
+      link.download = `aeropoint_airdraw_${Date.now()}.png`;
+      link.href = airDrawCanvas.toDataURL('image/png');
+      link.click();
+      soundSynth.playChord();
+    }
+  });
+
+  // Canvas drawing events
+  if (airDrawCanvas) {
+    const dCtx = airDrawCanvas.getContext('2d');
+    airDrawCanvas.addEventListener('mousedown', (e) => {
+      isPainting = true;
+      lastPaintPos = { x: e.offsetX, y: e.offsetY };
+    });
+    airDrawCanvas.addEventListener('mousemove', (e) => {
+      if (!isPainting || !lastPaintPos) return;
+      dCtx.strokeStyle = currentColor;
+      dCtx.shadowColor = currentColor;
+      dCtx.shadowBlur = 12;
+      dCtx.lineWidth = 4;
+      dCtx.lineCap = 'round';
+      dCtx.lineJoin = 'round';
+      dCtx.beginPath();
+      dCtx.moveTo(lastPaintPos.x, lastPaintPos.y);
+      dCtx.lineTo(e.offsetX, e.offsetY);
+      dCtx.stroke();
+      lastPaintPos = { x: e.offsetX, y: e.offsetY };
+    });
+    window.addEventListener('mouseup', () => {
+      isPainting = false;
+      lastPaintPos = null;
+    });
+  }
+
 });

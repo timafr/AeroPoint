@@ -187,10 +187,11 @@
                 <div class="viewport-mode-pill">
                   <button class="vp-btn active" id="btn-vp-video" title="Обычное видео">📺 2D</button>
                   <button class="vp-btn" id="btn-vp-3d" title="3D Пространственная Голограмма">🌐 3D</button>
+                  <button class="vp-btn" id="btn-vp-draw" title="Рисование в воздухе (Air-Draw)">✏️ Арт</button>
                 </div>
               </div>
 
-              <!-- Live Video Stream & 3D WebGL Hologram -->
+              <!-- Live Video Stream & 3D WebGL Hologram & Air-Draw Canvas -->
               <div class="video-container">
                 <div id="camera-loading-overlay" class="camera-loading-overlay">
                   <div class="quantum-spinner"></div>
@@ -198,6 +199,22 @@
                 </div>
                 <img id="video-stream" src="/video_feed" alt="Video Stream" />
                 <canvas id="hologram-3d-canvas" class="hologram-3d-canvas" style="display: none;"></canvas>
+                <canvas id="air-draw-canvas" class="air-draw-canvas" style="display: none;"></canvas>
+              </div>
+
+              <!-- Air-Draw Floating Toolbar -->
+              <div class="air-draw-toolbar" id="air-draw-toolbar" style="display: none;">
+                <div class="color-picker-row">
+                  <button class="color-btn active" style="background: #00f2fe;" data-color="#00f2fe" title="Неоновый Циан"></button>
+                  <button class="color-btn" style="background: #8a2be2;" data-color="#8a2be2" title="Электрик Фиолетовый"></button>
+                  <button class="color-btn" style="background: #00e676;" data-color="#00e676" title="Лазерный Изумруд"></button>
+                  <button class="color-btn" style="background: #ff007f;" data-color="#ff007f" title="Неоновый Розовый"></button>
+                  <button class="color-btn" style="background: #ffd700;" data-color="#ffd700" title="Золотой"></button>
+                </div>
+                <div class="draw-tools-row">
+                  <button class="dt-btn" id="btn-draw-clear" title="Очистить холст">🧹 Стереть</button>
+                  <button class="dt-btn" id="btn-draw-save" title="Сохранить снимок">📸 Экспорт</button>
+                </div>
               </div>
 
               <!-- Bottom Gesture Feedback & Kinetic Gauge Banner -->

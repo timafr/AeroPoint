@@ -27,6 +27,7 @@ from gestures import GestureRecognizer, GestureType
 from filters import AeroPrecisionEngine, InertialScrollEngine
 from hud import CyberHUD
 from spatial_receiver import SpatialReceiver
+from hotkeys import GlobalHotkeyService
 
 
 def get_system_camera_names() -> List[str]:
@@ -64,6 +65,7 @@ class CameraManager:
         self.tracker = HandTracker(self.config)
         self.recognizer = GestureRecognizer(self.config, self.screen_size, self.screen_origin)
         self.hud = CyberHUD(self.config)
+        self.hotkeys = GlobalHotkeyService(self)
 
         # State flags
         self.control_enabled = True       # When False: preview only
@@ -220,12 +222,14 @@ class CameraManager:
         if self.running:
             return
         self.running = True
+        self.hotkeys.start()
         self.worker_thread = threading.Thread(target=self._capture_loop, daemon=True)
         self.worker_thread.start()
 
     def stop(self):
         """Stops background loop and releases devices."""
         self.running = False
+        self.hotkeys.stop()
         if self.worker_thread:
             self.worker_thread.join(timeout=2.0)
         with self.lock:
