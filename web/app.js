@@ -485,6 +485,78 @@ document.addEventListener('DOMContentLoaded', () => {
       const cardEl = document.getElementById(info.id);
       if (cardEl) cardEl.classList.add('active-pose');
     }
+
+    // Process coach training
+    processCoachGesture(cleanName);
+  }
+
+  // Interactive Gesture Coach Steps
+  const coachSteps = [
+    { name: '1. Наведение (☝️)', hint: 'Вытяните указательный палец в сторону камеры, согнув остальные пальцы.', test: (g) => g.includes('HOVER') },
+    { name: '2. Левый клик (🤏 / 👍)', hint: 'Сожмите большой и указательный пальцы (или согните большой палец).', test: (g) => g.includes('PINCH') || g.includes('THUMB') || g.includes('AIR_TAP') },
+    { name: '3. Зажатие / Перетаскивание (✊)', hint: 'Сожмите кулак или удерживайте щипок дольше 0.22 сек.', test: (g) => g.includes('DRAG') },
+    { name: '4. Правый клик (👌)', hint: 'Сомкните кончики большого и среднего пальцев.', test: (g) => g.includes('RIGHT') },
+    { name: '5. Прокрутка вверх/вниз (✌️)', hint: 'Поднимите указательный и средний пальцы вместе вверх («знак V»).', test: (g) => g.includes('SCROLL') },
+    { name: 'Защитная пауза (🖐️)', hint: 'Полностью раскройте ладонь (5 пальцев), чтобы зафиксировать курсор.', test: (g) => g.includes('PAUSE') }
+  ];
+
+  let currentCoachIdx = 0;
+  let coachHoldFrames = 0;
+  const coachTargetName = document.getElementById('coach-target-name');
+  const coachHint = document.getElementById('coach-hint');
+  const coachMatchPct = document.getElementById('coach-match-pct');
+  const coachStatusText = document.getElementById('coach-status-text');
+  const btnCoachNext = document.getElementById('btn-coach-next');
+
+  function updateCoachUI() {
+    const step = coachSteps[currentCoachIdx];
+    if (coachTargetName) coachTargetName.textContent = `Попробуйте жест: ${step.name}`;
+    if (coachHint) coachHint.textContent = step.hint;
+    if (coachMatchPct) {
+      coachMatchPct.textContent = '0%';
+      coachMatchPct.parentElement.classList.remove('success');
+    }
+    if (coachStatusText) coachStatusText.textContent = 'Ожидание жеста...';
+    coachHoldFrames = 0;
+  }
+
+  btnCoachNext?.addEventListener('click', () => {
+    currentCoachIdx = (currentCoachIdx + 1) % coachSteps.length;
+    updateCoachUI();
+    soundSynth.playClick();
+  });
+
+  function processCoachGesture(cleanName) {
+    if (!coachTargetName) return;
+    const step = coachSteps[currentCoachIdx];
+    const isMatching = step.test(cleanName);
+
+    if (isMatching) {
+      coachHoldFrames = Math.min(30, coachHoldFrames + 2);
+    } else {
+      coachHoldFrames = Math.max(0, coachHoldFrames - 1);
+    }
+
+    const pct = Math.round((coachHoldFrames / 30) * 100);
+    if (coachMatchPct) {
+      coachMatchPct.textContent = `${pct}%`;
+      if (pct >= 100) {
+        coachMatchPct.parentElement.classList.add('success');
+        if (coachStatusText) coachStatusText.textContent = '✓ Идеально!';
+        if (coachHoldFrames === 30) {
+          soundSynth.playChord();
+          flashActionCapsule('✨', `Жест освоен: ${step.name}`);
+          setTimeout(() => {
+            currentCoachIdx = (currentCoachIdx + 1) % coachSteps.length;
+            updateCoachUI();
+          }, 900);
+        }
+      } else if (pct > 0) {
+        if (coachStatusText) coachStatusText.textContent = 'Удерживайте...';
+      } else {
+        if (coachStatusText) coachStatusText.textContent = 'Ожидание жеста...';
+      }
+    }
   }
 
   // =========================================================================
