@@ -435,5 +435,100 @@ class TestDiagnosticsAPI(unittest.TestCase):
                     cm.stop()
 
 
+class TestSpatialAirCanvas(unittest.TestCase):
+    """Verifies Spatial Air-Canvas Stream Annotator: stroke persistence, rendering, and API control."""
+
+    def test_air_canvas_hud_drawing(self):
+        config = GestureConfig()
+        hud = CyberHUD(config)
+        self.assertEqual(len(hud.air_draw_strokes), 0)
+
+        # 1. Add points to first stroke
+        color_cyan = (254, 242, 0)
+        hud.add_air_draw_point((100, 100), color_cyan)
+        self.assertEqual(len(hud.air_draw_strokes), 1)
+        self.assertEqual(len(hud.air_draw_strokes[0]["points"]), 1)
+
+        # 2. Points too close (<3px) should be filtered out to avoid overdraw
+        hud.add_air_draw_point((101, 101), color_cyan)
+        self.assertEqual(len(hud.air_draw_strokes[0]["points"]), 1)
+
+        # 3. Point sufficiently moved should be recorded
+        hud.add_air_draw_point((115, 120), color_cyan)
+        self.assertEqual(len(hud.air_draw_strokes[0]["points"]), 2)
+
+        # 4. Finish stroke and start another
+        hud.finish_air_draw_stroke()
+        self.assertIsNone(hud.current_air_stroke)
+
+        color_magenta = (255, 0, 255)
+        hud.add_air_draw_point((200, 200), color_magenta)
+        hud.add_air_draw_point((220, 225), color_magenta)
+        self.assertEqual(len(hud.air_draw_strokes), 2)
+
+        # 5. Render onto synthetic frame
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        hud.draw_air_canvas(frame)
+        # Drawn lines must alter the canvas pixels
+        self.assertGreater(int(np.sum(frame)), 0)
+
+        # 6. Clear canvas
+        hud.clear_air_canvas()
+        self.assertEqual(len(hud.air_draw_strokes), 0)
+        self.assertIsNone(hud.current_air_stroke)
+
+    def test_air_canvas_api_endpoints(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    def make_request(path, method='POST', body_dict=None):
+                        body_bytes = json.dumps(body_dict or {}).encode('utf-8')
+                        environ = {
+                            'PATH_INFO': path,
+                            'REQUEST_METHOD': method,
+                            'CONTENT_LENGTH': str(len(body_bytes)),
+                            'CONTENT_TYPE': 'application/json',
+                            'wsgi.input': io.BytesIO(body_bytes),
+                            'wsgi.errors': io.StringIO(),
+                            'SERVER_NAME': 'localhost',
+                            'SERVER_PORT': '5000'
+                        }
+                        status_cap = []
+                        def start_response(status, headers, *args):
+                            status_cap.append(status)
+                        resp = b"".join(app(environ, start_response))
+                        return status_cap[0], json.loads(resp.decode('utf-8'))
+
+                    # Test toggle
+                    status, res = make_request('/api/canvas/toggle', 'POST', {'enabled': True})
+                    self.assertTrue(status.startswith("200"))
+                    self.assertTrue(res['enabled'])
+                    self.assertTrue(cm.config.enable_air_draw_stream)
+
+                    # Test color
+                    status, res = make_request('/api/canvas/color', 'POST', {'color': 'gold'})
+                    self.assertTrue(status.startswith("200"))
+                    self.assertEqual(res['color'], 'gold')
+                    self.assertEqual(cm.config.air_draw_color, 'gold')
+
+                    # Test clear
+                    cm.hud.add_air_draw_point((50, 50), (0, 255, 255))
+                    self.assertEqual(len(cm.hud.air_draw_strokes), 1)
+                    status, res = make_request('/api/canvas/clear', 'POST', {})
+                    self.assertTrue(status.startswith("200"))
+                    self.assertEqual(len(cm.hud.air_draw_strokes), 0)
+
+                    cm.stop()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

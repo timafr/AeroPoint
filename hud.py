@@ -46,6 +46,10 @@ class CyberHUD:
         # Rotary dial visual feedback queue
         self.rotary_feedbacks: List[Dict[str, any]] = []
 
+        # Spatial Air-Canvas Stream Annotator: list of strokes
+        self.air_draw_strokes: List[Dict[str, any]] = []
+        self.current_air_stroke: Optional[Dict[str, any]] = None
+
         # Kinetic velocity tracker & precision reticle
         self.prev_pointer_tip: Optional[Tuple[int, int]] = None
         self.prev_pointer_time: float = 0.0
@@ -159,6 +163,46 @@ class CyberHUD:
 
                 active.append(rf)
         self.rotary_feedbacks = active
+
+    def add_air_draw_point(self, pt: Tuple[int, int], color: Tuple[int, int, int]):
+        """Appends a new point to the active air-drawing stroke."""
+        if self.current_air_stroke is None:
+            self.current_air_stroke = {"color": color, "points": [pt]}
+            self.air_draw_strokes.append(self.current_air_stroke)
+        else:
+            last_pt = self.current_air_stroke["points"][-1]
+            if math.hypot(pt[0] - last_pt[0], pt[1] - last_pt[1]) >= 3.0:
+                self.current_air_stroke["points"].append(pt)
+
+    def finish_air_draw_stroke(self):
+        """Ends the active drawing stroke."""
+        self.current_air_stroke = None
+
+    def clear_air_canvas(self):
+        """Clears all mid-air drawn strokes."""
+        self.air_draw_strokes.clear()
+        self.current_air_stroke = None
+
+    def draw_air_canvas(self, frame: np.ndarray):
+        """Renders glowing multi-colored spatial whiteboard strokes directly into video frame."""
+        if not self.air_draw_strokes:
+            return
+        overlay = frame.copy()
+        for stroke in self.air_draw_strokes:
+            pts = stroke.get("points", [])
+            col = stroke.get("color", (0, 242, 254))
+            if len(pts) < 2:
+                if len(pts) == 1:
+                    cv2.circle(frame, pts[0], 3, col, -1, cv2.LINE_AA)
+                continue
+            # Outer neon glow
+            for i in range(len(pts) - 1):
+                cv2.line(overlay, pts[i], pts[i + 1], col, 5, cv2.LINE_AA)
+            # Crisp white core
+            for i in range(len(pts) - 1):
+                cv2.line(frame, pts[i], pts[i + 1], (255, 255, 255), 2, cv2.LINE_AA)
+
+        cv2.addWeighted(overlay, 0.45, frame, 0.55, 0, frame)
 
     def update_jitter_chart(self, raw_coord: float, ema_coord: float):
         """Appends latest coordinates for real-time jitter graph rendering."""
@@ -937,6 +981,7 @@ class CyberHUD:
         if edge_snap_flags:
             self.draw_proximity_edge_glow(frame, edge_snap_flags)
 
+        self.draw_air_canvas(frame)
         self.draw_ripples(frame)
         self.draw_slide_chevrons(frame)
         self.draw_rotary_dials(frame)

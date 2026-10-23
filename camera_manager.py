@@ -43,6 +43,16 @@ def get_system_camera_names() -> List[str]:
     return []
 
 
+AIR_DRAW_COLOR_MAP = {
+    "cyan": (254, 242, 0),      # #00F2FE Electric Cyan (BGR)
+    "magenta": (255, 0, 255),   # #FF00FF Magenta (BGR)
+    "green": (50, 255, 50),     # #32FF32 Emerald Green (BGR)
+    "gold": (0, 215, 255),      # #FFD700 Neon Gold (BGR)
+    "white": (255, 255, 255),   # #FFFFFF Crisp White (BGR)
+    "coral": (80, 80, 255),     # #FF5050 Hot Coral (BGR)
+}
+
+
 class CameraManager:
     """Thread-safe multi-camera and gesture processing orchestrator."""
     def __init__(self, config: Optional[GestureConfig] = None):
@@ -298,6 +308,18 @@ class CameraManager:
             label, fn = actions[sector]
             print(f"[⚡] Radial Executed: {label} (Sector #{sector})")
             fn()
+
+    def clear_air_canvas(self):
+        """Clears all spatial whiteboard strokes from the HUD."""
+        self.hud.clear_air_canvas()
+
+    def toggle_air_canvas(self, enabled: Optional[bool] = None) -> bool:
+        """Toggles or sets the air-draw stream state."""
+        if enabled is None:
+            self.config.enable_air_draw_stream = not self.config.enable_air_draw_stream
+        else:
+            self.config.enable_air_draw_stream = bool(enabled)
+        return self.config.enable_air_draw_stream
 
     def start(self):
         """Starts background capture and processing threads."""
@@ -642,6 +664,22 @@ class CameraManager:
                     self.precision_engine.reset()
                     hand_was_present = False
 
+            # Spatial Air-Canvas Stream Annotator: record stroke when drawing
+            if getattr(self.config, 'enable_air_draw_stream', False) and pointer_hand:
+                is_drawing = (
+                    events.get("drag_active", False)
+                    or (self.pinch_ratio < self.config.pinch_activate_ratio)
+                    or (effective_gesture in (GestureType.PINCH_CLICK, GestureType.AIR_TAP))
+                )
+                if is_drawing:
+                    ix, iy = pointer_hand.landmarks_px[INDEX_TIP]
+                    col_bgr = AIR_DRAW_COLOR_MAP.get(str(self.config.air_draw_color).lower(), (254, 242, 0))
+                    self.hud.add_air_draw_point((int(ix), int(iy)), col_bgr)
+                else:
+                    self.hud.finish_air_draw_stroke()
+            elif getattr(self.config, 'enable_air_draw_stream', False):
+                self.hud.finish_air_draw_stroke()
+
             # Render clean video stream for GUI only when client is actively viewing
             loop_now = time.time()
             client_active = (loop_now - self.last_client_request_time) < 4.0
@@ -750,6 +788,9 @@ class CameraManager:
             "sound_volume": getattr(self.config, 'sound_volume', 0.65),
             "enable_legacy_shortcuts": getattr(self.config, 'enable_legacy_shortcuts', False),
             "laser_pointer_mode": getattr(self.config, 'laser_pointer_mode', False),
+            "enable_air_draw_stream": getattr(self.config, 'enable_air_draw_stream', False),
+            "air_draw_color": getattr(self.config, 'air_draw_color', 'cyan'),
+            "air_draw_strokes_count": len(getattr(self.hud, 'air_draw_strokes', [])),
             "enable_corner_snap": getattr(self.config, 'enable_corner_snap', True),
             "enable_distance_adaptation": getattr(self.config, 'enable_distance_adaptation', True),
             "enable_anchor": self.precision_engine.enable_click_anchor,

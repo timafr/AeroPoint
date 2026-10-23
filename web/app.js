@@ -1789,6 +1789,11 @@ document.addEventListener('DOMContentLoaded', () => {
       airDrawCanvas.height = airDrawCanvas.clientHeight || 480;
     }
     if (airDrawToolbar) airDrawToolbar.style.display = 'flex';
+    fetch('/api/canvas/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: true })
+    }).catch(() => {});
     soundSynth.playChord();
   });
 
@@ -1799,6 +1804,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (airDrawCanvas) airDrawCanvas.style.display = 'none';
     if (airDrawToolbar) airDrawToolbar.style.display = 'none';
     if (airBrushCursor) airBrushCursor.style.display = 'none';
+    fetch('/api/canvas/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: false })
+    }).catch(() => {});
   });
 
   btnVp3d?.addEventListener('click', () => {
@@ -1807,8 +1817,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (airDrawCanvas) airDrawCanvas.style.display = 'none';
     if (airDrawToolbar) airDrawToolbar.style.display = 'none';
     if (airBrushCursor) airBrushCursor.style.display = 'none';
-  });
-    if (airDrawToolbar) airDrawToolbar.style.display = 'none';
+    fetch('/api/canvas/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: false })
+    }).catch(() => {});
   });
 
   // Color picker
@@ -1817,6 +1830,19 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
       cBtn.classList.add('active');
       currentColor = cBtn.getAttribute('data-color') || '#00f2fe';
+      const colorNameMap = {
+        '#00f2fe': 'cyan',
+        '#ff007f': 'magenta',
+        '#32ff7e': 'green',
+        '#ffd32a': 'gold',
+        '#ffffff': 'white'
+      };
+      const colName = colorNameMap[currentColor.toLowerCase()] || 'cyan';
+      fetch('/api/canvas/color', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ color: colName })
+      }).catch(() => {});
       soundSynth.playClick();
     });
   });
@@ -1826,6 +1852,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (airDrawCanvas) {
       const dCtx = airDrawCanvas.getContext('2d');
       dCtx.clearRect(0, 0, airDrawCanvas.width, airDrawCanvas.height);
+      fetch('/api/canvas/clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      }).catch(() => {});
       soundSynth.playPinch();
     }
   });

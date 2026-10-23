@@ -43,6 +43,8 @@ class GestureConfig:
     pinch_hold_drag_delay_sec: float = 0.22 # Delay before drag locks in
     radial_menu_enabled: bool = True        # Radial Quick-Dial Pie Menu
     laser_pointer_mode: bool = False        # Laser vector aiming mode with snap assistance
+    enable_air_draw_stream: bool = False    # Live glowing air-draw annotations directly in the camera stream
+    air_draw_color: str = "cyan"            # "cyan", "magenta", "green", "gold", "white"
 
     # --- Audio & Sonic Synthesizer ---
     sound_enabled: bool = True

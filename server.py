@@ -214,11 +214,46 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             if "hud_theme" in data:
                 theme = str(data["hud_theme"])
                 manager.config.apply_hud_theme(theme)
+            if "enable_air_draw_stream" in data:
+                manager.config.enable_air_draw_stream = bool(data["enable_air_draw_stream"])
+            if "air_draw_color" in data:
+                manager.config.air_draw_color = str(data["air_draw_color"])
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()
 
             return {"status": "ok"}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/canvas/toggle', method='POST')
+    def canvas_toggle():
+        try:
+            data = bottle.request.json or {}
+            enabled = data.get('enabled', None)
+            res = manager.toggle_air_canvas(enabled)
+            return {"status": "ok", "enabled": res}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/canvas/clear', method='POST')
+    def canvas_clear():
+        try:
+            manager.clear_air_canvas()
+            return {"status": "ok"}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/canvas/color', method='POST')
+    def canvas_color():
+        try:
+            data = bottle.request.json or {}
+            col = str(data.get('color', 'cyan')).lower()
+            manager.config.air_draw_color = col
+            return {"status": "ok", "color": manager.config.air_draw_color}
         except Exception as e:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}
