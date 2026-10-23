@@ -771,6 +771,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Store live landmarks for 3D Holographic Visualizer
+    window._latestLandmarks3D = data.landmarks_3d || null;
+
     // Telemetry top badges
     badgeFps.textContent = `${data.fps || 0} FPS`;
     badgeLatency.textContent = `${data.latency_ms || 0} ms`;
@@ -1184,8 +1187,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
       const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
 
+      // Determine active 3D vertices (Live Neural Hand vs Canonical Model)
+      let vertices = CANONICAL_HAND_3D;
+      let isLiveMesh = false;
+      if (window._latestLandmarks3D && window._latestLandmarks3D.length === 21) {
+        const raw = window._latestLandmarks3D;
+        const wrist = raw[0];
+        // Center around wrist, flip Y so fingers point up
+        vertices = raw.map(p => [
+          (p[0] - wrist[0]) * 2.2,
+          (wrist[1] - p[1]) * 2.2,
+          (p[2] - wrist[2]) * 2.2
+        ]);
+        isLiveMesh = true;
+      }
+
       // Project 21 vertices
-      const projected = CANONICAL_HAND_3D.map(([x, y, z]) => {
+      const projected = vertices.map(([x, y, z]) => {
         // Rotate around Y
         let rx = x * cosY - z * sinY;
         let rz = x * sinY + z * cosY;
@@ -1240,10 +1258,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // HUD Hologram Label
       ctx.shadowBlur = 0;
       ctx.font = '600 11px "JetBrains Mono", monospace';
-      ctx.fillStyle = 'rgba(0, 242, 254, 0.8)';
-      ctx.fillText('✦ 3D SPATIAL KINEMATIC MESH', 24, 34);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.fillText(`ROTATION Y: ${(angleY % (Math.PI * 2)).toFixed(2)} rad | JOINTS: 21/21`, 24, 52);
+      ctx.fillStyle = isLiveMesh ? '#00e676' : 'rgba(0, 242, 254, 0.8)';
+      ctx.fillText(isLiveMesh ? '✦ LIVE NEURAL 3D SKELETON (ACTIVE)' : '✦ 3D SPATIAL KINEMATIC MESH (STANDBY)', 24, 34);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.fillText(`ROTATION Y: ${(angleY % (Math.PI * 2)).toFixed(2)} rad | JOINTS: 21/21 | MODE: ${isLiveMesh ? 'REAL-TIME 3D' : 'PROJECTION'}`, 24, 52);
 
       holoAnimId = requestAnimationFrame(render3D);
     }

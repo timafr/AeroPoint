@@ -536,6 +536,12 @@ class CameraManager:
     def get_telemetry(self) -> Dict[str, any]:
         """Returns live metrics dictionary for GUI."""
         self.last_client_request_time = time.time()
+        landmarks_3d = None
+        if self.pointer_hand and hasattr(self.pointer_hand, 'landmarks_norm'):
+            landmarks_3d = [[round(p[0], 3), round(p[1], 3), round(p[2], 3)] for p in self.pointer_hand.landmarks_norm]
+        elif self.current_hands and len(self.current_hands) > 0 and hasattr(self.current_hands[0], 'landmarks_norm'):
+            landmarks_3d = [[round(p[0], 3), round(p[1], 3), round(p[2], 3)] for p in self.current_hands[0].landmarks_norm]
+
         return {
             "fps": round(self.fps, 1),
             "latency_ms": round(self.latency_ms, 1),
@@ -543,6 +549,7 @@ class CameraManager:
             "hand_detected": self.hand_detected,
             "hands_count": len(self.current_hands),
             "is_dual_hand": self.is_dual_hand_active,
+            "landmarks_3d": landmarks_3d,
             "enable_two_hands": self.config.enable_two_hands,
             "dominant_hand": self.config.dominant_hand,
             "gesture": self.current_gesture.value,
