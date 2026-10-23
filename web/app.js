@@ -267,6 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const pillLighting = document.getElementById('pill-lighting');
   const badgeLightingIcon = document.getElementById('badge-lighting-icon');
   const badgeLightingText = document.getElementById('badge-lighting-text');
+  const pillVelocity = document.getElementById('pill-velocity');
+  const badgeVelocity = document.getElementById('badge-velocity');
   const trackingStatusBadge = document.getElementById('tracking-status-badge');
 
   // Gesture Banner & Pinch Gauge
@@ -822,6 +824,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (badgeLightingIcon) badgeLightingIcon.textContent = '⛅';
         badgeLightingText.textContent = `${lx} lx`;
         if (pillLighting) pillLighting.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+      }
+    }
+
+    // Kinetic Speedometer telemetry
+    if (badgeVelocity && typeof data.velocity_px_s === 'number') {
+      badgeVelocity.textContent = `${Math.round(data.velocity_px_s)} px/s`;
+      if (pillVelocity) {
+        if (data.velocity_px_s > 350) {
+          pillVelocity.style.borderColor = 'rgba(0, 242, 254, 0.65)';
+        } else {
+          pillVelocity.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+        }
       }
     }
 

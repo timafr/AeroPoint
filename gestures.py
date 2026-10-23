@@ -447,7 +447,17 @@ class GestureRecognizer:
                 self.current_gesture = GestureType.TASK_SWITCH
                 return self.current_gesture, events
 
-        # --- E. LEFT CLICK: THUMB BEND OR PINCH ---
+        # --- E. LEFT CLICK: THUMB BEND OR PINCH OR AIR-TAP ---
+        # Always calculate 3D forward push penetration metric for HUD depth compression visualization
+        cur_z = pts_3d[INDEX_TIP][2] if len(pts_3d[INDEX_TIP]) > 2 else 0.0
+        self.z_history = [(t, z) for t, z in self.z_history if now - t <= 0.35]
+        self.z_history.append((now, cur_z))
+        penetration = 0.0
+        if len(self.z_history) >= 3 and finger_states["index"] and not finger_states["middle"]:
+            z_baseline = max(z for t, z in self.z_history)
+            penetration = (z_baseline - cur_z) / max(0.04, palm)
+            events["air_tap_pct"] = round(min(100.0, max(0.0, (penetration / 0.14) * 100.0)), 1)
+
         if self.config.click_mode == "thumb_bend":
             # Release hysteresis: releases if thumb unbends OR extends OR user stops pointing
             if self.is_thumb_bend_active:
@@ -517,16 +527,7 @@ class GestureRecognizer:
 
         elif self.config.click_mode == "air_tap":
             # 3D Depth Air-Tap (Push-to-Click like Apple Vision Pro)
-            cur_z = pts_3d[INDEX_TIP][2] if len(pts_3d[INDEX_TIP]) > 2 else 0.0
-            self.z_history = [(t, z) for t, z in self.z_history if now - t <= 0.35]
-            self.z_history.append((now, cur_z))
-
             if len(self.z_history) >= 3 and finger_states["index"] and not finger_states["middle"]:
-                # In vision coordinates, forward thrust means depth drops relative to recent baseline
-                z_baseline = max(z for t, z in self.z_history)
-                penetration = (z_baseline - cur_z) / max(0.04, palm)
-                events["air_tap_pct"] = round(min(100.0, max(0.0, (penetration / 0.14) * 100.0)), 1)
-
                 if self.is_air_tap_active:
                     if penetration < 0.07:  # retract finger releases click
                         self.is_air_tap_active = False

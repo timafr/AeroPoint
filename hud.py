@@ -40,6 +40,12 @@ class CyberHUD:
         # Click ripple animation queue: list of (x, y, radius, max_radius, color, start_time)
         self.ripples: List[Dict[str, any]] = []
 
+        # Kinetic velocity tracker & precision reticle
+        self.prev_pointer_tip: Optional[Tuple[int, int]] = None
+        self.prev_pointer_time: float = 0.0
+        self.smoothed_velocity: float = 0.0
+        self.velocity_vector: Tuple[float, float] = (0.0, 0.0)
+
         # Cached CPU percentage (polled every 0.5s to reduce overhead)
         self.last_cpu_check = 0.0
         self.cached_cpu = 0.0
@@ -189,6 +195,21 @@ class CyberHUD:
             mid_y = (thumb_pt[1] + index_pt[1]) // 2
             cv2.circle(frame, (mid_x, mid_y), int(3 + 4 * prox), (255, 255, 255), -1, cv2.LINE_AA)
             cv2.circle(frame, (mid_x, mid_y), int(5 + 6 * prox), guide_color, 1, cv2.LINE_AA)
+
+        # Kinetic velocity tracking and precision reticle for Pointer Hand
+        if not is_action_hand:
+            now = time.time()
+            if self.prev_pointer_tip and (now - self.prev_pointer_time > 0.005):
+                dt = now - self.prev_pointer_time
+                vx = (index_pt[0] - self.prev_pointer_tip[0]) / dt
+                vy = (index_pt[1] - self.prev_pointer_tip[1]) / dt
+                inst_vel = math.hypot(vx, vy)
+                self.smoothed_velocity = 0.70 * self.smoothed_velocity + 0.30 * inst_vel
+                self.velocity_vector = (vx, vy)
+            self.prev_pointer_tip = index_pt
+            self.prev_pointer_time = now
+
+            self.draw_speedometer_and_precision_reticle(frame, index_pt, self.smoothed_velocity, self.velocity_vector)
 
     def draw_ripples(self, frame: np.ndarray):
         """Renders click shockwave rings with optimized local ROI blending (zero full-frame copying)."""
@@ -455,6 +476,73 @@ class CyberHUD:
         cv2.putText(frame, pct_text, (cx - 16, cy + r_outer + 24),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.52, (0, 230, 118), 1, cv2.LINE_AA)
 
+    def draw_speedometer_and_precision_reticle(
+        self,
+        frame: np.ndarray,
+        index_pt: Tuple[int, int],
+        velocity: float,
+        vec: Tuple[float, float]
+    ):
+        """Draws kinetic velocity readout and motion vector or micro-precision targeting reticle."""
+        h, w, _ = frame.shape
+        ix, iy = index_pt
+
+        if velocity >= 260.0:
+            # Kinetic high-speed tracking: motion streak + velocity tag
+            norm = math.hypot(vec[0], vec[1])
+            if norm > 1.0:
+                streak_len = min(28, int(norm * 0.025))
+                tx = int(ix - (vec[0] / norm) * streak_len)
+                ty = int(iy - (vec[1] / norm) * streak_len)
+                cv2.line(frame, (ix, iy), (tx, ty), (0, 242, 254), 2, cv2.LINE_AA)
+
+            badge_text = f"{int(velocity)} px/s"
+            bx = max(10, min(w - 95, ix + 14))
+            by = max(18, min(h - 10, iy - 8))
+            cv2.putText(frame, badge_text, (bx, by), cv2.FONT_HERSHEY_PLAIN, 0.85, (0, 242, 254), 1, cv2.LINE_AA)
+
+        elif velocity <= 80.0:
+            # Micro-Precision Stabilization reticle
+            cv2.circle(frame, index_pt, 10, (0, 242, 254), 1, cv2.LINE_AA)
+            cv2.line(frame, (ix - 14, iy), (ix - 6, iy), (0, 242, 254), 1, cv2.LINE_AA)
+            cv2.line(frame, (ix + 6, iy), (ix + 14, iy), (0, 242, 254), 1, cv2.LINE_AA)
+            cv2.line(frame, (ix, iy - 14), (ix, iy - 6), (0, 242, 254), 1, cv2.LINE_AA)
+            cv2.line(frame, (ix, iy + 6), (ix, iy + 14), (0, 242, 254), 1, cv2.LINE_AA)
+
+    def draw_depth_push_indicator(
+        self,
+        frame: np.ndarray,
+        index_pt: Tuple[int, int],
+        air_tap_pct: float
+    ):
+        """Draws Apple Vision Pro style 3D depth push rings shrinking toward fingertip as user presses forward."""
+        if air_tap_pct <= 5.0:
+            return
+        ix, iy = index_pt
+        ratio = min(1.0, max(0.0, air_tap_pct / 100.0))
+
+        # Dynamic ring shrinks from radius 32 down to 10 as user pushes
+        ring_r = int(32 - 20 * ratio)
+        if ratio > 0.85:
+            ring_col = (255, 0, 128)  # Hot magenta trigger zone
+            thick = 2
+        elif ratio > 0.50:
+            ring_col = (0, 230, 118)  # Emerald green press in progress
+            thick = 2
+        else:
+            ring_col = (0, 242, 254)  # Cyan approach
+            thick = 1
+
+        cv2.circle(frame, (ix, iy), ring_r, ring_col, thick, cv2.LINE_AA)
+
+        # Inner feedback core
+        core_r = max(2, int(6 * ratio))
+        cv2.circle(frame, (ix, iy), core_r, ring_col, -1, cv2.LINE_AA)
+
+        # Depth progress tag
+        tag = f"DEPTH {int(air_tap_pct)}%"
+        cv2.putText(frame, tag, (ix + 16, iy + 14), cv2.FONT_HERSHEY_PLAIN, 0.8, ring_col, 1, cv2.LINE_AA)
+
     def render_clean(
         self,
         frame: np.ndarray,
@@ -466,7 +554,8 @@ class CyberHUD:
         action_hand: Optional[HandData] = None,
         show_skeleton: bool = True,
         laser_pointer_mode: bool = False,
-        calibration_progress: Optional[float] = None
+        calibration_progress: Optional[float] = None,
+        air_tap_pct: float = 0.0
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
         if show_skeleton:
@@ -485,6 +574,13 @@ class CyberHUD:
             if target_h:
                 is_click = gesture in (GestureType.THUMB_CLICK, GestureType.PINCH_CLICK, GestureType.AIR_TAP)
                 self.draw_laser_pointer(frame, target_h, is_clicking=is_click)
+
+        # Vision Pro Depth Push visual feedback
+        if air_tap_pct > 5.0:
+            target_h = pointer_hand or (hands[0] if hands else hand)
+            if target_h:
+                tip = (int(target_h.landmarks_px[INDEX_TIP][0]), int(target_h.landmarks_px[INDEX_TIP][1]))
+                self.draw_depth_push_indicator(frame, tip, air_tap_pct)
 
         # Holographic Auto-Calibration Countdown
         if calibration_progress is not None:

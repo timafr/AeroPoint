@@ -93,6 +93,7 @@ class CameraManager:
         self.is_dual_hand_active = False
         self.pinch_ratio = 0.0
         self.pinch_pct = 0.0
+        self.latest_air_tap_pct = 0.0
         self.fps = 0.0
         self.latency_ms = 0.0
         self.cpu_percent = 0.0
@@ -426,6 +427,8 @@ class CameraManager:
                 if effective_gesture != GestureType.SCROLL:
                     self.mouse.move_to(smooth_x, smooth_y)
 
+                self.latest_air_tap_pct = events.get("air_tap_pct", 0.0)
+
                 # 1. Drag & Drop handling (✊ Fist)
                 if events.get("drag_active"):
                     if not self.mouse.is_dragging:
@@ -500,6 +503,7 @@ class CameraManager:
                 if zoom_delta != 0:
                     self.mouse.zoom(zoom_delta)
             else:
+                self.latest_air_tap_pct = 0.0
                 self.scroll_engine.brake()
                 if self.mouse.is_dragging:
                     self.mouse.mouse_up("left")
@@ -529,7 +533,8 @@ class CameraManager:
                         action_gesture=self.action_gesture,
                         show_skeleton=self.config.show_skeleton,
                         laser_pointer_mode=getattr(self.config, 'laser_pointer_mode', False),
-                        calibration_progress=calibration_prog
+                        calibration_progress=calibration_prog,
+                        air_tap_pct=events.get("air_tap_pct", 0.0)
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)
@@ -578,6 +583,8 @@ class CameraManager:
             "active_camera_id": self.active_camera_id,
             "pinch_ratio": round(self.pinch_ratio, 2),
             "pinch_pct": round(self.pinch_pct, 1),
+            "air_tap_pct": round(getattr(self, "latest_air_tap_pct", 0.0), 1),
+            "velocity_px_s": round(getattr(self.hud, "smoothed_velocity", 0.0), 1),
             "click_mode": self.config.click_mode,
             "is_anchored": self.precision_engine.is_anchor_active,
             "gain": round(self.precision_engine.current_gain, 2),
