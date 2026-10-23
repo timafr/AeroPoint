@@ -294,6 +294,23 @@ class TestCyberHUD(unittest.TestCase):
         self.assertIsNotNone(rendered)
         self.assertEqual(rendered.shape, (480, 640, 3))
 
+    def test_render_optical_zoom_loupes(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        initial_scale = self.hud.virtual_zoom_scale
+        self.hud.trigger_zoom_feedback((320, 240), zoom_delta=1)
+        self.assertGreater(self.hud.virtual_zoom_scale, initial_scale)
+        self.assertEqual(len(self.hud.zoom_feedbacks), 1)
+
+        self.hud.trigger_zoom_feedback((320, 240), zoom_delta=-1)
+        self.assertEqual(len(self.hud.zoom_feedbacks), 2)
+
+        self.hud.draw_zoom_loupes(frame)
+        self.assertGreater(int(np.sum(frame)), 0)
+
+        rendered = self.hud.render_clean(frame)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+
 
 class TestNightVisionBooster(unittest.TestCase):
     """Verifies low-light CLAHE and zero-latency LUT gamma boost."""

@@ -46,6 +46,10 @@ class CyberHUD:
         # Rotary dial visual feedback queue
         self.rotary_feedbacks: List[Dict[str, any]] = []
 
+        # Zoom Loupe holographic visual feedback queue
+        self.zoom_feedbacks: List[Dict[str, any]] = []
+        self.virtual_zoom_scale: float = 1.0
+
         # Spatial Air-Canvas Stream Annotator: list of strokes
         self.air_draw_strokes: List[Dict[str, any]] = []
         self.current_air_stroke: Optional[Dict[str, any]] = None
@@ -86,6 +90,17 @@ class CyberHUD:
             "y": px[1],
             "is_up": is_up,
             "delta_deg": delta_deg,
+            "created": time.time()
+        })
+
+    def trigger_zoom_feedback(self, px: Tuple[int, int], zoom_delta: int):
+        """Spawns an optical magnifying zoom loupe HUD with live scale percentage."""
+        self.virtual_zoom_scale = max(0.25, min(4.0, self.virtual_zoom_scale + (0.10 if zoom_delta > 0 else -0.10)))
+        self.zoom_feedbacks.append({
+            "x": px[0],
+            "y": px[1],
+            "delta": zoom_delta,
+            "scale": self.virtual_zoom_scale,
             "created": time.time()
         })
 
@@ -163,6 +178,66 @@ class CyberHUD:
 
                 active.append(rf)
         self.rotary_feedbacks = active
+
+    def draw_zoom_loupes(self, frame: np.ndarray):
+        """Renders animated futuristic optical zoom loupe HUD around active hand coordinates."""
+        if not self.zoom_feedbacks:
+            return
+        now = time.time()
+        active = []
+        h, w, _ = frame.shape
+
+        for zf in self.zoom_feedbacks:
+            elapsed = now - zf["created"]
+            duration = 0.55
+            if elapsed < duration:
+                progress = elapsed / duration
+                alpha = max(0.0, 1.0 - progress)
+                zx, zy = int(zf["x"]), int(zf["y"])
+                delta = zf["delta"]
+                scale_pct = int(round(zf["scale"] * 100))
+
+                # Color: Electric Cyan for Zoom In, Vibrant Orange/Coral for Zoom Out
+                col = (0, 242, 254) if delta > 0 else (60, 120, 255)
+
+                # Outer animated pulsating ring
+                r = int(36 + 14 * progress) if delta > 0 else int(50 - 14 * progress)
+                r = max(18, min(140, r))
+
+                overlay = frame.copy()
+
+                # Loupe glass ring
+                cv2.circle(overlay, (zx, zy), r, col, 2, cv2.LINE_AA)
+                cv2.circle(overlay, (zx, zy), max(4, r - 5), (255, 255, 255), 1, cv2.LINE_AA)
+
+                # Precision crosshair tick marks (compass 4 directions)
+                for angle_deg in (0, 90, 180, 270):
+                    rad = math.radians(angle_deg)
+                    p1 = (int(zx + (r - 7) * math.cos(rad)), int(zy + (r - 7) * math.sin(rad)))
+                    p2 = (int(zx + (r + 7) * math.cos(rad)), int(zy + (r + 7) * math.sin(rad)))
+                    cv2.line(overlay, p1, p2, col, 2, cv2.LINE_AA)
+
+                # Direction symbol
+                sym = "+" if delta > 0 else "-"
+                cv2.putText(overlay, sym, (zx - 5, zy + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2, cv2.LINE_AA)
+
+                # VisionOS Glass Pill for Zoom readout
+                label = f"ZOOM {scale_pct}%"
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                scale = 0.48
+                thickness = 1
+                (lw, lh), _ = cv2.getTextSize(label, font, scale, thickness)
+                bx = max(10, min(w - lw - 24, zx - lw // 2 - 8))
+                by = max(lh + 16, min(h - 16, zy + r + 24))
+
+                cv2.rectangle(overlay, (bx, by - lh - 6), (bx + lw + 16, by + 6), (18, 14, 22), -1)
+                cv2.rectangle(overlay, (bx, by - lh - 6), (bx + lw + 16, by + 6), col, 1, cv2.LINE_AA)
+                cv2.putText(overlay, label, (bx + 8, by), font, scale, (255, 255, 255), thickness, cv2.LINE_AA)
+
+                cv2.addWeighted(overlay, alpha * 0.90, frame, 1.0 - (alpha * 0.90), 0, frame)
+                active.append(zf)
+
+        self.zoom_feedbacks = active
 
     def add_air_draw_point(self, pt: Tuple[int, int], color: Tuple[int, int, int]):
         """Appends a new point to the active air-drawing stroke."""
@@ -985,6 +1060,7 @@ class CyberHUD:
         self.draw_ripples(frame)
         self.draw_slide_chevrons(frame)
         self.draw_rotary_dials(frame)
+        self.draw_zoom_loupes(frame)
         return frame
 
     def render(

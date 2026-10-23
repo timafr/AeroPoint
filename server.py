@@ -289,8 +289,10 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 mouse.lock_workstation()
             elif action == 'zoom_in':
                 mouse.zoom(1)
+                manager.hud.trigger_zoom_feedback((320, 240), 1)
             elif action == 'zoom_out':
                 mouse.zoom(-1)
+                manager.hud.trigger_zoom_feedback((320, 240), -1)
             elif action == 'double_click':
                 mouse.double_click('left')
             elif action in ('next_slide', 'next'):

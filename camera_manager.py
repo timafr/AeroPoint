@@ -655,6 +655,8 @@ class CameraManager:
                 zoom_delta = events.get("zoom_delta", 0)
                 if zoom_delta != 0:
                     self.mouse.zoom(zoom_delta)
+                    zx, zy = (pointer_hand.landmarks_px[INDEX_TIP] if pointer_hand else (frame.shape[1] // 2, frame.shape[0] // 2))
+                    self.hud.trigger_zoom_feedback((int(zx), int(zy)), zoom_delta)
             else:
                 self.latest_air_tap_pct = 0.0
                 self.scroll_engine.brake()
