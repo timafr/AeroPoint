@@ -73,6 +73,7 @@ class HandData:
     estimated_distance_cm: float = 50.0                # Physical estimated distance from camera in cm
     roll_deg: float = 0.0                              # In-plane tilt angle of knuckle line in degrees
     pitch_deg: float = 0.0                             # Palm pointing angle in degrees
+    confidence: float = 0.95                           # Neural network landmark detection confidence
 
 
 class HandTracker:
@@ -217,8 +218,10 @@ class HandTracker:
                 pitch_deg = round(math.degrees(math.atan2(-float(m_y - w_y), float(m_x - w_x))), 1)
 
                 handedness = "Right"
+                conf_score = 0.95
                 if result.handedness and len(result.handedness) > hand_idx and len(result.handedness[hand_idx]) > 0:
                     handedness = result.handedness[hand_idx][0].category_name
+                    conf_score = float(getattr(result.handedness[hand_idx][0], 'score', 0.95))
 
                 h_data = HandData(
                     landmarks_norm=landmarks_norm,
@@ -229,7 +232,8 @@ class HandTracker:
                     handedness=handedness,
                     estimated_distance_cm=dist_cm,
                     roll_deg=roll_deg,
-                    pitch_deg=pitch_deg
+                    pitch_deg=pitch_deg,
+                    confidence=conf_score
                 )
                 all_hands.append(h_data)
 

@@ -297,6 +297,15 @@ class TestCyberHUD(unittest.TestCase):
         rendered = self.hud.render_clean(frame, spotlight_mode=True, spotlight_radius=50)
         self.assertIsNotNone(rendered)
 
+    def test_render_tracking_confidence_meter(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        self.hud.draw_tracking_confidence_meter(frame, 95.0)
+        self.hud.draw_tracking_confidence_meter(frame, 65.0)
+        self.hud.draw_tracking_confidence_meter(frame, 30.0)
+        rendered = self.hud.render_clean(frame, confidence_pct=92.0)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+
     def test_render_clean_with_calibration_and_ripples(self):
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
         self.hud.trigger_click_ripple((320, 240), is_right=False)

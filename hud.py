@@ -1180,6 +1180,56 @@ class CyberHUD:
         cv2.putText(frame, "DEPTH", (gx - 10, gy - 4), cv2.FONT_HERSHEY_PLAIN, 0.65, (180, 180, 180), 1, cv2.LINE_AA)
         cv2.putText(frame, f"{int(distance_cm)}cm", (gx - 10, gy + gh + 13), cv2.FONT_HERSHEY_PLAIN, 0.70, pip_col, 1, cv2.LINE_AA)
 
+    def draw_tracking_confidence_meter(
+        self,
+        frame: np.ndarray,
+        confidence_pct: float
+    ):
+        """
+        Renders a 5-bar LED VU meter indicating real-time neural network tracking confidence.
+        Green/Cyan (>85%), Amber/Gold (60-85%), Coral (<60%).
+        """
+        h, w, _ = frame.shape
+        mx = w - 165
+        my = 18
+        bw = 145
+        bh = 22
+
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (mx, my), (mx + bw, my + bh), (15, 18, 24), -1)
+        cv2.addWeighted(overlay, 0.70, frame, 0.30, 0, frame)
+        cv2.rectangle(frame, (mx, my), (mx + bw, my + bh), (60, 65, 75), 1, cv2.LINE_AA)
+
+        # Label
+        cv2.putText(frame, "SIG", (mx + 8, my + 15), cv2.FONT_HERSHEY_PLAIN, 0.8, (200, 200, 200), 1, cv2.LINE_AA)
+
+        # 5 LED segments
+        num_bars = 5
+        active_bars = max(0, min(5, int(round((confidence_pct / 100.0) * num_bars))))
+        bx_start = mx + 42
+        bar_w = 14
+        bar_gap = 4
+        bar_h = 10
+        bar_y = my + 6
+
+        if confidence_pct >= 85.0:
+            fill_col = (0, 242, 254)  # Cyan
+        elif confidence_pct >= 60.0:
+            fill_col = (0, 215, 255)  # Gold
+        else:
+            fill_col = (60, 60, 255)  # Coral
+
+        for b in range(num_bars):
+            bx = bx_start + b * (bar_w + bar_gap)
+            if b < active_bars:
+                cv2.rectangle(frame, (bx, bar_y), (bx + bar_w, bar_y + bar_h), fill_col, -1)
+            else:
+                cv2.rectangle(frame, (bx, bar_y), (bx + bar_w, bar_y + bar_h), (35, 38, 45), -1)
+
+        # Readout text
+        pct_text = f"{int(confidence_pct)}%"
+        cv2.putText(frame, pct_text, (mx + bw - 28, my + 15), cv2.FONT_HERSHEY_PLAIN, 0.70, fill_col, 1, cv2.LINE_AA)
+
     def render_clean(
         self,
         frame: np.ndarray,
@@ -1200,9 +1250,12 @@ class CyberHUD:
         ergonomic_minutes: Optional[int] = None,
         snap_zone: Optional[str] = None,
         spotlight_mode: bool = False,
-        spotlight_radius: int = 85
+        spotlight_radius: int = 85,
+        confidence_pct: Optional[float] = None
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
+        if confidence_pct is not None and confidence_pct > 0.0:
+            self.draw_tracking_confidence_meter(frame, confidence_pct)
         # Keynote Presentation Spotlight Vignette Dimming
         if spotlight_mode:
             target_h = pointer_hand or (hands[0] if hands else hand)

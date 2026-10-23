@@ -127,6 +127,7 @@ class CameraManager:
 
         # Spatial Window Snap Drop Zone state
         self.active_snap_zone: Optional[str] = None
+        self.tracking_confidence_pct: float = 0.0
 
         # Video capture handle & double-buffering
         self.cap: Optional[cv2.VideoCapture] = None
@@ -525,6 +526,12 @@ class CameraManager:
             self.current_gesture = effective_gesture
             self.pinch_ratio = events.get("thumb_idx_ratio", 0.0) if events else 0.0
             self.pinch_pct = events.get("pinch_proximity_pct", 0.0) if events else 0.0
+            if pointer_hand:
+                self.tracking_confidence_pct = getattr(pointer_hand, 'confidence', 0.95) * 100.0
+            elif self.active_tab == "iphone" and getattr(self.spatial_receiver, 'is_connected', False):
+                self.tracking_confidence_pct = 98.0
+            else:
+                self.tracking_confidence_pct = 0.0
 
             # Radial In-Air Sector Selection & Execution
             if self.radial_menu_open and pointer_hand:
@@ -808,7 +815,8 @@ class CameraManager:
                         ergonomic_minutes=ergo_min,
                         snap_zone=self.active_snap_zone,
                         spotlight_mode=getattr(self.config, 'presentation_spotlight_mode', False),
-                        spotlight_radius=getattr(self.config, 'spotlight_radius', 85)
+                        spotlight_radius=getattr(self.config, 'spotlight_radius', 85),
+                        confidence_pct=self.tracking_confidence_pct
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)
@@ -869,6 +877,7 @@ class CameraManager:
             "precision_profile": getattr(self.precision_engine, 'profile', 'desktop'),
             "gain": round(self.precision_engine.current_gain, 2),
             "acceleration_curve": getattr(self.config, 'acceleration_curve', 'exponential'),
+            "confidence_pct": round(self.tracking_confidence_pct, 1),
             "luminance": round(getattr(self.tracker, 'current_luminance', 120.0), 1),
             "is_night_mode": getattr(self.tracker, 'is_night_mode', False),
             "use_clahe": self.config.use_clahe,

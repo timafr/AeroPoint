@@ -355,6 +355,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Telemetry Badges
   const badgeFps = document.getElementById('badge-fps');
   const badgeLatency = document.getElementById('badge-latency');
+  const badgeSignal = document.getElementById('badge-signal');
+  const dotSignal = document.getElementById('dot-signal');
   const badgeCpu = document.getElementById('badge-cpu');
   const badgeAnchor = document.getElementById('badge-anchor');
   const pillAnchorStatus = document.getElementById('pill-anchor-status');
@@ -1265,6 +1267,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Telemetry top badges
     badgeFps.textContent = `${data.fps || 0} FPS`;
     badgeLatency.textContent = `${data.latency_ms || 0} ms`;
+    if (badgeSignal && typeof data.confidence_pct === 'number') {
+      const conf = Math.round(data.confidence_pct);
+      badgeSignal.textContent = `${conf}%`;
+      if (dotSignal) {
+        if (conf >= 85) dotSignal.style.background = '#00e676';
+        else if (conf >= 60) dotSignal.style.background = '#ffd600';
+        else dotSignal.style.background = '#ff5252';
+      }
+    }
     if (badgeCpu) badgeCpu.textContent = `${data.cpu || 0}%`;
 
     // Anchor status
