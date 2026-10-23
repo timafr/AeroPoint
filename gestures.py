@@ -192,6 +192,11 @@ class GestureRecognizer:
         palm_scale: float = 60.0
     ) -> Tuple[float, float]:
         """Maps coordinates within the Active Tracking Zone to Screen Resolution with sensitivity multiplier and AeroMagnet corner snapping."""
+        try:
+            palm_scale = float(palm_scale)
+        except (ValueError, TypeError):
+            palm_scale = 60.0
+
         cam_h, cam_w = cam_shape
         x, y = point_px[0], point_px[1]
 
@@ -473,9 +478,9 @@ class GestureRecognizer:
                 is_tucked_in = (thumb_knuckle_dist <= self.config.thumb_bend_dist_activate and thumb_ip_angle < 132.0)
                 if is_deliberate_bend or is_tucked_in:
                     time_since_last = now - self.last_left_click_time
-                    if time_since_last > self.config.click_debounce_sec:
+                    if time_since_last > min(0.08, self.config.click_debounce_sec):
                         self.is_thumb_bend_active = True
-                        if time_since_last < 0.42:
+                        if time_since_last < 0.45:
                             events["trigger_double_click"] = True
                         else:
                             events["trigger_left_click"] = True
@@ -499,8 +504,11 @@ class GestureRecognizer:
                         events["drag_active"] = False
                     else:
                         time_since_last = now - self.last_left_click_time
-                        if time_since_last > 0.12:
-                            events["trigger_left_click"] = True
+                        if time_since_last > min(0.08, self.config.click_debounce_sec):
+                            if time_since_last < 0.45:
+                                events["trigger_double_click"] = True
+                            else:
+                                events["trigger_left_click"] = True
                             self.last_left_click_time = now
                     self.is_pinch_active = False
                     self.pinch_start_time = 0.0
@@ -534,10 +542,14 @@ class GestureRecognizer:
                         self.is_air_tap_active = False
                 else:
                     if penetration >= 0.14:
-                        if (now - self.last_left_click_time) > self.config.click_debounce_sec:
+                        time_since_last = now - self.last_left_click_time
+                        if time_since_last > min(0.08, self.config.click_debounce_sec):
                             self.is_air_tap_active = True
+                            if time_since_last < 0.45:
+                                events["trigger_double_click"] = True
+                            else:
+                                events["trigger_left_click"] = True
                             self.last_left_click_time = now
-                            events["trigger_left_click"] = True
                             self.current_gesture = GestureType.AIR_TAP
                             return self.current_gesture, events
 
@@ -787,9 +799,9 @@ class GestureRecognizer:
                                     (act_thumb_knuckle_dist <= self.config.thumb_bend_dist_activate and act_thumb_ip_angle < 132.0)
                     if is_act_flexed:
                         time_since_last = now - self.last_left_click_time
-                        if time_since_last > self.config.click_debounce_sec:
+                        if time_since_last > min(0.08, self.config.click_debounce_sec):
                             self.is_action_thumb_bend_active = True
-                            if time_since_last < 0.42:
+                            if time_since_last < 0.45:
                                 events["trigger_double_click"] = True
                             else:
                                 events["trigger_left_click"] = True
@@ -809,8 +821,11 @@ class GestureRecognizer:
                             events["drag_active"] = False
                         else:
                             time_since_last = now - self.last_left_click_time
-                            if time_since_last > 0.12:
-                                events["trigger_left_click"] = True
+                            if time_since_last > min(0.08, self.config.click_debounce_sec):
+                                if time_since_last < 0.45:
+                                    events["trigger_double_click"] = True
+                                else:
+                                    events["trigger_left_click"] = True
                                 self.last_left_click_time = now
                         self.is_action_pinch_active = False
                         self.action_pinch_start_time = 0.0

@@ -724,5 +724,113 @@ class TestBimanualAirClap(unittest.TestCase):
         self.assertFalse(events_cooldown.get("trigger_air_clap", False))
 
 
+class TestDoubleClickGesture(unittest.TestCase):
+    """Verifies dual-tap fast double click detection across thumb_bend and pinch modes."""
+
+    def test_thumb_bend_double_click(self):
+        config = GestureConfig()
+        config.click_mode = "thumb_bend"
+        rec = GestureRecognizer(config, screen_size=(1920, 1080), screen_origin=(0, 0))
+
+        def make_pointing_hand(thumb_bent: bool) -> HandData:
+            px = [(300.0, 300.0, 0.0)] * 21
+            px[0] = (300.0, 350.0, 0.0)
+            # Index extended
+            px[5] = (300.0, 260.0, 0.0)
+            px[6] = (300.0, 230.0, 0.0)
+            px[7] = (300.0, 210.0, 0.0)
+            px[8] = (300.0, 190.0, 0.0)
+            # Middle curled
+            px[9] = (320.0, 260.0, 0.0)
+            px[10] = (320.0, 280.0, 0.0)
+            px[11] = (320.0, 300.0, 0.0)
+            px[12] = (320.0, 310.0, 0.0)
+            # Thumb
+            if thumb_bent:
+                px[1] = (260.0, 300.0, 0.0)
+                px[2] = (275.0, 280.0, 0.0)
+                px[3] = (295.0, 280.0, 0.0)
+                px[4] = (295.0, 305.0, 0.0)
+            else:
+                px[1] = (270.0, 280.0, 0.0)
+                px[2] = (250.0, 260.0, 0.0)
+                px[3] = (235.0, 245.0, 0.0)
+                px[4] = (220.0, 230.0, 0.0)
+
+            return HandData(
+                landmarks_norm=[(p[0] / 640.0, p[1] / 480.0, 0.0) for p in px],
+                landmarks_px=px,
+                landmarks_world=[(p[0] * 0.001, p[1] * 0.001, 0.0) for p in px],
+                palm_size=0.15,
+                handedness="Right"
+            )
+
+        h_bent = make_pointing_hand(thumb_bent=True)
+        h_open = make_pointing_hand(thumb_bent=False)
+
+        # First click: single click
+        rec.update(h_open, (480, 640))
+        time.sleep(0.01)
+        gest1, ev1 = rec.update(h_bent, (480, 640))
+        self.assertTrue(ev1.get("trigger_left_click", False))
+        self.assertFalse(ev1.get("trigger_double_click", False))
+
+        # Release thumb
+        rec.update(h_open, (480, 640))
+        time.sleep(0.12)
+
+        # Second rapid bend within 0.20s -> Double Click!
+        gest2, ev2 = rec.update(h_bent, (480, 640))
+        self.assertTrue(ev2.get("trigger_double_click", False))
+
+    def test_pinch_double_click(self):
+        config = GestureConfig()
+        config.click_mode = "pinch"
+        rec = GestureRecognizer(config, screen_size=(1920, 1080), screen_origin=(0, 0))
+
+        def make_pinch_hand(pinched: bool) -> HandData:
+            px = [(300.0, 300.0, 0.0)] * 21
+            px[0] = (300.0, 350.0, 0.0)
+            # Index extended
+            px[5] = (300.0, 260.0, 0.0)
+            px[6] = (300.0, 230.0, 0.0)
+            px[7] = (300.0, 210.0, 0.0)
+            px[8] = (300.0, 190.0, 0.0)
+            # Middle curled
+            px[9] = (320.0, 260.0, 0.0)
+            px[10] = (320.0, 280.0, 0.0)
+            px[11] = (320.0, 300.0, 0.0)
+            px[12] = (320.0, 310.0, 0.0)
+            if pinched:
+                px[4] = (300.0, 195.0, 0.0)  # thumb touching index tip
+            else:
+                px[4] = (250.0, 240.0, 0.0)  # thumb far from index tip
+
+            return HandData(
+                landmarks_norm=[(p[0] / 640.0, p[1] / 480.0, 0.0) for p in px],
+                landmarks_px=px,
+                landmarks_world=[(p[0] * 0.001, p[1] * 0.001, 0.0) for p in px],
+                palm_size=0.15,
+                handedness="Right"
+            )
+
+        h_pinched = make_pinch_hand(pinched=True)
+        h_open = make_pinch_hand(pinched=False)
+
+        # First pinch tap: pinch down then release
+        rec.update(h_pinched, (480, 640))
+        time.sleep(0.01)
+        gest1, ev1 = rec.update(h_open, (480, 640))
+        self.assertTrue(ev1.get("trigger_left_click", False))
+
+        time.sleep(0.12)
+
+        # Second rapid pinch tap: pinch down then release
+        rec.update(h_pinched, (480, 640))
+        time.sleep(0.01)
+        gest2, ev2 = rec.update(h_open, (480, 640))
+        self.assertTrue(ev2.get("trigger_double_click", False))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
