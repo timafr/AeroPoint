@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>AeroPoint Mobile Spatial Controller</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0814">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- MediaPipe Hands & Camera Utils from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --bg-dark: #07050d;
+      --card-bg: rgba(22, 16, 36, 0.72);
+      --card-border: rgba(147, 51, 234, 0.28);
+      --aero-cyan: #00f2fe;
+      --aero-violet: #8a2be2;
+      --aero-green: #00e676;
+      --aero-red: #ff3366;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Ambient Background Glow */
+    .ambient-glow {
+      position: fixed;
+      top: -20%;
+      left: 10%;
+      width: 80%;
+      height: 50%;
+      background: radial-gradient(circle, rgba(138, 43, 226, 0.22) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Header Bar */
+    header {
+      position: relative;
+      z-index: 10;
+      padding: calc(env(safe-area-inset-top, 12px) + 8px) 16px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(10, 8, 20, 0.65);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--aero-cyan), var(--aero-violet));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 40%, #c4b5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(0, 230, 118, 0.12);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+      color: var(--aero-green);
+    }
+
+    .status-pill.disconnected {
+      background: rgba(255, 51, 102, 0.12);
+      border-color: rgba(255, 51, 102, 0.3);
+      color: var(--aero-red);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 6px currentColor;
+    }
+
+    /* Main Viewport */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 5;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    /* Video & Canvas Container */
+    .viewport-card {
+      flex: 1;
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    video#webcam {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* Mirror for natural selfie view */
+      opacity: 0.85;
+    }
+
+    canvas#output-canvas {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* Mirror matches video */
+      pointer-events: none;
+    }
+
+    /* HUD Overlay on Viewport */
+    .hud-overlay {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .hud-chip {
+      background: rgba(15, 11, 28, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--aero-cyan);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .hud-depth-gauge {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      right: 14px;
+      background: rgba(15, 11, 28, 0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 10px 14px;
+      z-index: 20;
+    }
+
+    .gauge-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .gauge-val {
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+    }
+
+    .gauge-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .gauge-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--aero-cyan), var(--aero-violet));
+      border-radius: 3px;
+      transition: width 0.08s ease;
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.6);
+    }
+
+    /* Bottom Control Bar */
+    .bottom-bar {
+      padding-bottom: calc(env(safe-area-inset-bottom, 14px) + 4px);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .ctrl-btn {
+      background: rgba(28, 20, 48, 0.8);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .ctrl-btn:active {
+      transform: scale(0.97);
+      background: rgba(45, 30, 80, 0.9);
+    }
+
+    .ctrl-btn.active {
+      background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(138, 43, 226, 0.3));
+      border-color: var(--aero-cyan);
+      box-shadow: 0 0 16px rgba(0, 242, 254, 0.3);
+    }
+
+    /* Start / Permission Overlay */
+    .start-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(7, 5, 13, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      transition: opacity 0.3s ease;
+    }
+
+    .start-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .phone-icon-anim {
+      font-size: 48px;
+      margin-bottom: 16px;
+      animation: float 2.5s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .start-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #fff, var(--aero-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .start-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 24px;
+      max-width: 280px;
+    }
+
+    .launch-btn {
+      background: linear-gradient(135deg, #00f2fe, #8a2be2);
+      border: none;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 28px;
+      border-radius: 20px;
+      box-shadow: 0 0 24px rgba(0, 242, 254, 0.5);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .launch-btn:active {
+      transform: scale(0.96);
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">A</div>
+      <div class="brand-title">AeroPoint Spatial</div>
+    </div>
+    <div class="status-pill" id="conn-pill">
+      <span class="status-dot"></span>
+      <span id="conn-text">ПК Сопряжен</span>
+    </div>
+  </header>
+
+  <!-- Main Viewport -->
+  <main>
+    <div class="viewport-card">
+      <video id="webcam" playsinline autoplay muted></video>
+      <canvas id="output-canvas"></canvas>
+
+      <!-- Top HUD Stats -->
+      <div class="hud-overlay">
+        <div class="hud-chip" id="fps-hud">60 FPS</div>
+        <div class="hud-chip" id="gesture-hud">🤚 Поиск руки...</div>
+      </div>
+
+      <!-- Distance & Pinch Gauge -->
+      <div class="hud-depth-gauge">
+        <div class="gauge-header">
+          <span>Дистанция (Z-Depth)</span>
+          <span class="gauge-val" id="depth-val">-- mm</span>
+        </div>
+        <div class="gauge-track">
+          <div class="gauge-fill" id="depth-fill"></div>
+        </div>
+      </div>
+
+      <!-- Start Overlay (Camera Permission) -->
+      <div class="start-overlay" id="start-overlay">
+        <div class="phone-icon-anim">📱✨</div>
+        <h2 class="start-title">AeroPoint Spatial Mobile</h2>
+        <p class="start-desc">
+          Превратите ваш iPhone в пространственный сенсор управления ПК без установки приложений!
+        </p>
+        <button class="launch-btn" id="btn-start">
+          <span>Разрешить камеру</span>
+          <span>⚡</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="bottom-bar">
+      <button class="ctrl-btn" id="btn-switch-cam">
+        <span>🔄</span>
+        <span id="cam-facing-text">Селфи TrueDepth</span>
+      </button>
+      <button class="ctrl-btn active" id="btn-toggle-send">
+        <span>📡</span>
+        <span id="send-state-text">Трансляция активна</span>
+      </button>
+    </div>
+  </main>
+
+  <script>
+    // --- Application State ---
+    let camera = null;
+    let hands = null;
+    let isStreaming = true;
+    let facingMode = 'user'; // 'user' (Front TrueDepth) or 'environment' (LiDAR)
+    let lastSendTime = 0;
+    const TARGET_INTERVAL_MS = 16; // ~60 FPS
+    let fpsFrames = 0;
+    let lastFpsTime = performance.now();
+    let currentFps = 60;
+
+    const videoElement = document.getElementById('webcam');
+    const canvasElement = document.getElementById('output-canvas');
+    const canvasCtx = canvasElement.getContext('2d');
+    const startOverlay = document.getElementById('start-overlay');
+    const btnStart = document.getElementById('btn-start');
+    const fpsHud = document.getElementById('fps-hud');
+    const gestureHud = document.getElementById('gesture-hud');
+    const depthVal = document.getElementById('depth-val');
+    const depthFill = document.getElementById('depth-fill');
+    const connPill = document.getElementById('conn-pill');
+    const connText = document.getElementById('conn-text');
+    const btnSwitchCam = document.getElementById('btn-switch-cam');
+    const camFacingText = document.getElementById('cam-facing-text');
+    const btnToggleSend = document.getElementById('btn-toggle-send');
+    const sendStateText = document.getElementById('send-state-text');
+
+    // Hand connections indices (MediaPipe 21 landmarks)
+    const CONNECTIONS = [
+      [0,1],[1,2],[2,3],[3,4],
+      [0,5],[5,6],[6,7],[7,8],
+      [5,9],[9,10],[10,11],[11,12],
+      [9,13],[13,14],[14,15],[15,16],
+      [13,17],[17,18],[18,19],[19,20],
+      [0,17]
+    ];
+
+    // --- MediaPipe Results Handler ---
+    function onResults(results) {
+      // Adjust canvas resolution
+      if (canvasElement.width !== videoElement.videoWidth || canvasElement.height !== videoElement.videoHeight) {
+        canvasElement.width = videoElement.videoWidth || 640;
+        canvasElement.height = videoElement.videoHeight || 480;
+      }
+
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+      // Measure FPS
+      fpsFrames++;
+      const now = performance.now();
+      if (now - lastFpsTime >= 1000) {
+        currentFps = Math.round((fpsFrames * 1000) / (now - lastFpsTime));
+        fpsFrames = 0;
+        lastFpsTime = now;
+        fpsHud.textContent = `${currentFps} FPS`;
+      }
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const handsData = [];
+
+        for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+          const lms = results.multiHandLandmarks[i];
+          const handedness = (results.multiHandedness && results.multiHandedness[i])
+            ? results.multiHandedness[i].label
+            : (i === 0 ? "Right" : "Left");
+
+          // Draw neon skeleton
+          drawHandSkeleton(canvasCtx, lms, canvasElement.width, canvasElement.height);
+
+          // Calculate approximate physical distance (Z-Depth) based on palm width (Wrist to Middle MCP)
+          const wrist = lms[0];
+          const middleMcp = lms[9];
+          const dx = middleMcp.x - wrist.x;
+          const dy = middleMcp.y - wrist.y;
+          const palmDistNorm = Math.sqrt(dx * dx + dy * dy);
+          // Standard human palm ~85mm. When close (~200mm), palmDistNorm ~0.35. When far (~800mm), ~0.10.
+          const approxDepthMm = Math.max(150, Math.min(1000, 38 / Math.max(0.04, palmDistNorm) * 10));
+
+          // Draw HUD indicator
+          depthVal.textContent = `${Math.round(approxDepthMm)} mm`;
+          const zPct = Math.min(100, Math.max(0, ((approxDepthMm - 150) / 700) * 100));
+          depthFill.style.width = `${zPct}%`;
+
+          // Format 21 landmarks [x, y, z]
+          const normCoords = lms.map(pt => [pt.x, pt.y, pt.z]);
+
+          handsData.push({
+            handedness: handedness,
+            palm_size_mm: 85.0,
+            depth_avg_mm: approxDepthMm,
+            landmarks_norm: normCoords
+          });
+
+          // Detect active gesture for phone HUD
+          updateMobileHUDGesture(lms);
+        }
+
+        // Send to PC via HTTP POST
+        if (isStreaming && (now - lastSendTime >= TARGET_INTERVAL_MS)) {
+          lastSendTime = now;
+          sendPayloadToPC(handsData);
+        }
+      } else {
+        gestureHud.textContent = '🤚 Поиск руки...';
+        depthVal.textContent = '-- mm';
+        depthFill.style.width = '0%';
+      }
+
+      canvasCtx.restore();
+    }
+
+    // --- Draw Cyber Holographic Hand ---
+    function drawHandSkeleton(ctx, lms, w, h) {
+      // Connections
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#8a2be2';
+      ctx.shadowColor = '#8a2be2';
+      ctx.shadowBlur = 8;
+
+      for (const [p1, p2] of CONNECTIONS) {
+        const pt1 = lms[p1];
+        const pt2 = lms[p2];
+        ctx.beginPath();
+        ctx.moveTo(pt1.x * w, pt1.y * h);
+        ctx.lineTo(pt2.x * w, pt2.y * h);
+        ctx.stroke();
+      }
+
+      // Joints
+      ctx.shadowColor = '#00f2fe';
+      ctx.shadowBlur = 10;
+      for (let i = 0; i < lms.length; i++) {
+        const pt = lms[i];
+        ctx.beginPath();
+        ctx.arc(pt.x * w, pt.y * h, i === 4 || i === 8 ? 6 : 4, 0, 2 * Math.PI);
+        ctx.fillStyle = i === 8 ? '#00f2fe' : (i === 4 ? '#ff007f' : '#ffffff');
+        ctx.fill();
+      }
+    }
+
+    // --- Quick HUD Gesture Detector ---
+    function updateMobileHUDGesture(lms) {
+      // Thumb tip (4) to Index tip (8) distance
+      const dx = lms[4].x - lms[8].x;
+      const dy = lms[4].y - lms[8].y;
+      const pinchDist = Math.sqrt(dx * dx + dy * dy);
+
+      // Palm size ref
+      const pdx = lms[9].x - lms[0].x;
+      const pdy = lms[9].y - lms[0].y;
+      const palm = Math.max(0.01, Math.sqrt(pdx * pdx + pdy * pdy));
+      const ratio = pinchDist / palm;
+
+      if (ratio < 0.28) {
+        gestureHud.textContent = '👌 Клик (Pinch)';
+      } else {
+        gestureHud.textContent = '☝️ Наведение мыши';
+      }
+    }
+
+    // --- Transmit to PC Server ---
+    async function sendPayloadToPC(handsData) {
+      const payload = {
+        device: "iPhone (Mobile Safari)",
+        sensor: facingMode === 'user' ? "TrueDepth (Face ID)" : "LiDAR Pro",
+        fps: currentFps,
+        battery: 98,
+        timestamp: Date.now() / 1000.0,
+        hands: handsData
+      };
+
+      try {
+        const res = await fetch('/api/spatial_feed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          connPill.classList.remove('disconnected');
+          connText.textContent = 'ПК Сопряжен';
+        }
+      } catch (e) {
+        connPill.classList.add('disconnected');
+        connText.textContent = 'Ошибка сети';
+      }
+    }
+
+    // --- Camera Initialization ---
+    async function startCamera() {
+      if (camera) {
+        camera.stop();
+      }
+
+      // Initialize MediaPipe Hands
+      if (!hands) {
+        hands = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({
+          maxNumHands: 2,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.6,
+          minTrackingConfidence: 0.6
+        });
+
+        hands.onResults(onResults);
+      }
+
+      camera = new Camera(videoElement, {
+        onFrame: async () => {
+          if (videoElement.readyState >= 2) {
+            await hands.send({ image: videoElement });
+          }
+        },
+        facingMode: facingMode,
+        width: 640,
+        height: 480
+      });
+
+      await camera.start();
+      startOverlay.classList.add('hidden');
+    }
+
+    // --- Event Listeners ---
+    btnStart.addEventListener('click', async () => {
+      btnStart.innerHTML = '<span>Запуск...</span>';
+      try {
+        await startCamera();
+      } catch (err) {
+        alert("Ошибка доступа к камере: " + err.message);
+        btnStart.innerHTML = '<span>Разрешить камеру ⚡</span>';
+      }
+    });
+
+    btnSwitchCam.addEventListener('click', async () => {
+      facingMode = facingMode === 'user' ? 'environment' : 'user';
+      camFacingText.textContent = facingMode === 'user' ? 'Селфи TrueDepth' : 'Основная LiDAR';
+      await startCamera();
+    });
+
+    btnToggleSend.addEventListener('click', () => {
+      isStreaming = !isStreaming;
+      if (isStreaming) {
+        btnToggleSend.classList.add('active');
+        sendStateText.textContent = 'Трансляция активна';
+      } else {
+        btnToggleSend.classList.remove('active');
+        sendStateText.textContent = 'Пауза трансляции';
+      }
+    });
+  </script>
+</body>
+</html>

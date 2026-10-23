@@ -1,0 +1,27 @@
+name: AeroPointSpatial
+options:
+  bundleIdPrefix: com.aeropoint
+  deploymentTarget:
+    iOS: 16.0
+targets:
+  AeroPointSpatial:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: Sources/AeroPointSpatial
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: AeroPoint Spatial
+        CFBundleIdentifier: com.aeropoint.spatial
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+        NSCameraUsageDescription: "AeroPoint uses camera for LiDAR and TrueDepth spatial hand tracking"
+        UILaunchScreen: {}
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.aeropoint.spatial
+      DEVELOPMENT_TEAM: ""
+      CODE_SIGNING_ALLOWED: NO
+      CODE_SIGN_IDENTITY: ""
+      CODE_SIGNING_REQUIRED: NO

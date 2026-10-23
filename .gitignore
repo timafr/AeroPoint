@@ -1,0 +1,25 @@
+# Video & large temp media
+*.mp4
+*.avi
+*.mov
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+env/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# iOS build artifacts
+build/
+DerivedData/
+*.ipa
+Payload/
+*.xcodeproj

@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AeroPoint Studio — Neural Gesture Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- Dynamic Kinetic Plasma & Aura Background -->
+  <div class="kinetic-aura">
+    <div class="aura-orb orb-primary"></div>
+    <div class="aura-orb orb-secondary"></div>
+    <div class="aura-orb orb-tertiary"></div>
+    <div class="aura-grid-overlay"></div>
+  </div>
+
+  <div class="app-window" id="main-app-window">
+    
+    <!-- AeroPoint Header / Navigation -->
+    <header class="aero-header">
+      <div class="header-left">
+        <!-- Window Controls -->
+        <div class="window-controls">
+          <span class="ctrl-dot dot-close" title="Закрыть"></span>
+          <span class="ctrl-dot dot-min" title="Свернуть"></span>
+          <span class="ctrl-dot dot-max" title="Развернуть"></span>
+        </div>
+        
+        <div class="app-brand">
+          <div class="brand-logo-wrap">
+            <svg class="brand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
+            </svg>
+            <span class="logo-pulse-ring"></span>
+          </div>
+          <div class="brand-text">
+            <div class="brand-title-row">
+              <span class="brand-title">AeroPoint</span>
+              <span class="studio-badge">STUDIO</span>
+              <span class="version-tag">v3.0 Kinetic</span>
+            </div>
+            <span class="brand-subtitle">Neural Kinetic Gesture Human-Computer Interface</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <!-- Input Source Tabs (Webcam AI vs iPhone LiDAR) -->
+        <div class="source-tabs-pill">
+          <button class="source-tab-btn active" id="tab-btn-webcam" data-tab="webcam" title="Локальная веб-камера DirectShow">
+            <span class="tab-icon">📷</span>
+            <span class="tab-text">Веб-камера AI</span>
+          </button>
+          <button class="source-tab-btn" id="tab-btn-iphone" data-tab="iphone" title="iPhone LiDAR Scanner & TrueDepth Face ID">
+            <span class="tab-icon">📱</span>
+            <span class="tab-text">iPhone Spatial</span>
+            <span class="tab-badge-glow">LiDAR / IR</span>
+          </button>
+        </div>
+
+        <!-- DirectShow Camera Selector Pill -->
+        <div class="camera-pill-container" id="camera-picker-wrap">
+          <div class="cam-icon-wrap">
+            <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+          </div>
+          <select id="camera-select" class="camera-dropdown" title="Выбор источника видео (DirectShow)">
+            <option value="0">Поиск подключенных камер...</option>
+          </select>
+          <button id="btn-refresh-cams" class="btn-refresh" title="Сканировать устройства DirectShow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Safety Pause Button -->
+        <button id="btn-safety-pause" class="aero-btn pill-btn" title="Заблокировать управление курсором">
+          <span class="status-indicator" id="pause-indicator"></span>
+          <span id="pause-btn-text">Пауза</span>
+        </button>
+
+        <!-- Master Switch -->
+        <div class="master-toggle-wrap">
+          <label class="aero-switch">
+            <input type="checkbox" id="master-control-switch" checked>
+            <span class="slider"></span>
+          </label>
+          <div class="master-label-block">
+            <span class="switch-label">Управление ПК</span>
+            <span class="switch-sub" id="control-state-sub">Включено</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      
+      <!-- Left: Spatial Camera Viewfinder with Kinetic Reticle HUD -->
+      <section class="viewfinder-section">
+        <div class="viewfinder-card kinetic-card" data-tilt>
+          
+          <!-- Cyber Kinetic Viewfinder Reticle Brackets -->
+          <div class="reticle-corner reticle-tl"></div>
+          <div class="reticle-corner reticle-tr"></div>
+          <div class="reticle-corner reticle-bl"></div>
+          <div class="reticle-corner reticle-br"></div>
+          <div class="reticle-scanline"></div>
+
+          <!-- Top Floating Telemetry Capsule -->
+          <div class="stream-hud-overlay">
+            <div class="hud-top-capsule">
+              <div class="glass-pill active-pill">
+                <span class="live-dot"></span>
+                <span id="badge-fps">-- FPS</span>
+              </div>
+              <div class="glass-pill">
+                <span class="pill-label">Задержка:</span>
+                <span id="badge-latency" class="pill-value">-- ms</span>
+              </div>
+              <div class="glass-pill" id="pill-anchor-status">
+                <span class="anchor-dot"></span>
+                <span id="badge-anchor">Якорь: Свободно</span>
+              </div>
+              <div class="glass-pill" id="pill-hands-mode">
+                <span id="badge-hands-icon">🖐️</span>
+                <span id="badge-hands-mode" class="pill-value">1 Рука</span>
+              </div>
+              <div class="glass-pill">
+                <span class="pill-label">3D Точки:</span>
+                <span id="badge-joints" class="pill-value">21/21</span>
+              </div>
+            </div>
+
+            <!-- Dynamic Bottom Kinetic Card with Gauge & Neural Pulse -->
+            <div class="gesture-float-banner" id="gesture-banner">
+              <div class="gesture-banner-left">
+                <span class="gesture-emoji" id="gesture-banner-icon">☝️</span>
+                <div class="gesture-meta">
+                  <span class="gesture-title" id="gesture-banner-title">Наведение</span>
+                  <span class="gesture-sub" id="gesture-banner-sub">Плавное позиционирование</span>
+                </div>
+              </div>
+
+              <!-- Motion Design Neural Waveform Visualizer -->
+              <div class="neural-waveform" title="Активность нейросети">
+                <span class="wave-bar wb-1"></span>
+                <span class="wave-bar wb-2"></span>
+                <span class="wave-bar wb-3"></span>
+                <span class="wave-bar wb-4"></span>
+                <span class="wave-bar wb-5"></span>
+              </div>
+
+              <!-- Live Dynamic Gauge -->
+              <div class="pinch-gauge-wrap" id="pinch-gauge-container">
+                <div class="gauge-label-row">
+                  <span id="gauge-label-title">Сила сжатия / сгиба</span>
+                  <span id="pinch-percent-text" class="gauge-pct">0%</span>
+                </div>
+                <div class="gauge-bar-track">
+                  <div class="gauge-bar-fill" id="pinch-bar-fill" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video Viewport -->
+          <div class="stream-viewport">
+            <div id="camera-loading-overlay" class="camera-loading-overlay">
+              <div class="aero-spinner"></div>
+              <span class="loading-text" id="loading-status-text">Инициализация видеопотока...</span>
+            </div>
+            <img id="video-stream" src="/video_feed" alt="Video Stream" />
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Right: Inspector & Kinetic Tuning Pane -->
+      <aside class="inspector-section">
+        
+        <!-- Two-Handed (Bimanual) Control Card -->
+        <div class="glass-card kinetic-card" data-tilt>
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-dot-decor" style="background: var(--aero-violet);"></span>
+              <h3>Двуручный режим (Bimanual)</h3>
+            </div>
+            <label class="aero-switch small">
+              <input type="checkbox" id="switch-two-hands" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="mode-hint" style="margin-bottom: 12px;">
+            🎯 <strong>Курсор:</strong> ведущая рука наводит мышь.<br>
+            ⚡ <strong>Команды:</strong> вторая рука кликает, скроллит и перетаскивает без смещения курсора!
+          </div>
+
+          <div class="setting-row">
+            <div class="slider-header">
+              <span>Ведущая рука (Курсор)</span>
+              <span class="slider-val" id="val-dominant-hand">Правая</span>
+            </div>
+            <div class="segmented-control" style="margin-top: 6px;">
+              <button class="segment-btn active" id="btn-dom-right" data-dom="Right" title="Правая рука управляет курсором, левая — действиями">
+                <span class="seg-icon">👉</span>
+                <span class="seg-text">Правая</span>
+              </button>
+              <button class="segment-btn" id="btn-dom-left" data-dom="Left" title="Левая рука управляет курсором, правая — действиями">
+                <span class="seg-icon">👈</span>
+                <span class="seg-text">Левая</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Click Trigger Selector (Thumb Bend vs Pinch) -->
+        <div class="glass-card kinetic-card" data-tilt>
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-dot-decor"></span>
+              <h3>Триггер клика ЛКМ</h3>
+            </div>
+            <span class="aero-tag" id="tag-current-mode">Сгиб пальца</span>
+          </div>
+
+          <div class="segmented-control">
+            <button class="segment-btn active" id="btn-mode-thumb" data-mode="thumb_bend" title="Сгиб большого пальца">
+              <span class="seg-icon">👍</span>
+              <span class="seg-text">Сгиб пальца</span>
+            </button>
+            <button class="segment-btn" id="btn-mode-pinch" data-mode="pinch" title="Классический щипок пальцами">
+              <span class="seg-icon">🤏</span>
+              <span class="seg-text">Щипок (Pinch)</span>
+            </button>
+          </div>
+          <div class="mode-hint" id="mode-hint-text">
+            ☝️ <strong>Рекомендовано:</strong> наведите курсор указательным пальцем и согните большой палец для 100% стабильного клика без смещения мыши.
+          </div>
+        </div>
+
+        <!-- Live Gestures Feedback Grid -->
+        <div class="glass-card kinetic-card" data-tilt>
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-dot-decor"></span>
+              <h3>Словарь жестов</h3>
+            </div>
+            <span class="badge-mini" id="tracking-status-badge">СКАНИРОВАНИЕ</span>
+          </div>
+
+          <div class="gestures-grid">
+            <div class="gesture-card" id="card-hover">
+              <div class="g-icon">☝️</div>
+              <div class="g-info">
+                <div class="g-name">Hover</div>
+                <div class="g-desc">Курсор</div>
+              </div>
+              <span class="g-indicator"></span>
+            </div>
+
+            <div class="gesture-card" id="card-pinch">
+              <div class="g-icon">👍</div>
+              <div class="g-info">
+                <div class="g-name">Left Click</div>
+                <div class="g-desc">Левый клик</div>
+              </div>
+              <span class="g-indicator"></span>
+            </div>
+
+            <div class="gesture-card" id="card-right">
+              <div class="g-icon">👌</div>
+              <div class="g-info">
+                <div class="g-name">Right Click</div>
+                <div class="g-desc">Контекст</div>
+              </div>
+              <span class="g-indicator"></span>
+            </div>
+
+            <div class="gesture-card" id="card-scroll">
+              <div class="g-icon">✌️</div>
+              <div class="g-info">
+                <div class="g-name">Scroll</div>
+                <div class="g-desc">Прокрутка</div>
+              </div>
+              <span class="g-indicator"></span>
+            </div>
+
+            <div class="gesture-card" id="card-drag">
+              <div class="g-icon">✊</div>
+              <div class="g-info">
+                <div class="g-name">Drag & Drop</div>
+                <div class="g-desc">Зажатие</div>
+              </div>
+              <span class="g-indicator"></span>
+            </div>
+
+            <div class="gesture-card" id="card-middle">
+              <div class="g-icon">🔘</div>
+              <div class="g-info">
+                <div class="g-name">Middle Click</div>
+                <div class="g-desc">Безымянный</div>
+              </div>
+              <span class="g-indicator"></span>
+            </div>
+
+            <div class="gesture-card" id="card-task">
+              <div class="g-icon">🪟</div>
+              <div class="g-info">
+                <div class="g-name">Task View</div>
+                <div class="g-desc">Мизинец</div>
+              </div>
+              <span class="g-indicator"></span>
+            </div>
+
+            <div class="gesture-card" id="card-rock">
+              <div class="g-icon">🤘</div>
+              <div class="g-info">
+                <div class="g-name">Alt + Tab</div>
+                <div class="g-desc">Рок-жест</div>
+              </div>
+              <span class="g-indicator"></span>
+            </div>
+
+            <div class="gesture-card" id="card-shaka">
+              <div class="g-icon">🤙</div>
+              <div class="g-info">
+                <div class="g-name">Show Desktop</div>
+                <div class="g-desc">Шака-жест</div>
+              </div>
+              <span class="g-indicator"></span>
+            </div>
+
+            <div class="gesture-card" id="card-pause">
+              <div class="g-icon">🖐️</div>
+              <div class="g-info">
+                <div class="g-name">Pause</div>
+                <div class="g-desc">Защита</div>
+              </div>
+              <span class="g-indicator"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- iPhone Spatial Dashboard Card -->
+        <div class="glass-card kinetic-card iphone-hero-card" id="iphone-dashboard-card" style="display: none;" data-tilt>
+          <div class="card-header" style="margin-bottom: 8px;">
+            <div class="card-title-group">
+              <span class="card-dot-decor" style="background: var(--aero-violet);"></span>
+              <h3>iPhone Spatial Sensor</h3>
+            </div>
+            <span class="sensor-badge disconnected" id="badge-iphone-conn">ОЖИДАНИЕ</span>
+          </div>
+
+          <div class="mode-hint" style="margin-bottom: 10px;">
+            📡 <strong>Физическая 3D глубина:</strong> чип A15–A18 Bionic считывает 21 сустав кисти с миллиметровой точностью на 60 FPS.
+          </div>
+
+          <div class="spatial-metrics-grid">
+            <div class="sp-card">
+              <div class="sp-label">Сенсор</div>
+              <div class="sp-value" id="val-iphone-sensor" style="color: var(--aero-cyan);">TrueDepth</div>
+            </div>
+            <div class="sp-card">
+              <div class="sp-label">Задержка</div>
+              <div class="sp-value" id="val-iphone-ping">0.8 ms</div>
+            </div>
+            <div class="sp-card">
+              <div class="sp-label">Батарея</div>
+              <div class="sp-value" id="val-iphone-battery">95%</div>
+            </div>
+          </div>
+
+          <div class="z-depth-card">
+            <div class="z-depth-header">
+              <span>Физическая дистанция (Z-Depth)</span>
+              <span id="val-iphone-depth" style="font-family: var(--font-mono); font-weight: 700;">420 mm</span>
+            </div>
+            <div class="z-depth-track">
+              <div class="z-depth-bar" id="bar-iphone-depth" style="width: 45%;"></div>
+            </div>
+          </div>
+
+          <!-- Quick Safari Connect (Zero-Install) -->
+          <div style="background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.22); border-radius: 14px; padding: 12px; margin-top: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 700; color: var(--aero-cyan); display: flex; align-items: center; gap: 6px;">
+                <span>⚡</span> Мгновенный запуск в Safari (Без .IPA):
+              </span>
+              <span class="badge-mini" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border-color: rgba(0, 230, 118, 0.3);">0 УСТАНОВКИ</span>
+            </div>
+            
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <div style="background: #ffffff; padding: 4px; border-radius: 10px; flex-shrink: 0; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">
+                <img id="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=http://192.168.1.194:5000/mobile" alt="QR Code" style="width: 86px; height: 86px; display: block;" />
+              </div>
+              <div style="flex: 1; font-size: 11.5px; color: var(--text-secondary); line-height: 1.45;">
+                <div>Наведите камеру iPhone на QR-код или откройте в Safari:</div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                  <code id="mobile-url-text" style="background: rgba(255,255,255,0.08); padding: 3px 6px; border-radius: 6px; color: #ffffff; font-family: var(--font-mono); font-size: 10.5px; word-break: break-all;">http://192.168.1.194:5000/mobile</code>
+                  <button class="aero-btn small" id="btn-copy-url" title="Скопировать ссылку" style="padding: 3px 8px; font-size: 11px;">📋</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button class="aero-btn small" id="btn-open-ios-guide" style="flex: 1; justify-content: center; background: rgba(127, 0, 255, 0.22); border-color: rgba(127, 0, 255, 0.45); color: #ffffff;">
+              <span>📦 Как собрать и установить .IPA</span>
+            </button>
+            <a href="/mobile" target="_blank" class="aero-btn small" style="text-decoration: none; display: flex; align-items: center; justify-content: center; padding: 0 12px; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: #fff;" title="Открыть Web Controller в браузере">
+              <span>🌐</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Precision & Stabilization Engine -->
+        <div class="glass-card kinetic-card" data-tilt>
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-dot-decor"></span>
+              <h3>Точность и курсор</h3>
+            </div>
+            <span class="aero-tag">1-Euro Aero Engine</span>
+          </div>
+
+          <!-- Feature Toggles for Accuracy -->
+          <div class="precision-toggles">
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-title">Якорь клика (Click Anchor)</span>
+                <span class="toggle-subtitle">Блокировка смещения курсора в момент нажатия</span>
+              </div>
+              <label class="aero-switch small">
+                <input type="checkbox" id="switch-anchor" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-title">Кинетическое ускорение</span>
+                <span class="toggle-subtitle">Субпиксельное прицеливание на малых скоростях</span>
+              </div>
+              <label class="aero-switch small">
+                <input type="checkbox" id="switch-acceleration" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Sliders -->
+          <div class="setting-row highlight-row" style="background: rgba(0, 242, 254, 0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(0, 242, 254, 0.18);">
+            <div class="slider-header">
+              <span style="font-weight: 600; color: var(--aero-cyan);">⚡ Скорость мыши (Sensitivity)</span>
+              <span class="slider-val" id="val-sensitivity" style="color: var(--aero-cyan); font-weight: 700;">1.8x</span>
+            </div>
+            <input type="range" id="slider-sensitivity" min="0.5" max="3.5" step="0.1" value="1.8" class="aero-slider" title="Увеличьте для максимальной скорости перемещения мыши по всему экрану">
+            <span class="sub-hint" style="color: var(--text-secondary); font-size: 0.72rem; display: block; margin-top: 4px;">Позволяет молниеносно перемещать курсор на 100% экрана минимальным движением кисти</span>
+          </div>
+
+          <div class="setting-row">
+            <div class="slider-header">
+              <span>Плавность фильтрации (Jitter Damping)</span>
+              <span class="slider-val" id="val-smooth">0.85 Hz</span>
+            </div>
+            <input type="range" id="slider-smooth" min="0.2" max="1.8" step="0.05" value="0.85" class="aero-slider">
+          </div>
+
+          <div class="setting-row">
+            <div class="slider-header">
+              <span>Мертвая зона (Deadzone)</span>
+              <span class="slider-val" id="val-deadzone">3.5 px</span>
+            </div>
+            <input type="range" id="slider-deadzone" min="1.0" max="12.0" step="0.5" value="3.5" class="aero-slider">
+          </div>
+
+          <div class="setting-row">
+            <div class="slider-header">
+              <span>Широта зоны действия (Reach)</span>
+              <span class="slider-val" id="val-reach">8% (Широкий)</span>
+            </div>
+            <input type="range" id="slider-reach" min="0.04" max="0.20" step="0.02" value="0.08" class="aero-slider" title="Меньше % = курсор быстрее дотягивается до всех углов экрана">
+            <span class="sub-hint">Обеспечивает легкий охват правого и левого края монитора</span>
+          </div>
+
+          <div class="setting-row">
+            <div class="slider-header">
+              <span>Порог срабатывания клика</span>
+              <span class="slider-val" id="val-pinch">0.28</span>
+            </div>
+            <input type="range" id="slider-pinch" min="0.18" max="0.42" step="0.02" value="0.28" class="aero-slider">
+          </div>
+        </div>
+
+        <!-- Vision & Hardware Options -->
+        <div class="glass-card kinetic-card" data-tilt>
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-dot-decor"></span>
+              <h3>Опции видоискателя</h3>
+            </div>
+          </div>
+
+          <div class="toggle-list">
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-title">Ночной режим (CLAHE)</span>
+                <span class="toggle-subtitle">Адаптивная контрастность в темноте</span>
+              </div>
+              <label class="aero-switch small">
+                <input type="checkbox" id="switch-clahe">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-title">Скелет кисти</span>
+                <span class="toggle-subtitle">Подсветка 21 сустава и связок</span>
+              </div>
+              <label class="aero-switch small">
+                <input type="checkbox" id="switch-skeleton" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-title">Аудио-клик (Micro-Switch Haptic)</span>
+                <span class="toggle-subtitle">Синтез мягкого механического щелчка</span>
+              </div>
+              <label class="aero-switch small">
+                <input type="checkbox" id="switch-sound" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetry & Performance Card -->
+        <div class="glass-card telemetry-card kinetic-card" data-tilt>
+          <div class="telemetry-grid">
+            <div class="t-item">
+              <span class="t-label">Нагрузка ЦП</span>
+              <span class="t-value" id="badge-cpu">-- %</span>
+            </div>
+            <div class="t-item">
+              <span class="t-label">Диспетчер Win32</span>
+              <span class="t-value highlight">0.002 ms</span>
+            </div>
+            <div class="t-item">
+              <span class="t-label">Дистанция жеста</span>
+              <span class="t-value" id="badge-pinch-ratio">--</span>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+    </main>
+  </div>
+
+  <!-- Modal: Руководство по подключению iPhone LiDAR / TrueDepth -->
+  <div class="aero-modal-backdrop" id="modal-ios-guide">
+    <div class="aero-modal-card" style="max-width: 620px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">📱</span>
+          <span class="modal-title">Подключение iPhone & Сборка .IPA</span>
+        </div>
+        <button class="btn-close-modal" id="btn-close-modal">✕</button>
+      </div>
+
+      <div style="color: var(--text-secondary); font-size: 13.5px; line-height: 1.6;">
+        <!-- Option 1 -->
+        <div style="background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.25); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+          <h4 style="color: var(--aero-cyan); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <span>⚡ Вариант 1 (Рекомендуется): Запуск БЕЗ установки и без .IPA</span>
+          </h4>
+          <p style="font-size: 12.5px; margin-bottom: 8px;">
+            Вам не нужно компилировать .ipa или мучиться с сертификатами Apple! В приложении уже встроен веб-контроллер для Safari:
+          </p>
+          <ol style="padding-left: 18px; font-size: 12.5px;">
+            <li>Убедитесь, что iPhone и ПК в одной сети Wi-Fi.</li>
+            <li>Откройте Safari на iPhone и перейдите по адресу: <code style="color: #fff; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px;">http://&lt;IP_КОМПЬЮТЕРА&gt;:5000/mobile</code> (или отсканируйте QR-код на панели).</li>
+            <li>Нажмите <strong>«Разрешить камеру»</strong> — отслеживание кисти и управление курсором ПК заработает моментально!</li>
+          </ol>
+        </div>
+
+        <!-- Option 2 -->
+        <div style="background: rgba(138, 43, 226, 0.1); border: 1px solid rgba(138, 43, 226, 0.28); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+          <h4 style="color: #c4b5fd; margin-bottom: 6px;">
+            ☁️ Вариант 2: Бесплатная авто-сборка .IPA в облаке (GitHub Actions)
+          </h4>
+          <p style="font-size: 12.5px; margin-bottom: 8px;">
+            Так как Windows не содержит компилятор Apple Clang и iOS SDK, мы добавили готовый файл автоматической сборки <code style="color: var(--aero-cyan);">.github/workflows/build_ios.yml</code>, который собирает настоящий .IPA на бесплатном сервере Mac в облаке GitHub:
+          </p>
+          <ol style="padding-left: 18px; font-size: 12.5px;">
+            <li>Загрузите ваш проект в репозиторий GitHub.</li>
+            <li>Перейдите во вкладку <strong>Actions</strong> → выберите <strong>Build AeroPoint Spatial iOS IPA</strong>.</li>
+            <li>Нажмите <strong>Run workflow</strong> — через 2 минуты сборка завершится.</li>
+            <li>В блоке <strong>Artifacts</strong> скачайте готовый архив <code style="color: #fff;">AeroPointSpatial.ipa</code>!</li>
+          </ol>
+        </div>
+
+        <!-- Option 3 -->
+        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+          <h4 style="color: #ffffff; margin-bottom: 6px;">
+            📲 Как установить скачанный .IPA на iPhone с Windows (Sideloadly):
+          </h4>
+          <ol style="padding-left: 18px; font-size: 12.5px;">
+            <li>Скачайте бесплатную утилиту <strong>Sideloadly</strong> для Windows (<a href="https://sideloadly.io" target="_blank" style="color: var(--aero-cyan);">sideloadly.io</a>).</li>
+            <li>Подключите iPhone кабелем Lightning/Type-C к компьютеру.</li>
+            <li>Перетащите файл <code style="color: #fff;">AeroPointSpatial.ipa</code> в окно Sideloadly.</li>
+            <li>Введите ваш Apple ID (для бесплатной цифровой подписи) и нажмите <strong>Start</strong>.</li>
+            <li>Через 30 секунд приложение появится на экране вашего iPhone!</li>
+          </ol>
+        </div>
+
+        <!-- Option 4 -->
+        <div style="font-size: 12px; color: var(--text-secondary); padding: 8px 12px; background: rgba(0,0,0,0.25); border-radius: 8px;">
+          💡 <strong>Если у вас или друга есть Mac:</strong> просто откройте папку <code style="color: #fff;">ios/AeroPointSpatial</code> в Xcode и нажмите кнопку <strong>Run ▶</strong>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

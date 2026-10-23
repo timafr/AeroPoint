@@ -1,0 +1,379 @@
+//
+//  ContentView.swift
+//  AeroPointSpatial
+//
+//  visionOS Glassmorphism Interface for iPhone Hand Tracking
+//
+
+import SwiftUI
+import Combine
+
+struct ContentView: View {
+    @StateObject private var tracker = SpatialTrackingManager()
+    @StateObject private var broadcaster = NetworkBroadcaster()
+    
+    @State private var serverIP: String = "192.168.1.100"
+    @State private var serverPort: String = "8765"
+    @State private var isSettingsOpen: Bool = false
+    @State private var activeSensor: SensorMode = .trueDepth
+    
+    enum SensorMode: String, CaseIterable, Identifiable {
+        case trueDepth = "TrueDepth (Face ID)"
+        case lidar = "LiDAR Scanner (Pro)"
+        
+        var id: String { self.rawValue }
+        var icon: String {
+            switch self {
+            case .trueDepth: return "faceid"
+            case .lidar: return "dot.scope.laptopcomputer"
+            }
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            // Dark futuristic ambient background
+            LinearGradient(
+                colors: [Color(red: 0.05, green: 0.04, blue: 0.08), Color(red: 0.08, green: 0.05, blue: 0.12)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 16) {
+                // Top Header Pill
+                HStack {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(broadcaster.isConnected ? Color.green : Color.orange)
+                            .frame(width: 8, height: 8)
+                            .shadow(color: broadcaster.isConnected ? Color.green : Color.orange, radius: 4)
+                        
+                        Text(broadcaster.isConnected ? "LIVE STREAMING" : "WAITING FOR PC")
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(Capsule())
+                    
+                    Spacer()
+                    
+                    Button(action: { isSettingsOpen.toggle() }) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.85))
+                            .padding(8)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(Circle())
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
+                
+                // Sensor Mode Segmented Pill
+                Picker("Sensor", selection: $activeSensor) {
+                    ForEach(SensorMode.allCases) { mode in
+                        HStack {
+                            Image(systemName: mode.icon)
+                            Text(mode.rawValue)
+                        }
+                        .tag(mode)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding(.horizontal)
+                .onChange(of: activeSensor) { newMode in
+                    tracker.switchSensor(newMode == .trueDepth ? .frontTrueDepth : .backLiDAR)
+                }
+
+                // Spatial Viewport / Camera & Hologram Display
+                ZStack {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(Color.black.opacity(0.6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [Color.cyan.opacity(0.6), Color.purple.opacity(0.4)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1.5
+                                )
+                        )
+                        .shadow(color: Color.cyan.opacity(0.2), radius: 16, x: 0, y: 8)
+                    
+                    // Video & Skeleton Rendering
+                    CameraPreviewView(session: tracker.captureSession)
+                        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    
+                    SkeletonOverlayView(landmarks: tracker.currentLandmarks)
+                        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    
+                    // Reticle Corner Accents
+                    VStack {
+                        HStack {
+                            CornerBracket(corner: .topLeft)
+                            Spacer()
+                            CornerBracket(corner: .topRight)
+                        }
+                        Spacer()
+                        HStack {
+                            CornerBracket(corner: .bottomLeft)
+                            Spacer()
+                            CornerBracket(corner: .bottomRight)
+                        }
+                    }
+                    .padding(14)
+                    
+                    // Floating Spatial Depth Badge
+                    VStack {
+                        Spacer()
+                        HStack {
+                            HStack(spacing: 6) {
+                                Image(systemName: "ruler.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.cyan)
+                                Text("Z: \(Int(tracker.currentDepthMM)) mm")
+                                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.black.opacity(0.75))
+                            .clipShape(Capsule())
+                            
+                            Spacer()
+                            
+                            HStack(spacing: 6) {
+                                Image(systemName: "hand.raised.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.green)
+                                Text(tracker.isHandDetected ? "21 JOINTS" : "SEARCHING...")
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .foregroundColor(tracker.isHandDetected ? .green : .gray)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.black.opacity(0.75))
+                            .clipShape(Capsule())
+                        }
+                        .padding(16)
+                    }
+                }
+                .aspectRatio(3.0 / 4.0, contentMode: .fit)
+                .padding(.horizontal)
+
+                // Live Metrics Bar (FPS, Ping, Device)
+                HStack(spacing: 12) {
+                    MetricCard(title: "RATE", value: "\(Int(tracker.actualFPS)) FPS", color: .green)
+                    MetricCard(title: "PING", value: "\(String(format: "%.1f", broadcaster.pingMs)) ms", color: .cyan)
+                    MetricCard(title: "PACKETS", value: "\(broadcaster.packetsSent)", color: .purple)
+                }
+                .padding(.horizontal)
+                
+                // Broadcast Toggle
+                Button(action: {
+                    if broadcaster.isStreaming {
+                        broadcaster.stopStreaming()
+                    } else {
+                        broadcaster.startStreaming(host: serverIP, port: UInt16(serverPort) ?? 8765)
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: broadcaster.isStreaming ? "stop.circle.fill" : "bolt.horizontal.circle.fill")
+                            .font(.system(size: 18))
+                        Text(broadcaster.isStreaming ? "ОСТАНОВИТЬ ТРАНСЛЯЦИЮ" : "ПОДКЛЮЧИТЬ К ПК")
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        broadcaster.isStreaming
+                            ? LinearGradient(colors: [Color.red, Color.orange], startPoint: .leading, endPoint: .trailing)
+                            : LinearGradient(colors: [Color.cyan, Color.blue], startPoint: .leading, endPoint: .trailing)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(color: (broadcaster.isStreaming ? Color.red : Color.cyan).opacity(0.4), radius: 10, y: 4)
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+            }
+        }
+        .sheet(isPresented: $isSettingsOpen) {
+            SettingsSheetView(serverIP: $serverIP, serverPort: $serverPort)
+        }
+        .onAppear {
+            tracker.startTracking()
+            tracker.onHandPoseDetected = { payload in
+                broadcaster.sendSpatialData(payload)
+            }
+        }
+        .onDisappear {
+            tracker.stopTracking()
+            broadcaster.stopStreaming()
+        }
+    }
+}
+
+// Subview: Metric Card
+struct MetricCard: View {
+    let title: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 3) {
+            Text(title)
+                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .foregroundColor(.white.opacity(0.6))
+            Text(value)
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+// Subview: Corner Bracket
+struct CornerBracket: View {
+    enum Corner { case topLeft, topRight, bottomLeft, bottomRight }
+    let corner: Corner
+    
+    var body: some View {
+        Canvas { context, size in
+            var path = Path()
+            let len: CGFloat = 14
+            switch corner {
+            case .topLeft:
+                path.move(to: CGPoint(x: 0, y: len))
+                path.addLine(to: CGPoint(x: 0, y: 0))
+                path.addLine(to: CGPoint(x: len, y: 0))
+            case .topRight:
+                path.move(to: CGPoint(x: size.width - len, y: 0))
+                path.addLine(to: CGPoint(x: size.width, y: 0))
+                path.addLine(to: CGPoint(x: size.width, y: len))
+            case .bottomLeft:
+                path.move(to: CGPoint(x: 0, y: size.height - len))
+                path.addLine(to: CGPoint(x: 0, y: size.height))
+                path.addLine(to: CGPoint(x: len, y: size.height))
+            case .bottomRight:
+                path.move(to: CGPoint(x: size.width - len, y: size.height))
+                path.addLine(to: CGPoint(x: size.width, y: size.height))
+                path.addLine(to: CGPoint(x: size.width, y: size.height - len))
+            }
+            context.stroke(path, with: .color(.cyan), lineWidth: 2)
+        }
+        .frame(width: 14, height: 14)
+    }
+}
+
+// Settings Sheet
+struct SettingsSheetView: View {
+    @Binding var serverIP: String
+    @Binding var serverPort: String
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Параметры соединения с ПК")) {
+                    HStack {
+                        Text("IP адрес ПК:")
+                        Spacer()
+                        TextField("192.168.1.100", text: $serverIP)
+                            .multilineTextAlignment(.trailing)
+                            .keyboardType(.numbersAndPunctuation)
+                    }
+                    HStack {
+                        Text("UDP Порт:")
+                        Spacer()
+                        TextField("8765", text: $serverPort)
+                            .multilineTextAlignment(.trailing)
+                            .keyboardType(.numberPad)
+                    }
+                }
+                
+                Section(header: Text("Подключение по кабелю (USB)")) {
+                    Text("Для нулевой задержки (0.5 ms) подключите iPhone проводом к ПК. Порт 8765 транслируется автоматически через USB tunnel.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .navigationTitle("Настройки")
+            .navigationBarItems(trailing: Button("Готово") { dismiss() })
+        }
+    }
+}
+
+// Camera Preview Platform View
+struct CameraPreviewView: UIViewRepresentable {
+    let session: AVCaptureSession?
+    
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView(frame: .zero)
+        guard let session = session else { return view }
+        let preview = AVCaptureVideoPreviewLayer(session: session)
+        preview.videoGravity = .resizeAspectFill
+        view.layer.addSublayer(preview)
+        context.coordinator.previewLayer = preview
+        return view
+    }
+    
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.previewLayer?.frame = uiView.bounds
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+    
+    class Coordinator {
+        var previewLayer: AVCaptureVideoPreviewLayer?
+    }
+}
+
+// Skeleton Overlay View
+struct SkeletonOverlayView: View {
+    let landmarks: [CGPoint]
+    
+    var body: some View {
+        Canvas { context, size in
+            guard landmarks.count == 21 else { return }
+            
+            // Bones
+            let connections: [(Int, Int)] = [
+                (0,1), (1,2), (2,3), (3,4),
+                (0,5), (5,6), (6,7), (7,8),
+                (5,9), (9,10), (10,11), (11,12),
+                (9,13), (13,14), (14,15), (15,16),
+                (13,17), (17,18), (18,19), (19,20),
+                (0,17)
+            ]
+            
+            for (p1, p2) in connections {
+                let pt1 = CGPoint(x: landmarks[p1].x * size.width, y: landmarks[p1].y * size.height)
+                let pt2 = CGPoint(x: landmarks[p2].x * size.width, y: landmarks[p2].y * size.height)
+                var path = Path()
+                path.move(to: pt1)
+                path.addLine(to: pt2)
+                context.stroke(path, with: .color(.cyan), lineWidth: 2)
+            }
+            
+            // Joints
+            for (idx, pt) in landmarks.enumerated() {
+                let pos = CGPoint(x: pt.x * size.width, y: pt.y * size.height)
+                let isTip = [4, 8, 12, 16, 20].contains(idx)
+                let radius: CGFloat = isTip ? 6 : 3.5
+                let color: Color = isTip ? .pink : .white
+                context.fill(Path(ellipseIn: CGRect(x: pos.x - radius, y: pos.y - radius, width: radius * 2, height: radius * 2)), with: .color(color))
+            }
+        }
+    }
+}
