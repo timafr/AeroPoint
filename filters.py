@@ -259,7 +259,7 @@ class AeroPrecisionEngine:
         # --- 3. Kinetic Velocity-Adaptive Deadzone ---
         # When hand is stationary, full deadzone removes micro-tremor.
         # When user deliberately initiates movement (> 18 px/frame), deadzone smoothly collapses to 0.0 for zero initial resistance.
-        dt = max(0.001, min(0.1, (now - self.last_time) if self.last_time is not None else 0.016))
+        dt = max(0.001, min(0.25, (now - self.last_time) if self.last_time is not None else 0.016))
         self.last_time = now
         inst_speed = dist / dt
         self.current_velocity = self.current_velocity * 0.65 + inst_speed * 0.35
@@ -277,10 +277,23 @@ class AeroPrecisionEngine:
         if dist < self.dynamic_deadzone:
             return self.prev_out_x, self.prev_out_y
 
-        # --- 4. Precision Positioning & Jitter Damping ---
-        self.current_gain = 1.0
-        out_x = filt_x
-        out_y = filt_y
+        # --- 4. Precision Positioning & Kinetic Non-Linear Acceleration ---
+        if self.enable_acceleration:
+            # Sub-pixel precision at slow speed (<80 px/s), energetic traverse at high speed (>180 px/s)
+            if self.current_velocity < 80.0:
+                self.current_gain = 0.75 + 0.25 * (self.current_velocity / 80.0)
+            elif self.current_velocity > 180.0:
+                boost = min(1.48, 1.0 + 0.48 * ((self.current_velocity - 180.0) / 400.0))
+                self.current_gain = boost
+            else:
+                self.current_gain = 1.0
+
+            out_x = self.prev_out_x + dx * self.current_gain
+            out_y = self.prev_out_y + dy * self.current_gain
+        else:
+            self.current_gain = 1.0
+            out_x = filt_x
+            out_y = filt_y
 
         self.prev_out_x = out_x
         self.prev_out_y = out_y

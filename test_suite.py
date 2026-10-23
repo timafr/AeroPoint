@@ -151,6 +151,26 @@ class TestAeroPrecisionEngine(unittest.TestCase):
         self.assertEqual(self.engine.deadzone_radius, 1.8)
         self.assertAlmostEqual(self.engine.one_euro.min_cutoff, 1.65)
 
+    def test_dynamic_acceleration_curve(self):
+        engine = AeroPrecisionEngine(enable_acceleration=True)
+        # Establish start
+        engine.process(500, 500, pinch_ratio=0.8, is_clicking=False, timestamp=1.00)
+
+        # Micro slow motion (e.g. 6px in 0.15s)
+        engine.process(506, 500, pinch_ratio=0.8, is_clicking=False, timestamp=1.15)
+        self.assertLess(engine.current_gain, 1.0)
+        self.assertGreaterEqual(engine.current_gain, 0.70)
+
+        # Rapid flick motion (e.g. 150px in 0.05s -> 3000 px/s)
+        engine.process(652, 500, pinch_ratio=0.8, is_clicking=False, timestamp=1.25)
+        self.assertGreater(engine.current_gain, 1.0)
+
+        # Acceleration disabled
+        engine_linear = AeroPrecisionEngine(enable_acceleration=False)
+        engine_linear.process(500, 500, pinch_ratio=0.8, is_clicking=False, timestamp=1.00)
+        engine_linear.process(650, 500, pinch_ratio=0.8, is_clicking=False, timestamp=1.05)
+        self.assertEqual(engine_linear.current_gain, 1.0)
+
 
 class TestInertialScrollEngine(unittest.TestCase):
     """Tests inertial decay and flick boost."""
