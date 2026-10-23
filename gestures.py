@@ -82,6 +82,8 @@ class GestureRecognizer:
         # State tracking
         self.current_gesture = GestureType.NONE
         self.is_pinch_active = False
+        self.pinch_start_time = 0.0
+        self.is_pinch_dragging = False
         self.is_thumb_bend_active = False
         self.is_right_click_active = False
         self.is_middle_click_active = False
@@ -104,6 +106,8 @@ class GestureRecognizer:
         # Bimanual action hand state tracking
         self.is_action_thumb_bend_active = False
         self.is_action_pinch_active = False
+        self.action_pinch_start_time = 0.0
+        self.is_action_pinch_dragging = False
         self.is_action_right_click_active = False
         self.is_action_middle_click_active = False
         self.is_action_task_switch_active = False
@@ -303,21 +307,23 @@ class GestureRecognizer:
             self.fist_start_time = 0.0
             self.is_fist_active = False
 
-        # --- SPECIAL POSE 1: SHAKA 🤙 (Thumb + Pinky extended) -> SHOW DESKTOP (Win+D) ---
-        if finger_states["thumb"] and finger_states["pinky"] and not finger_states["index"] and not finger_states["middle"] and not finger_states["ring"]:
-            if (now - self.last_shaka_time) > 0.45:
-                self.last_shaka_time = now
-                events["trigger_show_desktop"] = True
-            self.current_gesture = GestureType.SHAKA_DESKTOP
-            return self.current_gesture, events
+        # --- OPTIONAL EXPERIMENTAL POSES (Only if enable_legacy_shortcuts is True) ---
+        if getattr(self.config, 'enable_legacy_shortcuts', False):
+            # SPECIAL POSE 1: SHAKA 🤙 (Thumb + Pinky extended) -> SHOW DESKTOP (Win+D)
+            if finger_states["thumb"] and finger_states["pinky"] and not finger_states["index"] and not finger_states["middle"] and not finger_states["ring"]:
+                if (now - self.last_shaka_time) > 0.45:
+                    self.last_shaka_time = now
+                    events["trigger_show_desktop"] = True
+                self.current_gesture = GestureType.SHAKA_DESKTOP
+                return self.current_gesture, events
 
-        # --- SPECIAL POSE 2: ROCK 🤘 (Index + Pinky extended) -> QUICK ALT+TAB ---
-        if finger_states["index"] and finger_states["pinky"] and not finger_states["middle"] and not finger_states["ring"]:
-            if (now - self.last_rock_time) > 0.40:
-                self.last_rock_time = now
-                events["trigger_alt_tab"] = True
-            self.current_gesture = GestureType.ROCK_ALT_TAB
-            return self.current_gesture, events
+            # SPECIAL POSE 2: ROCK 🤘 (Index + Pinky extended) -> QUICK ALT+TAB
+            if finger_states["index"] and finger_states["pinky"] and not finger_states["middle"] and not finger_states["ring"]:
+                if (now - self.last_rock_time) > 0.40:
+                    self.last_rock_time = now
+                    events["trigger_alt_tab"] = True
+                self.current_gesture = GestureType.ROCK_ALT_TAB
+                return self.current_gesture, events
 
         # --- C. SCROLLING (✌️ Index + Middle extended, Ring + Pinky curled) ---
         if finger_states["index"] and finger_states["middle"] and not finger_states["ring"] and not finger_states["pinky"]:
@@ -362,33 +368,35 @@ class GestureRecognizer:
             self.current_gesture = GestureType.RIGHT_CLICK
             return self.current_gesture, events
 
-        # D2. Middle Click / Wheel (🔘 Pinch Thumb + Ring)
-        if self.is_middle_click_active:
-            if thumb_ring_dist > pinch_rel:
-                self.is_middle_click_active = False
-        elif min_pinch_dist == thumb_ring_dist and thumb_ring_dist < pinch_act:
-            if (now - self.last_middle_click_time) > self.config.click_debounce_sec:
-                self.is_middle_click_active = True
-                self.last_middle_click_time = now
-                events["trigger_middle_click"] = True
+        # D2 & D3: Middle Click / Task Switch (Only enabled if legacy shortcuts are on)
+        if getattr(self.config, 'enable_legacy_shortcuts', False):
+            # D2. Middle Click / Wheel (🔘 Pinch Thumb + Ring)
+            if self.is_middle_click_active:
+                if thumb_ring_dist > pinch_rel:
+                    self.is_middle_click_active = False
+            elif min_pinch_dist == thumb_ring_dist and thumb_ring_dist < pinch_act:
+                if (now - self.last_middle_click_time) > self.config.click_debounce_sec:
+                    self.is_middle_click_active = True
+                    self.last_middle_click_time = now
+                    events["trigger_middle_click"] = True
 
-        if self.is_middle_click_active:
-            self.current_gesture = GestureType.MIDDLE_CLICK
-            return self.current_gesture, events
+            if self.is_middle_click_active:
+                self.current_gesture = GestureType.MIDDLE_CLICK
+                return self.current_gesture, events
 
-        # D3. Task Switch / Win+Tab (🪟 Pinch Thumb + Pinky)
-        if self.is_task_switch_active:
-            if thumb_pinky_dist > pinch_rel:
-                self.is_task_switch_active = False
-        elif min_pinch_dist == thumb_pinky_dist and thumb_pinky_dist < pinch_act:
-            if (now - self.last_task_switch_time) > 0.40:
-                self.is_task_switch_active = True
-                self.last_task_switch_time = now
-                events["trigger_task_switch"] = True
+            # D3. Task Switch / Win+Tab (🪟 Pinch Thumb + Pinky)
+            if self.is_task_switch_active:
+                if thumb_pinky_dist > pinch_rel:
+                    self.is_task_switch_active = False
+            elif min_pinch_dist == thumb_pinky_dist and thumb_pinky_dist < pinch_act:
+                if (now - self.last_task_switch_time) > 0.40:
+                    self.is_task_switch_active = True
+                    self.last_task_switch_time = now
+                    events["trigger_task_switch"] = True
 
-        if self.is_task_switch_active:
-            self.current_gesture = GestureType.TASK_SWITCH
-            return self.current_gesture, events
+            if self.is_task_switch_active:
+                self.current_gesture = GestureType.TASK_SWITCH
+                return self.current_gesture, events
 
         # --- E. LEFT CLICK: THUMB BEND OR PINCH ---
         if self.config.click_mode == "thumb_bend":
@@ -424,18 +432,35 @@ class GestureRecognizer:
             z_depth_ok = (z_diff < 0.040) if (hasattr(hand, "landmarks_world") and hand.landmarks_world) else True
 
             if self.is_pinch_active:
+                # Check for pinch release
                 if thumb_idx_dist > self.config.pinch_release_ratio or not finger_states["index"] or not z_depth_ok:
+                    if self.is_pinch_dragging:
+                        self.is_pinch_dragging = False
+                        events["drag_active"] = False
+                    else:
+                        time_since_last = now - self.last_left_click_time
+                        if time_since_last > 0.12:
+                            events["trigger_left_click"] = True
+                            self.last_left_click_time = now
                     self.is_pinch_active = False
+                    self.pinch_start_time = 0.0
+                else:
+                    hold_time = now - self.pinch_start_time
+                    if getattr(self.config, 'enable_pinch_hold_drag', True) and hold_time >= getattr(self.config, 'pinch_hold_drag_delay_sec', 0.22):
+                        self.is_pinch_dragging = True
+                        events["drag_active"] = True
+                        self.current_gesture = GestureType.DRAG
+                        return self.current_gesture, events
+                    else:
+                        self.current_gesture = GestureType.PINCH_CLICK
+                        return self.current_gesture, events
             else:
                 if thumb_idx_dist < self.config.pinch_activate_ratio and finger_states["index"] and not finger_states["ring"] and z_depth_ok:
-                    time_since_last = now - self.last_left_click_time
-                    if time_since_last > self.config.click_debounce_sec:
-                        self.is_pinch_active = True
-                        if time_since_last < 0.42:
-                            events["trigger_double_click"] = True
-                        else:
-                            events["trigger_left_click"] = True
-                        self.last_left_click_time = now
+                    self.is_pinch_active = True
+                    self.pinch_start_time = now
+                    self.is_pinch_dragging = False
+                    self.current_gesture = GestureType.PINCH_CLICK
+                    return self.current_gesture, events
 
             if self.is_pinch_active:
                 self.current_gesture = GestureType.PINCH_CLICK
@@ -530,23 +555,25 @@ class GestureRecognizer:
                 self.is_action_fist_active = False
                 events["drag_active"] = False
 
-        # --- SPECIAL POSE 1 ON ACTION HAND: SHAKA 🤙 -> SHOW DESKTOP (Win+D) ---
-        if action_finger_states["thumb"] and action_finger_states["pinky"] and not action_finger_states["index"] and not action_finger_states["middle"] and not action_finger_states["ring"]:
-            if (now - self.last_shaka_time) > 0.45:
-                self.last_shaka_time = now
-                events["trigger_show_desktop"] = True
-            events["action_gesture"] = GestureType.SHAKA_DESKTOP.value
-            self.last_action_gesture = GestureType.SHAKA_DESKTOP
-            return GestureType.SHAKA_DESKTOP, events
+        # --- OPTIONAL SPECIAL POSES ON ACTION HAND (Only if enable_legacy_shortcuts is True) ---
+        if getattr(self.config, 'enable_legacy_shortcuts', False):
+            # SPECIAL POSE 1: SHAKA 🤙 -> SHOW DESKTOP (Win+D)
+            if action_finger_states["thumb"] and action_finger_states["pinky"] and not action_finger_states["index"] and not action_finger_states["middle"] and not action_finger_states["ring"]:
+                if (now - self.last_shaka_time) > 0.45:
+                    self.last_shaka_time = now
+                    events["trigger_show_desktop"] = True
+                events["action_gesture"] = GestureType.SHAKA_DESKTOP.value
+                self.last_action_gesture = GestureType.SHAKA_DESKTOP
+                return GestureType.SHAKA_DESKTOP, events
 
-        # --- SPECIAL POSE 2 ON ACTION HAND: ROCK 🤘 -> QUICK ALT+TAB ---
-        if action_finger_states["index"] and action_finger_states["pinky"] and not action_finger_states["middle"] and not action_finger_states["ring"]:
-            if (now - self.last_rock_time) > 0.40:
-                self.last_rock_time = now
-                events["trigger_alt_tab"] = True
-            events["action_gesture"] = GestureType.ROCK_ALT_TAB.value
-            self.last_action_gesture = GestureType.ROCK_ALT_TAB
-            return GestureType.ROCK_ALT_TAB, events
+            # SPECIAL POSE 2: ROCK 🤘 -> QUICK ALT+TAB
+            if action_finger_states["index"] and action_finger_states["pinky"] and not action_finger_states["middle"] and not action_finger_states["ring"]:
+                if (now - self.last_rock_time) > 0.40:
+                    self.last_rock_time = now
+                    events["trigger_alt_tab"] = True
+                events["action_gesture"] = GestureType.ROCK_ALT_TAB.value
+                self.last_action_gesture = GestureType.ROCK_ALT_TAB
+                return GestureType.ROCK_ALT_TAB, events
 
         # --- C. ACTION HAND SCROLLING (✌️ Index + Middle extended on action hand) ---
         if action_finger_states["index"] and action_finger_states["middle"] and not action_finger_states["ring"] and not action_finger_states["pinky"]:
@@ -584,34 +611,33 @@ class GestureRecognizer:
                 self.last_action_gesture = GestureType.RIGHT_CLICK
                 effective_gesture = GestureType.RIGHT_CLICK
 
-        # D2. Action Hand Middle Click (🔘 Pinch Thumb + Ring)
-        if self.is_action_middle_click_active:
-            if act_thumb_ring_dist > pinch_rel:
-                self.is_action_middle_click_active = False
-        elif act_min_pinch == act_thumb_ring_dist and act_thumb_ring_dist < pinch_act:
-            if (now - self.last_middle_click_time) > self.config.click_debounce_sec:
-                self.is_action_middle_click_active = True
-                self.last_middle_click_time = now
-                events["trigger_middle_click"] = True
-                events["action_gesture"] = GestureType.MIDDLE_CLICK.value
-                self.last_action_gesture = GestureType.MIDDLE_CLICK
-                effective_gesture = GestureType.MIDDLE_CLICK
+        # D2 & D3 (Only enabled if legacy shortcuts are on)
+        if getattr(self.config, 'enable_legacy_shortcuts', False):
+            if self.is_action_middle_click_active:
+                if act_thumb_ring_dist > pinch_rel:
+                    self.is_action_middle_click_active = False
+            elif act_min_pinch == act_thumb_ring_dist and act_thumb_ring_dist < pinch_act:
+                if (now - self.last_middle_click_time) > self.config.click_debounce_sec:
+                    self.is_action_middle_click_active = True
+                    self.last_middle_click_time = now
+                    events["trigger_middle_click"] = True
+                    events["action_gesture"] = GestureType.MIDDLE_CLICK.value
+                    self.last_action_gesture = GestureType.MIDDLE_CLICK
+                    effective_gesture = GestureType.MIDDLE_CLICK
 
-        # D3. Action Hand Task Switch (🪟 Pinch Thumb + Pinky)
-        if self.is_action_task_switch_active:
-            if act_thumb_pinky_dist > pinch_rel:
-                self.is_action_task_switch_active = False
-        elif act_min_pinch == act_thumb_pinky_dist and act_thumb_pinky_dist < pinch_act:
-            if (now - self.last_task_switch_time) > 0.40:
-                self.is_action_task_switch_active = True
-                self.last_task_switch_time = now
-                events["trigger_task_switch"] = True
-                events["action_gesture"] = GestureType.TASK_SWITCH.value
-                self.last_action_gesture = GestureType.TASK_SWITCH
-                effective_gesture = GestureType.TASK_SWITCH
+            if self.is_action_task_switch_active:
+                if act_thumb_pinky_dist > pinch_rel:
+                    self.is_action_task_switch_active = False
+            elif act_min_pinch == act_thumb_pinky_dist and act_thumb_pinky_dist < pinch_act:
+                if (now - self.last_task_switch_time) > 0.40:
+                    self.is_action_task_switch_active = True
+                    self.last_task_switch_time = now
+                    events["trigger_task_switch"] = True
+                    events["action_gesture"] = GestureType.TASK_SWITCH.value
+                    self.last_action_gesture = GestureType.TASK_SWITCH
+                    effective_gesture = GestureType.TASK_SWITCH
 
-        # --- E. ACTION HAND LEFT CLICK (Thumb Bend or Pinch on action hand) ---
-        # Only evaluate clicks if action hand is open/pointing (not in a fist)
+        # --- E. ACTION HAND LEFT CLICK & PINCH-HOLD DRAG ---
         if action_num_extended >= 1:
             if self.config.click_mode == "thumb_bend":
                 if self.is_action_thumb_bend_active:
@@ -639,19 +665,35 @@ class GestureRecognizer:
 
                 if self.is_action_pinch_active:
                     if act_thumb_idx_dist > self.config.pinch_release_ratio or not act_z_depth_ok:
-                        self.is_action_pinch_active = False
-                else:
-                    if act_thumb_idx_dist < self.config.pinch_activate_ratio and act_z_depth_ok:
-                        time_since_last = now - self.last_left_click_time
-                        if time_since_last > self.config.click_debounce_sec:
-                            self.is_action_pinch_active = True
-                            if time_since_last < 0.42:
-                                events["trigger_double_click"] = True
-                            else:
+                        if self.is_action_pinch_dragging:
+                            self.is_action_pinch_dragging = False
+                            events["drag_active"] = False
+                        else:
+                            time_since_last = now - self.last_left_click_time
+                            if time_since_last > 0.12:
                                 events["trigger_left_click"] = True
-                            self.last_left_click_time = now
+                                self.last_left_click_time = now
+                        self.is_action_pinch_active = False
+                        self.action_pinch_start_time = 0.0
+                    else:
+                        hold_time = now - self.action_pinch_start_time
+                        if getattr(self.config, 'enable_pinch_hold_drag', True) and hold_time >= getattr(self.config, 'pinch_hold_drag_delay_sec', 0.22):
+                            self.is_action_pinch_dragging = True
+                            events["drag_active"] = True
+                            events["action_gesture"] = GestureType.DRAG.value
+                            self.last_action_gesture = GestureType.DRAG
+                            effective_gesture = GestureType.DRAG
+                        else:
                             events["action_gesture"] = GestureType.PINCH_CLICK.value
                             self.last_action_gesture = GestureType.PINCH_CLICK
                             effective_gesture = GestureType.PINCH_CLICK
+                else:
+                    if act_thumb_idx_dist < self.config.pinch_activate_ratio and act_z_depth_ok:
+                        self.is_action_pinch_active = True
+                        self.action_pinch_start_time = now
+                        self.is_action_pinch_dragging = False
+                        events["action_gesture"] = GestureType.PINCH_CLICK.value
+                        self.last_action_gesture = GestureType.PINCH_CLICK
+                        effective_gesture = GestureType.PINCH_CLICK
 
         return effective_gesture, events

@@ -1,34 +1,36 @@
 /* ==========================================================================
-   AeroPoint Studio — Neural Kinetic HCI & Motion Design System
+   AeroPoint Quantum 3.0 — Spatial Neural HCI & Motion Design System
    ========================================================================== */
 
 :root {
-  --bg-deep: #06070a;
-  --surface-glass: rgba(16, 19, 28, 0.68);
-  --surface-glass-card: rgba(255, 255, 255, 0.04);
-  --surface-glass-hover: rgba(255, 255, 255, 0.075);
-  --surface-border: rgba(255, 255, 255, 0.11);
-  --surface-border-subtle: rgba(255, 255, 255, 0.05);
+  --bg-deep: #050609;
+  --bg-shell: rgba(10, 13, 20, 0.78);
+  --surface-glass: rgba(255, 255, 255, 0.04);
+  --surface-glass-card: rgba(255, 255, 255, 0.05);
+  --surface-glass-hover: rgba(255, 255, 255, 0.09);
+  --surface-border: rgba(255, 255, 255, 0.12);
+  --surface-border-subtle: rgba(255, 255, 255, 0.06);
 
-  /* AeroPoint Kinetic Color Palette */
+  /* Quantum Vision Neon Palette */
   --aero-cyan: #00f2fe;
-  --aero-blue: #3b82f6;
+  --aero-blue: #38bdf8;
   --aero-indigo: #6366f1;
   --aero-violet: #8b5cf6;
+  --aero-magenta: #ec4899;
   --aero-emerald: #10b981;
   --aero-amber: #f59e0b;
   --aero-rose: #f43f5e;
   --aero-glow: rgba(0, 242, 254, 0.35);
 
   --text-primary: #ffffff;
-  --text-secondary: #9ca3af;
-  --text-tertiary: #6b7280;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
 
-  --font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  --radius-window: 24px;
-  --radius-card: 18px;
+  --radius-shell: 26px;
+  --radius-card: 20px;
   --radius-pill: 32px;
   --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
   --smooth-ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -53,12 +55,9 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
-  perspective: 1200px;
 }
 
-/* ==========================================================================
-   Motion Design 1: Dynamic Kinetic Plasma & Aura Background
-   ========================================================================== */
+/* Background Atmosphere */
 .kinetic-aura {
   position: absolute;
   inset: 0;
@@ -70,588 +69,640 @@ body {
 .aura-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.32;
+  filter: blur(130px);
+  opacity: 0.28;
   mix-blend-mode: screen;
 }
 
 .orb-primary {
-  width: 680px;
-  height: 680px;
+  width: 650px;
+  height: 650px;
   background: radial-gradient(circle, var(--aero-cyan) 0%, transparent 70%);
-  top: -180px;
-  left: -140px;
-  animation: plasmaOrbit1 22s ease-in-out infinite alternate;
+  top: -160px;
+  left: -120px;
+  animation: floatOrb 24s ease-in-out infinite alternate;
 }
 
 .orb-secondary {
-  width: 760px;
-  height: 760px;
+  width: 750px;
+  height: 750px;
   background: radial-gradient(circle, var(--aero-indigo) 0%, transparent 70%);
-  bottom: -240px;
-  right: -160px;
-  animation: plasmaOrbit2 28s ease-in-out infinite alternate;
+  bottom: -220px;
+  right: -150px;
+  animation: floatOrb 30s ease-in-out infinite alternate-reverse;
 }
 
 .orb-tertiary {
-  width: 520px;
-  height: 520px;
-  background: radial-gradient(circle, var(--aero-violet) 0%, transparent 70%);
-  top: 32%;
-  left: 30%;
-  opacity: 0.22;
-  animation: plasmaOrbit3 25s ease-in-out infinite alternate;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--aero-magenta) 0%, transparent 70%);
+  top: 35%;
+  left: 45%;
+  animation: floatOrb 20s ease-in-out infinite alternate;
 }
 
-.aura-grid-overlay {
+@keyframes floatOrb {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(60px, -40px) scale(1.08); }
+  100% { transform: translate(-40px, 60px) scale(0.96); }
+}
+
+#ambient-canvas {
   position: absolute;
   inset: 0;
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, transparent 80%);
-}
-
-@keyframes plasmaOrbit1 {
-  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-  50% { transform: translate(80px, 60px) scale(1.12) rotate(60deg); }
-  100% { transform: translate(-40px, 100px) scale(0.95) rotate(120deg); }
-}
-
-@keyframes plasmaOrbit2 {
-  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-  50% { transform: translate(-100px, -70px) scale(1.15) rotate(-60deg); }
-  100% { transform: translate(50px, -40px) scale(0.92) rotate(-120deg); }
-}
-
-@keyframes plasmaOrbit3 {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(70px, -50px) scale(1.2); opacity: 0.35; }
-  100% { transform: translate(-60px, 40px) scale(0.88); opacity: 0.18; }
+  width: 100%;
+  height: 100%;
+  opacity: 0.45;
 }
 
 /* ==========================================================================
-   AeroPoint Window Frame (Glassmorphism & Specular Light)
+   Main Shell Window
    ========================================================================== */
-.app-window {
+.quantum-shell {
   position: relative;
+  z-index: 10;
   width: 96vw;
-  max-width: 1420px;
+  max-width: 1540px;
   height: 94vh;
-  background: var(--surface-glass);
-  backdrop-filter: blur(52px) saturate(210%) brightness(104%);
-  -webkit-backdrop-filter: blur(52px) saturate(210%) brightness(104%);
+  max-height: 960px;
+  background: var(--bg-shell);
+  backdrop-filter: blur(36px);
+  -webkit-backdrop-filter: blur(36px);
   border: 1px solid var(--surface-border);
-  border-radius: var(--radius-window);
-  box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.28),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    inset 0 -1px 0 0 rgba(0, 0, 0, 0.35),
-    0 20px 40px -10px rgba(0, 0, 0, 0.7),
-    0 40px 100px rgba(0, 0, 0, 0.9);
+  border-radius: var(--radius-shell);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   display: flex;
   flex-direction: column;
-  z-index: 10;
   overflow: hidden;
-  transition: box-shadow 0.4s ease;
 }
 
 /* ==========================================================================
-   Header & Titlebar
+   Top Header Bar
    ========================================================================== */
-.aero-header {
+.quantum-header {
   height: 68px;
-  border-bottom: 1px solid var(--surface-border-subtle);
+  padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  background: rgba(255, 255, 255, 0.015);
+  border-bottom: 1px solid var(--surface-border-subtle);
+  background: rgba(255, 255, 255, 0.02);
   flex-shrink: 0;
-  position: relative;
-  z-index: 20;
+  gap: 16px;
 }
 
-.header-left {
+.header-left, .header-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
 }
 
-.window-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ctrl-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
-  cursor: pointer;
-  transition: transform 0.2s var(--spring-bounce), filter 0.2s ease;
-}
-
-.ctrl-dot:hover {
-  transform: scale(1.22);
-}
-
-.dot-close { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
-.dot-min { background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.5); }
-.dot-max { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
-
-.app-brand {
+.brand-badge {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.brand-logo-wrap {
-  width: 38px;
-  height: 38px;
+.brand-glyph {
+  position: relative;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--aero-cyan), var(--aero-indigo));
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(127, 0, 255, 0.3));
+  border: 1px solid rgba(0, 242, 254, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 18px var(--aero-glow);
-  position: relative;
-  color: #ffffff;
+  color: var(--aero-cyan);
 }
 
-.brand-svg {
-  width: 22px;
-  height: 22px;
-  stroke: #ffffff;
+.brand-glyph svg {
+  width: 20px;
+  height: 20px;
 }
 
-.logo-pulse-ring {
+.glyph-glow {
   position: absolute;
-  inset: -3px;
-  border-radius: 13px;
-  border: 1.5px solid var(--aero-cyan);
-  opacity: 0;
-  animation: logoPulse 3s ease-out infinite;
+  inset: -2px;
+  border-radius: 12px;
+  background: var(--aero-cyan);
+  filter: blur(8px);
+  opacity: 0.35;
+  z-index: -1;
 }
 
-@keyframes logoPulse {
-  0% { transform: scale(0.9); opacity: 0.8; }
-  60% { transform: scale(1.25); opacity: 0; }
-  100% { transform: scale(1.3); opacity: 0; }
+.brand-meta {
+  display: flex;
+  flex-direction: column;
 }
 
-.brand-title-row {
+.brand-name-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .brand-title {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #ffffff;
-}
-
-.studio-badge {
-  font-size: 10px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  background: rgba(0, 242, 254, 0.15);
-  color: var(--aero-cyan);
-  border: 1px solid rgba(0, 242, 254, 0.3);
-  padding: 1px 6px;
-  border-radius: 6px;
+  letter-spacing: -0.4px;
+  background: linear-gradient(90deg, #ffffff, #d8f5ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.version-tag {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-tertiary);
+.quantum-tag {
+  font-size: 9.5px;
+  font-weight: 800;
   font-family: var(--font-mono);
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--aero-cyan), var(--aero-violet));
+  color: #000;
+  letter-spacing: 0.5px;
 }
 
 .brand-subtitle {
   font-size: 11px;
-  color: var(--text-secondary);
-  display: block;
-  margin-top: 1px;
+  color: var(--text-tertiary);
 }
 
-/* ==========================================================================
-   Header Center: Input Source Switcher Tabs & DirectShow Dropdown
-   ========================================================================== */
 .header-center {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.source-tabs-pill {
+/* Tabs */
+.quantum-tabs {
   display: flex;
-  align-items: center;
-  background: rgba(18, 16, 26, 0.7);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--surface-border);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--surface-border-subtle);
   border-radius: var(--radius-pill);
   padding: 3px;
   gap: 4px;
 }
 
-.source-tab-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.q-tab {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-family: var(--font-family);
   font-size: 12.5px;
   font-weight: 600;
   padding: 6px 14px;
-  border-radius: var(--radius-pill);
+  border-radius: 20px;
   cursor: pointer;
-  transition: all 0.25s var(--smooth-ease);
-}
-
-.source-tab-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.source-tab-btn.active {
-  color: #ffffff;
-  background: linear-gradient(135deg, rgba(0, 242, 254, 0.22), rgba(127, 0, 255, 0.25));
-  border: 1px solid rgba(0, 242, 254, 0.4);
-  box-shadow: 0 0 14px rgba(0, 242, 254, 0.22);
-}
-
-.tab-badge-glow {
-  font-size: 9px;
-  font-weight: 700;
-  background: rgba(255, 0, 127, 0.25);
-  border: 1px solid rgba(255, 0, 127, 0.45);
-  color: #ff66cc;
-  padding: 1px 5px;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
-}
-
-.camera-pill-container {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-pill);
-  padding: 4px 6px 4px 12px;
-  gap: 8px;
-  transition: all 0.25s var(--smooth-ease);
+  gap: 7px;
+  transition: all 0.2s var(--smooth-ease);
 }
 
-.camera-pill-container:hover {
+.q-tab.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.q-tab:hover:not(.active) {
+  color: #ffffff;
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(0, 242, 254, 0.35);
-  box-shadow: 0 0 14px rgba(0, 242, 254, 0.15);
 }
 
-.cam-icon-wrap {
-  display: flex;
-  align-items: center;
+.tab-chip {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(0, 242, 254, 0.2);
   color: var(--aero-cyan);
 }
 
-.pill-icon {
-  width: 16px;
-  height: 16px;
+/* Camera Dropdown Capsule */
+.camera-capsule {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--surface-border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  gap: 8px;
 }
 
-.camera-dropdown {
+.cam-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+}
+
+.camera-select-input {
   background: transparent;
   border: none;
   color: #ffffff;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
   font-family: var(--font-family);
+  font-weight: 500;
   outline: none;
   cursor: pointer;
-  padding-right: 8px;
-  min-width: 220px;
-  max-width: 320px;
+  max-width: 180px;
 }
 
-.camera-dropdown option {
+.camera-select-input option {
   background: #11141e;
   color: #ffffff;
-  padding: 8px;
 }
 
-.btn-refresh {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.btn-icon-refresh {
+  background: transparent;
+  border: none;
   color: var(--text-secondary);
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.25s var(--spring-bounce);
+  padding: 3px;
+  border-radius: 50%;
+  transition: all 0.2s;
 }
 
-.btn-refresh svg {
+.btn-icon-refresh svg {
   width: 14px;
   height: 14px;
 }
 
-.btn-refresh:hover {
-  background: rgba(0, 242, 254, 0.2);
+.btn-icon-refresh:hover {
   color: var(--aero-cyan);
-  border-color: var(--aero-cyan);
-  transform: rotate(90deg) scale(1.1);
+  transform: rotate(90deg);
 }
 
-/* ==========================================================================
-   Header Right: Pause & Master Switches
-   ========================================================================== */
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.aero-btn {
-  background: rgba(255, 255, 255, 0.06);
+/* Switch & Pause */
+.q-btn {
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--surface-border);
   color: #ffffff;
   font-family: var(--font-family);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   padding: 8px 16px;
-  border-radius: var(--radius-pill);
+  border-radius: 12px;
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s var(--spring-bounce);
-  backdrop-filter: blur(16px);
+  transition: all 0.2s var(--smooth-ease);
 }
 
-.aero-btn:hover {
-  background: rgba(255, 255, 255, 0.11);
-  border-color: rgba(255, 255, 255, 0.25);
+.q-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
   transform: translateY(-1px);
 }
 
-.aero-btn:active {
-  transform: scale(0.96);
+.q-btn.small {
+  padding: 5px 11px;
+  font-size: 11px;
+  border-radius: 8px;
+}
+
+.q-btn.pill-btn {
+  border-radius: var(--radius-pill);
 }
 
 .status-indicator {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--aero-emerald);
-  box-shadow: 0 0 8px var(--aero-emerald);
-  transition: all 0.3s ease;
+  background: #00e676;
+  box-shadow: 0 0 8px #00e676;
 }
 
 .status-indicator.paused {
-  background: var(--aero-amber);
-  box-shadow: 0 0 10px var(--aero-amber);
+  background: #ff3b30;
+  box-shadow: 0 0 8px #ff3b30;
 }
 
-.master-toggle-wrap {
+.master-toggle-pill {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.035);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--surface-border-subtle);
-  padding: 6px 14px;
   border-radius: var(--radius-pill);
+  padding: 4px 12px 4px 6px;
+  gap: 10px;
 }
 
-.master-label-block {
+.toggle-text-block {
   display: flex;
   flex-direction: column;
 }
 
-.switch-label {
-  font-size: 12px;
-  font-weight: 600;
+.switch-title {
+  font-size: 11.5px;
+  font-weight: 700;
 }
 
-.switch-sub {
-  font-size: 10px;
-  color: var(--aero-emerald);
+.switch-state {
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  color: #00e676;
 }
 
-/* ==========================================================================
-   Aero Switch Component
-   ========================================================================== */
-.aero-switch {
+/* Standard Switches */
+.q-switch {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 24px;
+  width: 40px;
+  height: 22px;
   flex-shrink: 0;
 }
 
-.aero-switch.small {
-  width: 36px;
-  height: 20px;
+.q-switch.small {
+  width: 34px;
+  height: 19px;
 }
 
-.aero-switch input {
+.q-switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.aero-switch .slider {
+.slider {
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background-color: rgba(255, 255, 255, 0.12);
-  transition: 0.3s var(--smooth-ease);
+  background-color: rgba(255, 255, 255, 0.15);
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.aero-switch .slider:before {
+.slider:before {
   position: absolute;
   content: "";
-  height: 18px;
-  width: 18px;
-  left: 2px;
-  bottom: 2px;
-  background-color: #ffffff;
-  transition: 0.3s var(--spring-bounce);
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 50%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
-.aero-switch.small .slider:before {
-  height: 14px;
-  width: 14px;
-  left: 2px;
-  bottom: 2px;
+.q-switch.small .slider:before {
+  height: 13px;
+  width: 13px;
 }
 
-.aero-switch input:checked + .slider {
-  background-color: var(--aero-emerald);
-  border-color: var(--aero-emerald);
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.45);
+input:checked + .slider {
+  background: linear-gradient(135deg, var(--aero-cyan), var(--aero-blue));
 }
 
-.aero-switch input:checked + .slider:before {
-  transform: translateX(20px);
+input:checked + .slider:before {
+  transform: translateX(18px);
 }
 
-.aero-switch.small input:checked + .slider:before {
-  transform: translateX(16px);
+.q-switch.small input:checked + .slider:before {
+  transform: translateX(15px);
 }
 
 /* ==========================================================================
-   Main Layout: Workspace & Viewfinder
+   Workspace Layout (Left Dock + Center View)
    ========================================================================== */
-.main-content {
+.workspace-layout {
+  display: flex;
   flex: 1;
-  display: grid;
-  grid-template-columns: 1.45fr 1fr;
-  gap: 20px;
-  padding: 20px 24px 24px 24px;
   overflow: hidden;
-  height: calc(100% - 68px);
 }
 
-.viewfinder-section {
+/* Left Vertical Floating Dock */
+.quantum-dock {
+  width: 104px;
+  background: rgba(255, 255, 255, 0.02);
+  border-right: 1px solid var(--surface-border-subtle);
   display: flex;
   flex-direction: column;
-  height: 100%;
+  align-items: center;
+  padding: 18px 0;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.dock-btn {
   position: relative;
+  width: 76px;
+  height: 64px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.25s var(--smooth-ease);
+}
+
+.dock-icon {
+  font-size: 20px;
+  transition: transform 0.25s var(--spring-bounce);
+}
+
+.dock-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.dock-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dock-btn:hover .dock-icon {
+  transform: scale(1.15);
+}
+
+.dock-btn.active {
+  color: #ffffff;
+  background: linear-gradient(145deg, rgba(0, 242, 254, 0.16), rgba(127, 0, 255, 0.12));
+  border-color: rgba(0, 242, 254, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 242, 254, 0.18);
+}
+
+.dock-indicator {
+  position: absolute;
+  right: -1px;
+  width: 3px;
+  height: 24px;
+  border-radius: 3px 0 0 3px;
+  background: var(--aero-cyan);
+  box-shadow: 0 0 8px var(--aero-cyan);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.dock-btn.active .dock-indicator {
+  opacity: 1;
 }
 
 /* ==========================================================================
-   Motion Design 2: 3D Kinetic Perspective Cards
+   Center Dynamic Views Container
    ========================================================================== */
-.kinetic-card {
-  transition: transform 0.25s var(--smooth-ease), box-shadow 0.25s var(--smooth-ease), border-color 0.25s ease;
-  transform-style: preserve-3d;
-}
-
-.kinetic-card:hover {
-  border-color: rgba(0, 242, 254, 0.28);
-  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 242, 254, 0.08);
-}
-
-.viewfinder-card {
+.viewports-container {
+  flex: 1;
+  overflow-y: auto;
   position: relative;
-  width: 100%;
-  height: 100%;
-  border-radius: var(--radius-card);
-  overflow: hidden;
-  border: 1px solid var(--surface-border);
-  background: #000000;
+  padding: 20px 24px;
+}
+
+.quantum-view {
+  display: none;
+  animation: fadeInView 0.32s var(--smooth-ease) forwards;
+}
+
+.quantum-view.active {
+  display: block;
+}
+
+@keyframes fadeInView {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.view-header-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
-/* Cyber Viewfinder Reticle Brackets */
+.view-header-bar h2 {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
+}
+
+.section-lead {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   View 1: Studio Layout
+   ========================================================================== */
+.studio-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  height: 100%;
+}
+
+.hologram-viewport-card {
+  position: relative;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Reticle Cyber Brackets */
 .reticle-corner {
   position: absolute;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   pointer-events: none;
   z-index: 15;
-  border-color: var(--aero-cyan);
-  opacity: 0.75;
-  transition: all 0.3s var(--spring-bounce);
 }
 
-.viewfinder-card:hover .reticle-corner {
-  opacity: 1;
-  border-color: #ffffff;
-  filter: drop-shadow(0 0 6px var(--aero-cyan));
-}
+.reticle-tl { top: 12px; left: 12px; border-top: 2.5px solid var(--aero-cyan); border-left: 2.5px solid var(--aero-cyan); }
+.reticle-tr { top: 12px; right: 12px; border-top: 2.5px solid var(--aero-cyan); border-right: 2.5px solid var(--aero-cyan); }
+.reticle-bl { bottom: 12px; left: 12px; border-bottom: 2.5px solid var(--aero-cyan); border-left: 2.5px solid var(--aero-cyan); }
+.reticle-br { bottom: 12px; right: 12px; border-bottom: 2.5px solid var(--aero-cyan); border-right: 2.5px solid var(--aero-cyan); }
 
-.reticle-tl { top: 16px; left: 16px; border-top: 2.5px solid; border-left: 2.5px solid; border-top-left-radius: 6px; }
-.reticle-tr { top: 16px; right: 16px; border-top: 2.5px solid; border-right: 2.5px solid; border-top-right-radius: 6px; }
-.reticle-bl { bottom: 16px; left: 16px; border-bottom: 2.5px solid; border-left: 2.5px solid; border-bottom-left-radius: 6px; }
-.reticle-br { bottom: 16px; right: 16px; border-bottom: 2.5px solid; border-right: 2.5px solid; border-bottom-right-radius: 6px; }
-
-/* Viewfinder Laser Scanline */
 .reticle-scanline {
   position: absolute;
+  top: 0;
   left: 0;
   right: 0;
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--aero-cyan), transparent);
-  box-shadow: 0 0 10px var(--aero-cyan);
-  opacity: 0.35;
+  box-shadow: 0 0 12px var(--aero-cyan);
+  opacity: 0.6;
   pointer-events: none;
-  z-index: 14;
-  animation: scanlineSweep 4.5s linear infinite;
+  z-index: 12;
+  animation: scanlineMove 6s linear infinite;
 }
 
-@keyframes scanlineSweep {
+@keyframes scanlineMove {
   0% { top: 0%; opacity: 0; }
-  10% { opacity: 0.45; }
-  90% { opacity: 0.45; }
+  15% { opacity: 0.7; }
+  85% { opacity: 0.7; }
   100% { top: 100%; opacity: 0; }
 }
 
-.stream-viewport {
-  width: 100%;
-  height: 100%;
+/* Top Telemetry Capsule */
+.telemetry-bar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 20;
+}
+
+.t-pill {
+  background: rgba(10, 13, 20, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.t-pill.active-pill {
+  border-color: rgba(0, 230, 118, 0.4);
+  color: #00e676;
+}
+
+.live-dot {
+  width: 6.5px;
+  height: 6.5px;
+  border-radius: 50%;
+  background: #00e676;
+  box-shadow: 0 0 6px #00e676;
+}
+
+.t-label { color: var(--text-tertiary); }
+.t-val { font-family: var(--font-mono); font-weight: 600; color: #ffffff; }
+
+.anchor-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--aero-cyan);
+}
+
+/* Video viewport */
+.video-container {
+  flex: 1;
   position: relative;
+  background: #040508;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 480px;
 }
 
 #video-stream {
@@ -661,771 +712,908 @@ body {
   display: block;
 }
 
-/* ==========================================================================
-   Motion Design 3: Telemetry Capsules & HUD Overlay
-   ========================================================================== */
-.stream-hud-overlay {
+.camera-loading-overlay {
   position: absolute;
   inset: 0;
-  pointer-events: none;
+  background: #050609;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 20px;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
   z-index: 10;
 }
 
-.hud-top-capsule {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  pointer-events: auto;
-  flex-wrap: wrap;
+.quantum-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid rgba(0, 242, 254, 0.15);
+  border-top-color: var(--aero-cyan);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
-.glass-pill {
-  background: rgba(18, 22, 32, 0.7);
-  backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 6px 14px;
-  border-radius: var(--radius-pill);
-  display: flex;
-  align-items: center;
-  gap: 8px;
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
   font-size: 12px;
-  font-weight: 500;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  transition: all 0.25s var(--smooth-ease);
-}
-
-.glass-pill:hover {
-  background: rgba(24, 30, 44, 0.85);
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--aero-emerald);
-  box-shadow: 0 0 8px var(--aero-emerald);
-  animation: liveBlink 1.8s ease-in-out infinite alternate;
-}
-
-@keyframes liveBlink {
-  0% { opacity: 0.6; transform: scale(0.9); }
-  100% { opacity: 1; transform: scale(1.2); }
-}
-
-.anchor-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--aero-blue);
-  box-shadow: 0 0 6px var(--aero-blue);
-}
-
-.pill-label {
   color: var(--text-secondary);
 }
 
-.pill-value {
-  color: var(--aero-cyan);
-  font-family: var(--font-mono);
-  font-weight: 600;
-}
-
-#pill-hands-mode.dual-active {
-  background: rgba(139, 92, 246, 0.22);
-  border-color: rgba(139, 92, 246, 0.45);
-  box-shadow: 0 0 16px rgba(139, 92, 246, 0.35);
-  animation: pulseViolet 2.5s ease-in-out infinite alternate;
-}
-
-@keyframes pulseViolet {
-  0% { box-shadow: 0 0 10px rgba(139, 92, 246, 0.25); }
-  100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.55); }
-}
-
-/* ==========================================================================
-   Motion Design 4: Bottom Banner with Neural Waveform & Gauge
-   ========================================================================== */
-.gesture-float-banner {
-  background: rgba(14, 17, 26, 0.78);
-  backdrop-filter: blur(32px) saturate(200%);
-  border: 1px solid var(--surface-border);
-  border-radius: 16px;
-  padding: 14px 20px;
+/* Bottom Hologram Banner */
+.gesture-hologram-banner {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+  background: rgba(10, 13, 20, 0.82);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 12px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  pointer-events: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  position: relative;
-  overflow: hidden;
+  z-index: 20;
 }
 
 .gesture-banner-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .gesture-emoji {
   font-size: 26px;
-  transition: transform 0.25s var(--spring-bounce);
 }
 
-.gesture-meta {
+.gesture-info-block {
   display: flex;
   flex-direction: column;
 }
 
-.gesture-title {
-  font-size: 15px;
-  font-weight: 700;
+.gesture-name {
+  font-size: 14px;
+  font-weight: 800;
   color: #ffffff;
 }
 
-.gesture-sub {
+.gesture-desc {
   font-size: 11px;
   color: var(--text-secondary);
 }
 
-/* Neural Waveform Audio/Activity Visualizer */
 .neural-waveform {
   display: flex;
   align-items: center;
-  gap: 4px;
-  height: 22px;
-  padding: 0 8px;
+  gap: 3.5px;
+  height: 20px;
 }
 
-.wave-bar {
+.w-bar {
   width: 3px;
   background: var(--aero-cyan);
-  border-radius: 3px;
-  box-shadow: 0 0 6px var(--aero-cyan);
-  animation: waveBarBounce 1.2s ease-in-out infinite alternate;
+  border-radius: 2px;
+  animation: waveformPulse 1.2s ease-in-out infinite alternate;
 }
 
 .wb-1 { height: 6px; animation-delay: 0.1s; }
-.wb-2 { height: 14px; animation-delay: 0.3s; }
-.wb-3 { height: 20px; animation-delay: 0.5s; }
-.wb-4 { height: 12px; animation-delay: 0.2s; }
-.wb-5 { height: 8px; animation-delay: 0.4s; }
+.wb-2 { height: 16px; animation-delay: 0.3s; }
+.wb-3 { height: 11px; animation-delay: 0.0s; }
+.wb-4 { height: 18px; animation-delay: 0.4s; }
+.wb-5 { height: 8px; animation-delay: 0.2s; }
 
-@keyframes waveBarBounce {
-  0% { transform: scaleY(0.4); opacity: 0.5; }
+@keyframes waveformPulse {
+  0% { transform: scaleY(0.4); opacity: 0.4; }
   100% { transform: scaleY(1.3); opacity: 1; }
 }
 
-/* Dynamic Proximity Gauge */
-.pinch-gauge-wrap {
-  width: 200px;
+.pinch-gauge-capsule {
+  width: 170px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
-.gauge-label-row {
+.gauge-meta-row {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: var(--text-secondary);
+  font-size: 10px;
+  color: var(--text-tertiary);
 }
 
 .gauge-pct {
   font-family: var(--font-mono);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--aero-cyan);
 }
 
-.gauge-bar-track {
-  width: 100%;
-  height: 7px;
-  background: rgba(255, 255, 255, 0.08);
+.gauge-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   overflow: hidden;
-  position: relative;
 }
 
-.gauge-bar-fill {
+.gauge-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--aero-blue), var(--aero-cyan));
+  background: linear-gradient(90deg, var(--aero-cyan), var(--aero-violet));
   border-radius: 4px;
-  box-shadow: 0 0 10px var(--aero-glow);
-  transition: width 0.12s var(--smooth-ease);
-  position: relative;
+  transition: width 0.08s linear;
 }
 
-.gauge-bar-fill::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-  animation: gaugeShimmer 1.8s infinite;
-}
-
-@keyframes gaugeShimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-/* ==========================================================================
-   Right: Inspector & Settings Pane
-   ========================================================================== */
-.inspector-section {
+/* Studio Side Column */
+.studio-side-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  overflow-y: auto;
-  padding-right: 6px;
-  padding-bottom: 30px;
-  height: 100%;
-  scrollbar-gutter: stable;
+  gap: 14px;
 }
 
-.inspector-section::-webkit-scrollbar {
-  width: 6px;
+.side-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.inspector-section::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 10px;
+.side-card-header h3 {
+  font-size: 14px;
+  font-weight: 800;
 }
 
-.glass-card {
-  background: var(--surface-glass-card);
-  backdrop-filter: blur(28px) saturate(180%);
+.badge-status-neon {
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  color: var(--aero-cyan);
+  background: rgba(0, 242, 254, 0.15);
+  border: 1px solid rgba(0, 242, 254, 0.3);
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.click-mode-toggle-block {
+  background: var(--surface-glass);
   border: 1px solid var(--surface-border-subtle);
   border-radius: var(--radius-card);
-  padding: 12px 14px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  flex-shrink: 0;
-  box-sizing: border-box;
 }
 
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.card-title-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-dot-decor {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--aero-cyan);
-  box-shadow: 0 0 8px var(--aero-cyan);
-}
-
-.card-header h3 {
-  font-size: 13px;
+.block-title {
+  font-size: 11.5px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--text-secondary);
 }
 
-.aero-tag {
-  font-size: 11px;
-  font-weight: 600;
-  background: rgba(0, 242, 254, 0.1);
-  color: var(--aero-cyan);
-  padding: 3px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(0, 242, 254, 0.25);
-}
-
-/* Segmented Control */
-.segmented-control {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.segmented-pill {
+  display: flex;
   background: rgba(0, 0, 0, 0.35);
-  padding: 3px;
+  border: 1px solid var(--surface-border-subtle);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px;
   gap: 4px;
 }
 
-.segment-btn {
+.seg-btn {
+  flex: 1;
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-family: var(--font-family);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  padding: 8px 12px;
+  padding: 7px 0;
   border-radius: 9px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.25s var(--spring-bounce);
+  transition: all 0.2s;
 }
 
-.segment-btn:hover {
+.seg-btn.active {
+  background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-.segment-btn.active {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+.hint-caption {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  line-height: 1.45;
 }
 
-.mode-hint {
-  font-size: 11px;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.025);
-  border-left: 3px solid var(--aero-cyan);
-  padding: 8px 10px;
-  border-radius: 4px;
-  line-height: 1.4;
-}
-
-/* Gestures Grid */
-.gestures-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-
-.gesture-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  padding: 8px 6px;
+.bimanual-quick-card {
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-border-subtle);
+  border-radius: var(--radius-card);
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 3px;
-  position: relative;
-  transition: all 0.2s var(--spring-bounce);
+  gap: 8px;
 }
 
-.gesture-card:hover {
-  background: rgba(255, 255, 255, 0.06);
+.bimanual-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.b-title {
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.b-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--aero-violet);
+}
+
+.b-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.dom-hand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.segmented-mini {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 3px;
+}
+
+.seg-mini-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.seg-mini-btn.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.quick-dial-launcher-card {
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.08), rgba(127, 0, 255, 0.08));
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  border-radius: var(--radius-card);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qdl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.qdl-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.mini-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: auto;
+}
+
+.m-card {
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-border-subtle);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.m-label { font-size: 9.5px; color: var(--text-tertiary); }
+.m-val { font-size: 11.5px; font-family: var(--font-mono); font-weight: 700; }
+
+/* ==========================================================================
+   View 2: Essential Gestures Grid
+   ========================================================================== */
+.essential-gestures-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.core-gesture-card {
+  position: relative;
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-border-subtle);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.25s var(--smooth-ease);
+}
+
+.core-gesture-card:hover {
+  background: var(--surface-glass-hover);
+  border-color: var(--surface-border);
   transform: translateY(-2px);
 }
 
-.gesture-card.active {
-  background: rgba(0, 242, 254, 0.14);
+.core-gesture-card.active-pose {
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.12), rgba(127, 0, 255, 0.12));
   border-color: var(--aero-cyan);
-  box-shadow: 0 0 14px rgba(0, 242, 254, 0.3);
-  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(0, 242, 254, 0.18);
 }
 
-.g-icon {
-  font-size: 18px;
+.cg-icon-wrap {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.g-name {
-  font-size: 11px;
-  font-weight: 700;
-  color: #ffffff;
+.cg-icon {
+  font-size: 24px;
 }
 
-.g-desc {
-  font-size: 10px;
-  color: var(--text-tertiary);
-}
-
-.g-indicator {
+.cg-halo {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: transparent;
-  transition: all 0.2s ease;
-}
-
-.gesture-card.active .g-indicator {
+  inset: 0;
+  border-radius: 14px;
   background: var(--aero-cyan);
-  box-shadow: 0 0 6px var(--aero-cyan);
+  filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.3s;
 }
 
-/* Precision Toggles & Sliders */
-.precision-toggles, .toggle-list {
+.core-gesture-card.active-pose .cg-halo {
+  opacity: 0.4;
+}
+
+.cg-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cg-title-row h4 {
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+.cg-badge {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 242, 254, 0.18);
+  color: var(--aero-cyan);
+}
+
+.cg-badge.neutral {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+}
+
+.cg-desc {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.cg-status-led {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.2s;
+}
+
+.core-gesture-card.active-pose .cg-status-led {
+  background: #00e676;
+  box-shadow: 0 0 10px #00e676;
+}
+
+.legacy-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.legacy-label {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   View 3: Radial Quick-Dial (Pie Menu) Studio
+   ========================================================================== */
+.radial-studio-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+}
+
+.radial-wheel-box {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--surface-border-subtle);
+  border-radius: var(--radius-card);
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
+}
+
+.radial-wheel-disc {
+  position: relative;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  border: 2px dashed rgba(0, 242, 254, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wheel-center-orb {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 242, 254, 0.25), rgba(127, 0, 255, 0.4));
+  border: 1.5px solid rgba(0, 242, 254, 0.6);
+  box-shadow: 0 0 24px rgba(0, 242, 254, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.center-icon { font-size: 20px; color: var(--aero-cyan); }
+.center-text { font-size: 10px; font-weight: 800; font-family: var(--font-mono); letter-spacing: 1px; }
+
+/* 8 Slices positioned around circle */
+.wheel-sector {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: rgba(16, 20, 30, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.25s var(--spring-bounce);
+}
+
+.wheel-sector:hover, .wheel-sector.active-sector {
+  background: linear-gradient(135deg, var(--aero-cyan), var(--aero-blue));
+  border-color: #ffffff;
+  color: #000000;
+  transform: scale(1.18);
+  box-shadow: 0 10px 28px rgba(0, 242, 254, 0.4);
+}
+
+.wheel-sector:hover .sector-label, .wheel-sector.active-sector .sector-label {
+  color: #000000;
+}
+
+.sector-icon { font-size: 22px; }
+.sector-label { font-size: 9.5px; font-weight: 700; color: var(--text-secondary); }
+
+/* Circle math positions for 8 items */
+.sec-1 { top: 12px; left: 134px; }             /* North: Win+Tab */
+.sec-2 { top: 48px; right: 38px; }            /* NE: Snipping Tool */
+.sec-3 { top: 134px; right: 10px; }           /* East: Volume Up */
+.sec-4 { bottom: 48px; right: 38px; }         /* SE: Volume Down */
+.sec-5 { bottom: 12px; left: 134px; }          /* South: Play/Pause */
+.sec-6 { bottom: 48px; left: 38px; }          /* SW: Win+D */
+.sec-7 { top: 134px; left: 10px; }            /* West: Alt+Tab */
+.sec-8 { top: 48px; left: 38px; }             /* NW: Lock */
+
+.wheel-caption {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  margin-top: 24px;
+}
+
+/* Actions list on the right */
+.radial-config-card {
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-border-subtle);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.config-desc {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--surface-border-subtle);
+  border-radius: 12px;
+}
+
+.action-item .ai-icon { font-size: 18px; margin-right: 10px; }
+.action-item .ai-info { flex: 1; display: flex; flex-direction: column; }
+.ai-name { font-size: 12px; font-weight: 700; }
+.ai-shortcut { font-size: 10px; color: var(--text-tertiary); font-family: var(--font-mono); }
+
+.test-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--surface-border);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.test-btn:hover { background: var(--aero-cyan); color: #000; }
+
+.shortcut-tip-box {
+  background: rgba(0, 242, 254, 0.06);
+  border: 1px solid rgba(0, 242, 254, 0.22);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* ==========================================================================
+   View 4: Precision & Laser Settings
+   ========================================================================== */
+.precision-grid, .iphone-grid, .audio-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.q-glass-card {
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-border-subtle);
+  border-radius: var(--radius-card);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.q-glass-card h3 {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.slider-control-block {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.toggle-item {
+.sc-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-}
-
-.toggle-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.toggle-title {
   font-size: 12px;
   font-weight: 600;
-  color: #ffffff;
 }
 
-.toggle-subtitle {
-  font-size: 10px;
-  color: var(--text-tertiary);
-}
-
-.setting-row {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.slider-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.slider-val {
+.sc-val {
   font-family: var(--font-mono);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--aero-cyan);
 }
 
-.sub-hint {
-  font-size: 10px;
-  color: var(--text-tertiary);
-}
-
-/* Aero Sliders */
-.aero-slider {
+.q-slider {
   -webkit-appearance: none;
-  appearance: none;
   width: 100%;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
   outline: none;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.aero-slider:hover {
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.aero-slider::-webkit-slider-thumb {
+.q-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  appearance: none;
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 10px var(--aero-glow);
-  cursor: pointer;
-  transition: transform 0.2s var(--spring-bounce);
-}
-
-.aero-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.25);
   background: var(--aero-cyan);
+  box-shadow: 0 0 10px var(--aero-cyan);
+  cursor: pointer;
+  transition: transform 0.15s;
 }
 
-/* Telemetry Grid */
-.telemetry-card {
-  padding: 12px 16px;
+.q-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
 }
 
-.telemetry-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  text-align: center;
+.sc-hints {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: var(--text-tertiary);
 }
 
-.t-item {
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tr-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.t-label {
-  font-size: 10px;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-}
-
-.t-value {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.t-value.highlight {
-  color: var(--aero-emerald);
-}
-
-/* Loading Overlay & Aero Spinner */
-.camera-loading-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(10, 12, 18, 0.88);
-  backdrop-filter: blur(20px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  z-index: 25;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-.camera-loading-overlay.hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.aero-spinner {
-  width: 44px;
-  height: 44px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--aero-cyan);
-  border-radius: 50%;
-  animation: aeroSpin 0.75s linear infinite;
-  box-shadow: 0 0 14px var(--aero-glow);
-}
-
-@keyframes aeroSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loading-text {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-/* Click Shockwave Expansion Effect */
-.click-shockwave {
-  position: absolute;
-  border-radius: 50%;
-  border: 2px solid var(--aero-cyan);
-  box-shadow: 0 0 16px var(--aero-cyan);
-  pointer-events: none;
-  animation: shockwaveOut 0.5s ease-out forwards;
-  z-index: 99;
-}
-
-@keyframes shockwaveOut {
-  0% { transform: scale(0.2); opacity: 1; }
-  100% { transform: scale(2.8); opacity: 0; }
-}
+.tr-title { font-size: 12px; font-weight: 700; }
+.tr-sub { font-size: 10.5px; color: var(--text-secondary); line-height: 1.4; }
 
 /* ==========================================================================
-   iPhone Spatial Sensor Dashboard & Vision UI
+   View 5: iPhone Studio
    ========================================================================== */
-.iphone-panel {
+.telemetry-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.tg-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--surface-border-subtle);
+  border-radius: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 4px;
 }
 
-.iphone-hero-card {
-  background: linear-gradient(135deg, rgba(127, 0, 255, 0.15), rgba(0, 242, 254, 0.08));
-  border: 1px solid rgba(127, 0, 255, 0.45);
-  border-radius: var(--radius-card);
-  padding: 16px;
-  position: relative;
-  overflow: visible !important;
-  flex-shrink: 0 !important;
-  min-height: fit-content;
-  box-shadow: 0 8px 32px rgba(127, 0, 255, 0.16);
-}
+.tg-label { font-size: 10px; color: var(--text-tertiary); }
+.tg-val { font-size: 13px; font-family: var(--font-mono); font-weight: 700; }
 
-.iphone-hero-card .card-header {
-  width: 100%;
+.z-distance-block {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.iphone-status-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.sensor-badge {
-  display: inline-flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
-  background: rgba(0, 242, 254, 0.15);
-  border: 1px solid rgba(0, 242, 254, 0.3);
-  color: var(--aero-cyan);
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  margin-top: 4px;
 }
 
-.sensor-badge.active {
-  background: rgba(16, 185, 129, 0.18);
-  border-color: rgba(16, 185, 129, 0.4);
-  color: var(--aero-emerald);
-}
-
-.sensor-badge.disconnected {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #ff7777;
-}
-
-.spatial-metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.sp-card {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--surface-border);
-  border-radius: 10px;
-  padding: 8px;
-  text-align: center;
-}
-
-.sp-label {
-  font-size: 9px;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  font-family: var(--font-mono);
-}
-
-.sp-value {
-  font-size: 13px;
-  font-weight: 700;
-  color: #ffffff;
-  font-family: var(--font-mono);
-  margin-top: 2px;
-}
-
-.z-depth-card {
-  background: rgba(0, 242, 254, 0.05);
-  border: 1px solid rgba(0, 242, 254, 0.25);
-  border-radius: 12px;
-  padding: 12px;
-  margin-top: 10px;
-}
-
-.z-depth-header {
+.z-meta-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--aero-cyan);
+  font-size: 11.5px;
 }
 
-.z-depth-track {
-  width: 100%;
+.z-track {
   height: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   overflow: hidden;
-  position: relative;
 }
 
-.z-depth-bar {
+.z-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--aero-cyan), var(--aero-violet));
   border-radius: 4px;
-  transition: width 0.15s ease-out;
 }
 
-/* Modal Popup */
-.aero-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(20px);
-  z-index: 999;
+.lidar-mirror-card {
+  background: rgba(0, 242, 254, 0.07);
+  border: 1px solid rgba(0, 242, 254, 0.3);
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 4px;
+}
+
+.lm-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-}
-
-.aero-modal-backdrop.open {
-  opacity: 1;
-  visibility: visible;
-}
-
-.aero-modal-card {
-  width: 90%;
-  max-width: 580px;
-  max-height: 85vh;
-  overflow-y: auto;
-  background: rgba(20, 16, 28, 0.95);
-  border: 1px solid rgba(0, 242, 254, 0.35);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 242, 254, 0.15);
-}
-
-.modal-header {
-  display: flex;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.lm-title { font-size: 12.5px; font-weight: 700; color: var(--aero-cyan); }
+.lm-sub { font-size: 10.5px; color: var(--text-secondary); margin-top: 2px; }
+
+.connect-options-box {
+  display: flex;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--surface-border-subtle);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.qr-col {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 6px;
 }
 
-.modal-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #ffffff;
+.qr-image {
+  width: 90px;
+  height: 90px;
+  background: #ffffff;
+  padding: 4px;
+  border-radius: 10px;
 }
 
-.btn-close-modal {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: #ffffff;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
+.qr-hint { font-size: 9.5px; color: var(--text-tertiary); }
+
+.qr-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.qi-title { font-size: 12px; font-weight: 700; color: var(--aero-cyan); }
+.qi-text { font-size: 11px; color: var(--text-secondary); }
+
+.qi-url-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 14px;
+  gap: 6px;
 }
 
-.btn-close-modal:hover {
-  background: rgba(255, 255, 255, 0.2);
+.qi-url-row code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 3px 6px;
+  border-radius: 6px;
+  word-break: break-all;
 }
 
+.qi-usb-text {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+.ipa-install-box {
+  background: rgba(127, 0, 255, 0.08);
+  border: 1px solid rgba(127, 0, 255, 0.3);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ipa-text { font-size: 11.5px; color: var(--text-secondary); }
+
+/* ==========================================================================
+   View 6: Sonic Audio FX Synthesizer
+   ========================================================================== */
+.sound-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.sound-test-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--surface-border-subtle);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s var(--smooth-ease);
+}
+
+.sound-test-btn:hover {
+  background: rgba(0, 242, 254, 0.14);
+  border-color: var(--aero-cyan);
+  transform: translateY(-2px);
+}
+
+.st-icon { font-size: 22px; }
+.st-name { font-size: 12px; font-weight: 700; }
+.st-freq { font-size: 9.5px; font-family: var(--font-mono); color: var(--text-tertiary); }
+
+.sound-theme-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stp-title { font-size: 12px; font-weight: 600; }
+
+.synth-info-box {
+  background: rgba(0, 242, 254, 0.05);
+  border: 1px solid rgba(0, 242, 254, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.sensor-badge {
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.sensor-badge.connected {
+  background: rgba(0, 230, 118, 0.18);
+  color: #00e676;
+  border: 1px solid rgba(0, 230, 118, 0.35);
+}
+
+.sensor-badge.disconnected {
+  background: rgba(245, 158, 11, 0.18);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}

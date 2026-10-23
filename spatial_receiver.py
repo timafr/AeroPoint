@@ -40,6 +40,7 @@ class SpatialReceiver:
         self.latency_ms = 0.0
         self.depth_mm = 450.0  # Physical distance from sensor to hand in mm
         self.packet_count = 0
+        self.force_mirror_x: Optional[bool] = None  # None = follow iPhone packet, True = force mirror, False = unmirrored
 
         # Latest decoded hand data
         self.latest_hands: List[HandData] = []
@@ -119,11 +120,19 @@ class SpatialReceiver:
             if client_t > 0:
                 self.latency_ms = max(0.5, (recv_time - client_t) * 1000.0)
 
+            # Mirroring flag
+            is_mirrored_pkt = p.get("is_mirrored", False)
+            should_invert = False
+            if self.force_mirror_x is not None:
+                should_invert = (self.force_mirror_x != is_mirrored_pkt)
+
             hands_raw = p.get("hands", [])
             new_hands: List[HandData] = []
 
             for h in hands_raw:
                 handedness = h.get("handedness", "Right")
+                if should_invert:
+                    handedness = "Right" if handedness == "Left" else "Left"
                 palm_mm = float(h.get("palm_size_mm", 85.0))
                 self.depth_mm = float(h.get("depth_avg_mm", 450.0))
                 
@@ -140,6 +149,8 @@ class SpatialReceiver:
                 for pt in raw_lms:
                     # pt is [nx, ny, nz_meters]
                     nx, ny, nz = float(pt[0]), float(pt[1]), float(pt[2])
+                    if should_invert:
+                        nx = 1.0 - nx
                     lms_norm.append((nx, ny, nz))
                     px_x = int(nx * cam_w)
                     px_y = int(ny * cam_h)
@@ -261,5 +272,6 @@ class SpatialReceiver:
             "battery": self.battery_pct if active else 0,
             "depth_mm": round(self.depth_mm, 1) if active else 0.0,
             "port": self.port,
-            "client_ip": self.client_ip if active else ""
+            "client_ip": self.client_ip if active else "",
+            "mirror_x": bool(self.force_mirror_x) if (self.force_mirror_x is not None) else True
         }

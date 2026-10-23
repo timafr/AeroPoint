@@ -176,8 +176,69 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             if "pinch_activate_ratio" in data:
                 manager.config.pinch_activate_ratio = float(data["pinch_activate_ratio"])
                 manager.config.pinch_release_ratio = manager.config.pinch_activate_ratio + 0.12
+            if "enable_legacy_shortcuts" in data:
+                manager.config.enable_legacy_shortcuts = bool(data["enable_legacy_shortcuts"])
+            if "laser_pointer_mode" in data:
+                manager.config.laser_pointer_mode = bool(data["laser_pointer_mode"])
+            if "sound_enabled" in data:
+                manager.config.sound_enabled = bool(data["sound_enabled"])
+            if "sound_theme" in data:
+                manager.config.sound_theme = str(data["sound_theme"])
+            if "sound_volume" in data:
+                manager.config.sound_volume = float(data["sound_volume"])
 
             return {"status": "ok"}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/radial/action', method='POST')
+    def radial_action():
+        try:
+            data = bottle.request.json or {}
+            action = str(data.get('action', '')).lower()
+            mouse = manager.mouse
+            if action in ('win_tab', 'task_view'):
+                mouse.task_view()
+            elif action in ('win_d', 'show_desktop', 'desktop'):
+                mouse.show_desktop()
+            elif action in ('alt_tab', 'switch_window'):
+                mouse.alt_tab()
+            elif action in ('snipping_tool', 'screenshot'):
+                mouse.snipping_tool()
+            elif action in ('volume_up', 'vol_up'):
+                mouse.volume_up()
+            elif action in ('volume_down', 'vol_down'):
+                mouse.volume_down()
+            elif action in ('volume_mute', 'mute'):
+                mouse.volume_mute()
+            elif action in ('play_pause', 'media'):
+                mouse.play_pause()
+            elif action in ('lock_pc', 'lock'):
+                mouse.lock_workstation()
+            elif action == 'zoom_in':
+                mouse.zoom(1)
+            elif action == 'zoom_out':
+                mouse.zoom(-1)
+            elif action == 'double_click':
+                mouse.double_click('left')
+            else:
+                return {"status": "error", "message": f"Unknown action: {action}"}
+            return {"status": "ok", "action": action}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/spatial/mirror', method='POST')
+    def toggle_spatial_mirror():
+        try:
+            data = bottle.request.json or {}
+            if "mirror" in data:
+                manager.spatial_receiver.force_mirror_x = bool(data["mirror"])
+            else:
+                cur = manager.spatial_receiver.force_mirror_x
+                manager.spatial_receiver.force_mirror_x = not cur if cur is not None else False
+            return {"status": "ok", "mirror_x": manager.spatial_receiver.force_mirror_x}
         except Exception as e:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}

@@ -48,6 +48,13 @@ if IS_WINDOWS:
     VK_TAB = 0x09
     VK_LMENU = 0x12  # Alt key
     VK_D = 0x44      # 'D' key
+    VK_SHIFT = 0x10  # Shift key
+    VK_S = 0x53      # 'S' key
+    VK_CONTROL = 0x11
+    VK_VOLUME_MUTE = 0xAD
+    VK_VOLUME_DOWN = 0xAE
+    VK_VOLUME_UP = 0xAF
+    VK_MEDIA_PLAY_PAUSE = 0xB3
 else:
     import pyautogui
     pyautogui.PAUSE = 0.0
@@ -147,6 +154,78 @@ class MouseController:
             user32.keybd_event(VK_LMENU, 0, KEYEVENTF_KEYUP, 0)
         else:
             pyautogui.hotkey('alt', 'tab')
+
+    def snipping_tool(self):
+        """Opens Windows Snipping Tool (Win + Shift + S)."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_LWIN, 0, 0, 0)
+            user32.keybd_event(VK_SHIFT, 0, 0, 0)
+            user32.keybd_event(VK_S, 0, 0, 0)
+            time.sleep(0.03)
+            user32.keybd_event(VK_S, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.hotkey('win', 'shift', 's')
+
+    def volume_up(self):
+        """Increases system master volume."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_VOLUME_UP, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_VOLUME_UP, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.press('volumeup')
+
+    def volume_down(self):
+        """Decreases system master volume."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_VOLUME_DOWN, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_VOLUME_DOWN, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.press('volumedown')
+
+    def volume_mute(self):
+        """Toggles audio mute."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_VOLUME_MUTE, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_VOLUME_MUTE, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.press('volumemute')
+
+    def play_pause(self):
+        """Toggles media play/pause."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_MEDIA_PLAY_PAUSE, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_MEDIA_PLAY_PAUSE, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.press('playpause')
+
+    def lock_workstation(self):
+        """Locks the Windows workstation instantly."""
+        if IS_WINDOWS:
+            try:
+                user32.LockWorkStation()
+            except Exception:
+                pass
+        else:
+            pyautogui.hotkey('win', 'l')
+
+    def zoom(self, amount: int):
+        """Performs zoom via Ctrl + Wheel."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_CONTROL, 0, 0, 0)
+            delta = int(amount * 120)
+            user32.mouse_event(MOUSEEVENTF_WHEEL, 0, 0, delta, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.keyDown('ctrl')
+            pyautogui.scroll(amount * 100)
+            pyautogui.keyUp('ctrl')
 
     def double_click(self, button: str = "left"):
         """Performs a precise rapid double-click on current pixel coordinates."""

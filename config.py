@@ -35,6 +35,18 @@ class GestureConfig:
     enable_two_hands: bool = True           # Allow simultaneous two-hand tracking
     dominant_hand: str = "Right"            # Pointer hand: "Right" or "Left"
 
+    # --- Essential & Advanced Gesture Control ---
+    enable_legacy_shortcuts: bool = False   # When False: suppresses accidental Shaka/Rock/Pinky clicks
+    enable_pinch_hold_drag: bool = True    # Hold pinch for > 0.22s to start dragging
+    pinch_hold_drag_delay_sec: float = 0.22 # Delay before drag locks in
+    radial_menu_enabled: bool = True        # Radial Quick-Dial Pie Menu
+    laser_pointer_mode: bool = False        # Laser vector aiming mode with snap assistance
+
+    # --- Audio & Sonic Synthesizer ---
+    sound_enabled: bool = True
+    sound_theme: str = "quantum"            # "quantum", "vision", "bionic"
+    sound_volume: float = 0.65
+
     # --- Active Workspace / Screen Mapping ---
     # Margins define the boundary inside camera frame that maps to 100% of the screen
     margin_x: float = 0.08  # Expanded 8% margins (allows cursor to easily reach the full right and left edge)

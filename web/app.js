@@ -1,9 +1,224 @@
 /**
- * AeroPoint Studio — Neural Kinetic HCI Logic & Motion Design
+ * AeroPoint Quantum 3.0 — Spatial Neural HCI & Web Audio Engine
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Elements
+
+  // =========================================================================
+  // 1. Web Audio Spatial Sound Synthesizer (Zero External Dependencies)
+  // =========================================================================
+  class SpatialAudioSynthesizer {
+    constructor() {
+      this.ctx = null;
+      this.enabled = true;
+      this.volume = 0.65;
+      this.theme = 'quantum';
+      this.lastScrollSoundTime = 0;
+      this.lastPinchSoundTime = 0;
+    }
+
+    init() {
+      if (!this.ctx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          this.ctx = new AudioContext();
+        }
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+    }
+
+    playPinch() {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      if (now - this.lastPinchSoundTime < 0.08) return;
+      this.lastPinchSoundTime = now;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      if (this.theme === 'vision') {
+        // Ethereal subtle glass tap
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.025);
+        gain.gain.setValueAtTime(this.volume * 0.45, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.045);
+      } else {
+        // Quantum Cyber click (crisp tactile snap)
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.035);
+        gain.gain.setValueAtTime(this.volume * 0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.045);
+      }
+    }
+
+    playRightClick() {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc1.type = 'sine';
+      osc2.type = 'sine';
+      osc1.frequency.setValueAtTime(880, now);   // A5
+      osc2.frequency.setValueAtTime(1760, now);  // A6
+
+      gain.gain.setValueAtTime(this.volume * 0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.13);
+      osc2.stop(now + 0.13);
+    }
+
+    playDragStart() {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(70, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.15);
+
+      gain.gain.setValueAtTime(this.volume * 0.7, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.20);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.21);
+    }
+
+    playScrollTick() {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      if (now - this.lastScrollSoundTime < 0.05) return;
+      this.lastScrollSoundTime = now;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1800, now);
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.012);
+
+      gain.gain.setValueAtTime(this.volume * 0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.018);
+    }
+
+    playRadialChime() {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      // 4-voice polyphonic visionOS harmonic chord (C5, E5, G5, B5)
+      const freqs = [523.25, 659.25, 783.99, 987.77];
+      freqs.forEach((f, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, now + idx * 0.025);
+
+        gain.gain.setValueAtTime(this.volume * 0.2, now + idx * 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.025 + 0.25);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now + idx * 0.025);
+        osc.stop(now + idx * 0.025 + 0.26);
+      });
+    }
+
+    playLaserFx() {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(2400, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.09);
+
+      gain.gain.setValueAtTime(this.volume * 0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.11);
+    }
+  }
+
+  const soundSynth = new SpatialAudioSynthesizer();
+  window.addEventListener('click', () => soundSynth.init(), { once: true });
+
+  // =========================================================================
+  // 2. Navigation Dock View Switching
+  // =========================================================================
+  const dockButtons = document.querySelectorAll('.dock-btn');
+  const quantumViews = document.querySelectorAll('.quantum-view');
+
+  dockButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetViewId = btn.getAttribute('data-view');
+      dockButtons.forEach(b => b.classList.remove('active'));
+      quantumViews.forEach(v => v.classList.remove('active'));
+
+      btn.classList.add('active');
+      const targetView = document.getElementById(targetViewId);
+      if (targetView) {
+        targetView.classList.add('active');
+      }
+      soundSynth.playPinch();
+    });
+  });
+
+  // =========================================================================
+  // 3. Elements Mapping & State
+  // =========================================================================
   const cameraSelect = document.getElementById('camera-select');
   const btnRefreshCams = document.getElementById('btn-refresh-cams');
   const masterControlSwitch = document.getElementById('master-control-switch');
@@ -15,27 +230,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Viewport & Stream
   const streamImg = document.getElementById('video-stream');
   const loadingOverlay = document.getElementById('camera-loading-overlay');
-  const loadingStatusText = document.getElementById('loading-status-text');
 
-  // Badges & Telemetry
+  // Telemetry Badges
   const badgeFps = document.getElementById('badge-fps');
   const badgeLatency = document.getElementById('badge-latency');
   const badgeCpu = document.getElementById('badge-cpu');
-  const badgePinchRatio = document.getElementById('badge-pinch-ratio');
-  const trackingStatusBadge = document.getElementById('tracking-status-badge');
   const badgeAnchor = document.getElementById('badge-anchor');
   const pillAnchorStatus = document.getElementById('pill-anchor-status');
   const pillHandsMode = document.getElementById('pill-hands-mode');
   const badgeHandsIcon = document.getElementById('badge-hands-icon');
   const badgeHandsMode = document.getElementById('badge-hands-mode');
+  const trackingStatusBadge = document.getElementById('tracking-status-badge');
 
-  // Two-Handed Control Elements
-  const switchTwoHands = document.getElementById('switch-two-hands');
-  const btnDomRight = document.getElementById('btn-dom-right');
-  const btnDomLeft = document.getElementById('btn-dom-left');
-  const valDominantHand = document.getElementById('val-dominant-hand');
-
-  // Gesture Banner & Dynamic Gauge
+  // Gesture Banner & Pinch Gauge
   const bannerIcon = document.getElementById('gesture-banner-icon');
   const bannerTitle = document.getElementById('gesture-banner-title');
   const bannerSub = document.getElementById('gesture-banner-sub');
@@ -43,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const pinchPercentText = document.getElementById('pinch-percent-text');
   const gaugeLabelTitle = document.getElementById('gauge-label-title');
 
-  // Sliders
+  // Precision Sliders & Toggles
   const sliderSensitivity = document.getElementById('slider-sensitivity');
   const valSensitivity = document.getElementById('val-sensitivity');
   const sliderSmooth = document.getElementById('slider-smooth');
@@ -52,600 +259,525 @@ document.addEventListener('DOMContentLoaded', () => {
   const valDeadzone = document.getElementById('val-deadzone');
   const sliderReach = document.getElementById('slider-reach');
   const valReach = document.getElementById('val-reach');
-  const sliderPinch = document.getElementById('slider-pinch');
-  const valPinch = document.getElementById('val-pinch');
-
-  // Switches
   const switchAnchor = document.getElementById('switch-anchor');
   const switchAcceleration = document.getElementById('switch-acceleration');
+  const switchLaser = document.getElementById('switch-laser');
   const switchClahe = document.getElementById('switch-clahe');
-  const switchSkeleton = document.getElementById('switch-skeleton');
-  const switchSound = document.getElementById('switch-sound');
+  const valLaserStatus = document.getElementById('val-laser-status');
 
-  // Mode Segment Buttons
+  // Bimanual Controls
+  const switchTwoHands = document.getElementById('switch-two-hands');
+  const btnDomRight = document.getElementById('btn-dom-right');
+  const btnDomLeft = document.getElementById('btn-dom-left');
+
+  // Click Mode Buttons
   const btnModeThumb = document.getElementById('btn-mode-thumb');
   const btnModePinch = document.getElementById('btn-mode-pinch');
-  const tagCurrentMode = document.getElementById('tag-current-mode');
   const modeHintText = document.getElementById('mode-hint-text');
 
-  // Gesture Cards Dictionary with exact matching and normalization
-  const gestureCards = {
-    'HOVER': { icon: '☝️', title: 'Наведение', sub: 'Плавное позиционирование', card: 'card-hover' },
-    'HOVER (MOVE)': { icon: '☝️', title: 'Наведение', sub: 'Плавное позиционирование', card: 'card-hover' },
-    'PINCH (LEFT CLICK)': { icon: '🤏', title: 'Щипок (ЛКМ)', sub: 'Левый клик мыши', card: 'card-pinch' },
-    'THUMB BEND (LEFT CLICK)': { icon: '👍', title: 'Сгиб пальца (ЛКМ)', sub: 'Стабильный левый клик', card: 'card-pinch' },
-    'RIGHT CLICK': { icon: '👌', title: 'Правый клик', sub: 'Контекстное меню', card: 'card-right' },
-    'MIDDLE CLICK (WHEEL)': { icon: '🔘', title: 'Колёсико мыши', sub: 'Безымянный палец', card: 'card-middle' },
-    'TASK SWITCH (WIN+TAB)': { icon: '🪟', title: 'Обзор окон (Win+Tab)', sub: 'Щипок мизинцем', card: 'card-task' },
-    'QUICK ALT+TAB': { icon: '🤘', title: 'Смена окна (Alt+Tab)', sub: 'Рок-жест', card: 'card-rock' },
-    'SHOW DESKTOP (WIN+D)': { icon: '🤙', title: 'Свернуть всё (Win+D)', sub: 'Шака-жест', card: 'card-shaka' },
-    'SCROLL': { icon: '✌️', title: 'Прокрутка', sub: 'Скролл двумя пальцами', card: 'card-scroll' },
-    'DRAG': { icon: '✊', title: 'Зажатие (Drag)', sub: 'Перетаскивание объектов', card: 'card-drag' },
-    'DRAG & DROP': { icon: '✊', title: 'Зажатие (Drag)', sub: 'Перетаскивание объектов', card: 'card-drag' },
-    'PAUSE': { icon: '🖐️', title: 'Защитная пауза', sub: 'Открытая ладонь', card: 'card-pause' },
-    'PAUSE (NEUTRAL)': { icon: '🖐️', title: 'Защитная пауза', sub: 'Открытая ладонь', card: 'card-pause' },
-    'NO HAND': { icon: '🔍', title: 'Поиск руки', sub: 'Поместите ладонь в кадр', card: null }
-  };
+  // Legacy Gestures Switch
+  const switchLegacyGestures = document.getElementById('switch-legacy-gestures');
 
-  function resolveGestureInfo(gest) {
-    if (!gest) return gestureCards['NO HAND'];
-    const g = gest.trim();
-    if (gestureCards[g]) return gestureCards[g];
-    if (g.includes('MIDDLE')) return gestureCards['MIDDLE CLICK (WHEEL)'];
-    if (g.includes('TASK')) return gestureCards['TASK SWITCH (WIN+TAB)'];
-    if (g.includes('ALT+TAB') || g.includes('ROCK')) return gestureCards['QUICK ALT+TAB'];
-    if (g.includes('DESKTOP') || g.includes('SHAKA')) return gestureCards['SHOW DESKTOP (WIN+D)'];
-    if (g.includes('HOVER')) return gestureCards['HOVER (MOVE)'];
-    if (g.includes('THUMB')) return gestureCards['THUMB BEND (LEFT CLICK)'];
-    if (g.includes('PINCH')) return gestureCards['PINCH (LEFT CLICK)'];
-    if (g.includes('RIGHT')) return gestureCards['RIGHT CLICK'];
-    if (g.includes('SCROLL')) return gestureCards['SCROLL'];
-    if (g.includes('DRAG')) return gestureCards['DRAG & DROP'];
-    if (g.includes('PAUSE')) return gestureCards['PAUSE'];
-    return gestureCards['NO HAND'];
-  }
-
-  let isPaused = false;
-  let frameReceived = false;
-  let pollingInterval = null;
-  let prevGesture = 'NO HAND';
-
-  // --- Synthetic Microswitch Click Sound (Web Audio API) ---
-  let audioCtx = null;
-  function playHapticClick(isRight = false) {
-    if (!switchSound || !switchSound.checked) return;
-    try {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-
-      osc.type = 'triangle';
-      const baseFreq = isRight ? 720 : 980;
-      osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.012);
-
-      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.012);
-
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.015);
-    } catch (e) {
-      // AudioContext unavailable or suppressed
-    }
-  }
-
-  // --- Motion Design 1: Click Shockwave Ripple Effect ---
-  function triggerShockwave() {
-    const viewport = document.querySelector('.stream-viewport');
-    if (!viewport) return;
-    const wave = document.createElement('div');
-    wave.className = 'click-shockwave';
-    wave.style.width = '70px';
-    wave.style.height = '70px';
-    wave.style.left = 'calc(50% - 35px)';
-    wave.style.top = 'calc(50% - 35px)';
-    viewport.appendChild(wave);
-    setTimeout(() => wave.remove(), 550);
-  }
-
-  // --- Motion Design 2: 3D Perspective Tilt on Cards ---
-  function initCardTilt() {
-    const cards = document.querySelectorAll('.kinetic-card');
-    cards.forEach(card => {
-      card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left - (rect.width / 2);
-        const y = e.clientY - rect.top - (rect.height / 2);
-        const rotateX = (-y / rect.height) * 6;
-        const rotateY = (x / rect.width) * 6;
-        card.style.transform = `perspective(800px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-2px)`;
-      });
-      card.addEventListener('mouseleave', () => {
-        card.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg) translateY(0px)';
-      });
-    });
-  }
-  initCardTilt();
-
-  // --- Stream Reception & Smart Failover ---
-  function markFrameLoaded() {
-    frameReceived = true;
-    if (loadingOverlay) {
-      loadingOverlay.classList.add('hidden');
-    }
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-      pollingInterval = null;
-    }
-  }
-
-  streamImg.addEventListener('load', markFrameLoaded);
-  streamImg.addEventListener('error', () => {
-    console.warn('[AeroPoint] Stream dropped, engaging fallback polling...');
-    startSnapshotFallback();
-  });
-
-  function startSnapshotFallback() {
-    if (pollingInterval) return;
-    console.log('[AeroPoint] Running snapshot fallback...');
-    pollingInterval = setInterval(() => {
-      const img = new Image();
-      img.onload = () => {
-        streamImg.src = img.src;
-        markFrameLoaded();
-      };
-      img.src = '/api/frame.jpg?t=' + Date.now();
-    }, 60);
-  }
-
-  // --- 1. Load Real DirectShow Cameras List ---
-  async function loadCameras() {
-    try {
-      const res = await fetch('/api/cameras');
-      const data = await res.json();
-      cameraSelect.innerHTML = '';
-
-      if (!data.cameras || data.cameras.length === 0) {
-        const opt = document.createElement('option');
-        opt.textContent = 'Камеры не найдены';
-        cameraSelect.appendChild(opt);
-        return;
-      }
-
-      data.cameras.forEach(cam => {
-        const opt = document.createElement('option');
-        opt.value = cam.id;
-        opt.textContent = `${cam.label} [ID: ${cam.id}]`;
-        if (cam.id === data.active_id) {
-          opt.selected = true;
-        }
-        cameraSelect.appendChild(opt);
-      });
-    } catch (e) {
-      console.error('Error loading cameras:', e);
-    }
-  }
-
-  // Camera change event (Strict DirectShow Index Match)
-  cameraSelect.addEventListener('change', async (e) => {
-    const camId = parseInt(e.target.value);
-    const selectedText = cameraSelect.options[cameraSelect.selectedIndex]?.text || `Камера #${camId}`;
-    
-    if (loadingOverlay) {
-      loadingOverlay.classList.remove('hidden');
-      if (loadingStatusText) loadingStatusText.textContent = `Подключение: ${selectedText}...`;
-    }
-    frameReceived = false;
-
-    try {
-      const res = await fetch('/api/select_camera', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ camera_id: camId })
-      });
-      const data = await res.json();
-      if (data && data.active_id !== undefined) {
-        cameraSelect.value = data.active_id;
-      }
-      setTimeout(() => {
-        streamImg.src = '/video_feed?t=' + Date.now();
-      }, 350);
-    } catch (err) {
-      console.error('Error selecting camera:', err);
-      loadCameras();
-    }
-  });
-
-  btnRefreshCams.addEventListener('click', loadCameras);
-
-  // --- 1.5 Click Mode Segmented Selector ---
-  if (btnModeThumb && btnModePinch) {
-    btnModeThumb.addEventListener('click', async () => {
-      btnModeThumb.classList.add('active');
-      btnModePinch.classList.remove('active');
-      tagCurrentMode.textContent = 'Сгиб пальца';
-      if (gaugeLabelTitle) gaugeLabelTitle.textContent = 'Угол сгиба пальца';
-      modeHintText.innerHTML = '☝️ <strong>Рекомендовано:</strong> наведите курсор указательным пальцем и согните большой палец для 100% стабильного клика без смещения мыши.';
-      await sendSettings({ click_mode: 'thumb_bend' });
-    });
-
-    btnModePinch.addEventListener('click', async () => {
-      btnModePinch.classList.add('active');
-      btnModeThumb.classList.remove('active');
-      tagCurrentMode.textContent = 'Щипок (Pinch)';
-      if (gaugeLabelTitle) gaugeLabelTitle.textContent = 'Сила щипка (Pinch)';
-      modeHintText.innerHTML = '🤏 <strong>Классический щипок:</strong> соприкосновение кончиков большого и указательного пальцев.';
-      await sendSettings({ click_mode: 'pinch' });
-    });
-  }
-
-  // --- 1.6 Two-Handed (Bimanual) Controls ---
-  if (switchTwoHands) {
-    switchTwoHands.addEventListener('change', async (e) => {
-      await sendSettings({ enable_two_hands: e.target.checked });
-    });
-  }
-
-  if (btnDomRight && btnDomLeft) {
-    btnDomRight.addEventListener('click', async () => {
-      btnDomRight.classList.add('active');
-      btnDomLeft.classList.remove('active');
-      if (valDominantHand) valDominantHand.textContent = 'Правая';
-      await sendSettings({ dominant_hand: 'Right' });
-    });
-
-    btnDomLeft.addEventListener('click', async () => {
-      btnDomLeft.classList.add('active');
-      btnDomRight.classList.remove('active');
-      if (valDominantHand) valDominantHand.textContent = 'Левая';
-      await sendSettings({ dominant_hand: 'Left' });
-    });
-  }
-
-  // --- 0. Source Tabs: Webcam vs iPhone Spatial ---
+  // iPhone Sensor Elements
   const tabBtnWebcam = document.getElementById('tab-btn-webcam');
   const tabBtnIphone = document.getElementById('tab-btn-iphone');
-  const cameraPickerWrap = document.getElementById('camera-picker-wrap');
-  const iphoneDashboardCard = document.getElementById('iphone-dashboard-card');
   const badgeIphoneConn = document.getElementById('badge-iphone-conn');
   const valIphoneSensor = document.getElementById('val-iphone-sensor');
   const valIphonePing = document.getElementById('val-iphone-ping');
   const valIphoneBattery = document.getElementById('val-iphone-battery');
   const valIphoneDepth = document.getElementById('val-iphone-depth');
+  const valIphoneDepthDisplay = document.getElementById('val-iphone-depth-display');
   const barIphoneDepth = document.getElementById('bar-iphone-depth');
-
-  const btnOpenIosGuide = document.getElementById('btn-open-ios-guide');
-  const btnCloseModal = document.getElementById('btn-close-modal');
-  const modalIosGuide = document.getElementById('modal-ios-guide');
-
-  if (tabBtnWebcam && tabBtnIphone) {
-    tabBtnWebcam.addEventListener('click', async () => {
-      tabBtnWebcam.classList.add('active');
-      tabBtnIphone.classList.remove('active');
-      if (cameraPickerWrap) cameraPickerWrap.style.display = 'flex';
-      if (iphoneDashboardCard) iphoneDashboardCard.style.display = 'none';
-      await fetch('/api/switch_tab', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tab: 'webcam' })
-      });
-    });
-
-    tabBtnIphone.addEventListener('click', async () => {
-      tabBtnIphone.classList.add('active');
-      tabBtnWebcam.classList.remove('active');
-      if (cameraPickerWrap) cameraPickerWrap.style.display = 'none';
-      if (iphoneDashboardCard) iphoneDashboardCard.style.display = 'flex';
-      await fetch('/api/switch_tab', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tab: 'iphone' })
-      });
-    });
-  }
-
-  if (btnOpenIosGuide && modalIosGuide) {
-    btnOpenIosGuide.addEventListener('click', () => {
-      modalIosGuide.classList.add('open');
-    });
-  }
-  if (btnCloseModal && modalIosGuide) {
-    btnCloseModal.addEventListener('click', () => {
-      modalIosGuide.classList.remove('open');
-    });
-  }
-  if (modalIosGuide) {
-    modalIosGuide.addEventListener('click', (e) => {
-      if (e.target === modalIosGuide) modalIosGuide.classList.remove('open');
-    });
-  }
-
-  // --- LAN Info & Mobile QR Code ---
-  const qrCodeImg = document.getElementById('qr-code-img');
-  const mobileUrlText = document.getElementById('mobile-url-text');
+  const btnToggleMirror = document.getElementById('btn-toggle-mirror');
+  const txtMirrorStatus = document.getElementById('txt-mirror-status');
   const btnCopyUrl = document.getElementById('btn-copy-url');
+  const mobileUrlText = document.getElementById('mobile-url-text');
+  const btnOpenIpaFolder = document.getElementById('btn-open-ipa-folder');
 
-  async function loadLanInfo() {
-    try {
-      const res = await fetch('/api/lan_info');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.mobile_url) {
-          if (mobileUrlText) mobileUrlText.textContent = data.mobile_url;
-          if (qrCodeImg) {
-            qrCodeImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(data.mobile_url)}`;
-          }
-        }
+  // Audio Controls
+  const switchSoundMaster = document.getElementById('switch-sound-master');
+  const sliderSoundVolume = document.getElementById('slider-sound-volume');
+  const valSoundVolume = document.getElementById('val-sound-volume');
+
+  // Sound Test Buttons
+  document.getElementById('snd-test-click')?.addEventListener('click', () => soundSynth.playPinch());
+  document.getElementById('snd-test-right')?.addEventListener('click', () => soundSynth.playRightClick());
+  document.getElementById('snd-test-drag')?.addEventListener('click', () => soundSynth.playDragStart());
+  document.getElementById('snd-test-scroll')?.addEventListener('click', () => soundSynth.playScrollTick());
+  document.getElementById('snd-test-dial')?.addEventListener('click', () => soundSynth.playRadialChime());
+  document.getElementById('snd-test-laser')?.addEventListener('click', () => soundSynth.playLaserFx());
+
+  // Sound Themes
+  document.querySelectorAll('.sound-theme-picker .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sound-theme-picker .seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      soundSynth.theme = btn.getAttribute('data-theme') || 'quantum';
+      soundSynth.playRadialChime();
+      postSettings({ sound_theme: soundSynth.theme });
+    });
+  });
+
+  // Sound Volume & Toggle
+  sliderSoundVolume?.addEventListener('input', (e) => {
+    const vol = parseInt(e.target.value) / 100.0;
+    soundSynth.volume = vol;
+    valSoundVolume.textContent = `${e.target.value}%`;
+    postSettings({ sound_volume: vol });
+  });
+
+  switchSoundMaster?.addEventListener('change', (e) => {
+    soundSynth.enabled = e.target.checked;
+    postSettings({ sound_enabled: e.target.checked });
+  });
+
+  // =========================================================================
+  // 4. Interactive Radial Quick-Dial (Pie Menu) Logic
+  // =========================================================================
+  const wheelSectors = document.querySelectorAll('.wheel-sector');
+  const actionListItems = document.querySelectorAll('.action-item');
+
+  function triggerRadialAction(actionName) {
+    soundSynth.playRadialChime();
+    fetch('/api/radial/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: actionName })
+    }).catch(err => console.error('[!] Radial action failed:', err));
+  }
+
+  wheelSectors.forEach(sec => {
+    sec.addEventListener('click', () => {
+      const act = sec.getAttribute('data-action');
+      if (act) {
+        sec.classList.add('active-sector');
+        setTimeout(() => sec.classList.remove('active-sector'), 300);
+        triggerRadialAction(act);
       }
-    } catch (e) {
-      console.warn("Failed to fetch LAN info", e);
+    });
+  });
+
+  actionListItems.forEach(item => {
+    const testBtn = item.querySelector('.test-btn');
+    const act = item.getAttribute('data-action');
+    if (testBtn && act) {
+      testBtn.addEventListener('click', () => triggerRadialAction(act));
+    }
+  });
+
+  document.getElementById('btn-open-radial-modal')?.addEventListener('click', () => {
+    const radialDockBtn = document.querySelector('.dock-btn[data-view="view-radial"]');
+    if (radialDockBtn) radialDockBtn.click();
+  });
+
+  // =========================================================================
+  // 5. Essential 5 Gestures Dictionary & Visual Active States
+  // =========================================================================
+  const coreGestureCards = {
+    'HOVER': { id: 'card-hover', title: 'Наведение', desc: 'Плавное позиционирование курсора', icon: '☝️' },
+    'HOVER (MOVE)': { id: 'card-hover', title: 'Наведение', desc: 'Плавное позиционирование курсора', icon: '☝️' },
+    'PINCH (LEFT CLICK)': { id: 'card-pinch', title: 'Левый клик (Щипок)', desc: 'Нажатие левой кнопки мыши', icon: '🤏' },
+    'THUMB BEND (LEFT CLICK)': { id: 'card-pinch', title: 'Левый клик (Сгиб)', desc: 'Стабильный клик сгибом пальца', icon: '👍' },
+    'DRAG': { id: 'card-drag', title: 'Зажатие (Drag)', desc: 'Удержание щипка / кулака для переноса', icon: '✊' },
+    'DRAG & DROP': { id: 'card-drag', title: 'Зажатие (Drag)', desc: 'Удержание щипка / кулака для переноса', icon: '✊' },
+    'RIGHT CLICK': { id: 'card-right', title: 'Правый клик', desc: 'Касание средним пальцем', icon: '👌' },
+    'SCROLL': { id: 'card-scroll', title: 'Прокрутка', desc: 'Два пальца вверх / вниз', icon: '✌️' },
+    'PAUSE': { id: 'card-pause', title: 'Защитная пауза', desc: 'Ладонь раскрыта (5 пальцев)', icon: '🖐️' },
+    'PAUSE (NEUTRAL)': { id: 'card-pause', title: 'Защитная пауза', desc: 'Ладонь раскрыта (5 пальцев)', icon: '🖐️' },
+    'NO HAND': { id: null, title: 'Поиск руки', desc: 'Поместите ладонь перед камерой', icon: '🔍' }
+  };
+
+  let previousGesture = 'NO HAND';
+
+  function updateCoreGestureHighlight(gestureName) {
+    const cleanName = (gestureName || 'NO HAND').trim();
+    let info = coreGestureCards[cleanName];
+    if (!info) {
+      if (cleanName.includes('PINCH') || cleanName.includes('THUMB')) info = coreGestureCards['PINCH (LEFT CLICK)'];
+      else if (cleanName.includes('RIGHT')) info = coreGestureCards['RIGHT CLICK'];
+      else if (cleanName.includes('SCROLL')) info = coreGestureCards['SCROLL'];
+      else if (cleanName.includes('DRAG')) info = coreGestureCards['DRAG'];
+      else if (cleanName.includes('PAUSE')) info = coreGestureCards['PAUSE'];
+      else if (cleanName.includes('HOVER')) info = coreGestureCards['HOVER'];
+      else info = coreGestureCards['NO HAND'];
+    }
+
+    // Audio triggers on gesture transition
+    if (cleanName !== previousGesture) {
+      if (cleanName.includes('PINCH') || cleanName.includes('THUMB')) soundSynth.playPinch();
+      else if (cleanName.includes('RIGHT')) soundSynth.playRightClick();
+      else if (cleanName.includes('DRAG')) soundSynth.playDragStart();
+      previousGesture = cleanName;
+    }
+
+    // Update banner
+    if (bannerIcon) bannerIcon.textContent = info.icon;
+    if (bannerTitle) bannerTitle.textContent = info.title;
+    if (bannerSub) bannerSub.textContent = info.desc;
+
+    // Highlight active card
+    document.querySelectorAll('.core-gesture-card').forEach(c => c.classList.remove('active-pose'));
+    if (info.id) {
+      const cardEl = document.getElementById(info.id);
+      if (cardEl) cardEl.classList.add('active-pose');
     }
   }
-  loadLanInfo();
 
-  if (btnCopyUrl && mobileUrlText) {
-    btnCopyUrl.addEventListener('click', () => {
-      navigator.clipboard.writeText(mobileUrlText.textContent);
-      const orig = btnCopyUrl.textContent;
-      btnCopyUrl.textContent = '✓';
-      setTimeout(() => { btnCopyUrl.textContent = orig; }, 1500);
-    });
+  // =========================================================================
+  // 6. Settings Synchronization (POST /api/settings)
+  // =========================================================================
+  function postSettings(settingsObj) {
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settingsObj)
+    }).catch(err => console.error('[!] Error updating settings:', err));
   }
 
-  // --- 2. Master Control Switch ---
-  masterControlSwitch.addEventListener('change', async (e) => {
-    const enabled = e.target.checked;
-    controlStateSub.textContent = enabled ? 'Включено' : 'Предпросмотр';
-    controlStateSub.style.color = enabled ? 'var(--aero-emerald)' : 'var(--text-tertiary)';
-    await sendSettings({ control_enabled: enabled });
+  // Sliders
+  sliderSensitivity?.addEventListener('input', (e) => {
+    valSensitivity.textContent = `${e.target.value}x`;
+    postSettings({ sensitivity: parseFloat(e.target.value) });
   });
 
-  // --- 3. Safety Pause Toggle ---
-  btnSafetyPause.addEventListener('click', async () => {
-    isPaused = !isPaused;
-    updatePauseUI(isPaused);
-    await sendSettings({ manual_pause: isPaused });
+  sliderSmooth?.addEventListener('input', (e) => {
+    valSmooth.textContent = e.target.value;
+    postSettings({ smoothing_alpha: parseFloat(e.target.value) });
   });
 
-  function updatePauseUI(paused) {
-    if (paused) {
+  sliderDeadzone?.addEventListener('input', (e) => {
+    valDeadzone.textContent = `${e.target.value} px`;
+    postSettings({ deadzone_radius: parseFloat(e.target.value) });
+  });
+
+  sliderReach?.addEventListener('input', (e) => {
+    const margin = parseInt(e.target.value) / 100.0;
+    valReach.textContent = `${e.target.value}%`;
+    postSettings({ margin_x: margin, margin_y: margin + 0.02 });
+  });
+
+  // Toggles
+  switchAnchor?.addEventListener('change', (e) => postSettings({ enable_anchor: e.target.checked }));
+  switchAcceleration?.addEventListener('change', (e) => postSettings({ enable_acceleration: e.target.checked }));
+  switchClahe?.addEventListener('change', (e) => postSettings({ use_clahe: e.target.checked }));
+  switchLegacyGestures?.addEventListener('change', (e) => postSettings({ enable_legacy_shortcuts: e.target.checked }));
+  
+  switchLaser?.addEventListener('change', (e) => {
+    valLaserStatus.textContent = e.target.checked ? 'ЛАЗЕР ВКЛ' : 'Обычный';
+    valLaserStatus.style.color = e.target.checked ? '#ff007f' : 'var(--aero-cyan)';
+    soundSynth.playLaserFx();
+    postSettings({ laser_pointer_mode: e.target.checked });
+  });
+
+  // Master Switch & Pause
+  masterControlSwitch?.addEventListener('change', (e) => {
+    const isChecked = e.target.checked;
+    controlStateSub.textContent = isChecked ? 'Включено' : 'Выключено';
+    controlStateSub.style.color = isChecked ? '#00e676' : 'var(--text-tertiary)';
+    soundSynth.playPinch();
+    postSettings({ control_enabled: isChecked });
+  });
+
+  btnSafetyPause?.addEventListener('click', () => {
+    const isPaused = pauseIndicator.classList.contains('paused');
+    const newPauseState = !isPaused;
+    if (newPauseState) {
       pauseIndicator.classList.add('paused');
-      pauseBtnText.textContent = 'На паузе';
-      btnSafetyPause.style.borderColor = 'var(--aero-amber)';
+      pauseBtnText.textContent = 'Возобновить';
     } else {
       pauseIndicator.classList.remove('paused');
       pauseBtnText.textContent = 'Пауза';
-      btnSafetyPause.style.borderColor = 'var(--surface-border)';
     }
-  }
+    soundSynth.playPinch();
+    postSettings({ manual_pause: newPauseState });
+  });
 
-  // --- 4. Sliders ---
-  if (sliderSensitivity) {
-    sliderSensitivity.addEventListener('input', (e) => {
-      const v = parseFloat(e.target.value);
-      const tag = v >= 2.5 ? 'Максимум' : (v >= 1.6 ? 'Быстро' : 'Стандарт');
-      valSensitivity.textContent = `${v.toFixed(1)}x (${tag})`;
+  // Click Mode (Thumb Bend vs Pinch)
+  btnModeThumb?.addEventListener('click', () => {
+    btnModeThumb.classList.add('active');
+    btnModePinch.classList.remove('active');
+    modeHintText.innerHTML = 'Наведите курсор указательным пальцем и <strong>согните большой палец</strong> для клика без смещения мыши.';
+    gaugeLabelTitle.textContent = 'Сгиб большого пальца';
+    soundSynth.playPinch();
+    postSettings({ click_mode: 'thumb_bend' });
+  });
+
+  btnModePinch?.addEventListener('click', () => {
+    btnModePinch.classList.add('active');
+    btnModeThumb.classList.remove('active');
+    modeHintText.innerHTML = 'Сведите <strong>кончики большого и указательного пальцев</strong> (щипок) для клика, удерживайте для Drag & Drop.';
+    gaugeLabelTitle.textContent = 'Сила щипка (Pinch)';
+    soundSynth.playPinch();
+    postSettings({ click_mode: 'pinch' });
+  });
+
+  // Two-Hand Dominant Hand
+  switchTwoHands?.addEventListener('change', (e) => postSettings({ enable_two_hands: e.target.checked }));
+  btnDomRight?.addEventListener('click', () => {
+    btnDomRight.classList.add('active');
+    btnDomLeft.classList.remove('active');
+    postSettings({ dominant_hand: 'Right' });
+  });
+  btnDomLeft?.addEventListener('click', () => {
+    btnDomLeft.classList.add('active');
+    btnDomRight.classList.remove('active');
+    postSettings({ dominant_hand: 'Left' });
+  });
+
+  // Tab Switcher (Webcam vs iPhone)
+  tabBtnWebcam?.addEventListener('click', () => {
+    tabBtnWebcam.classList.add('active');
+    tabBtnIphone.classList.remove('active');
+    fetch('/api/switch_tab', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab: 'webcam' })
     });
-    sliderSensitivity.addEventListener('change', async (e) => {
-      await sendSettings({ sensitivity: parseFloat(e.target.value) });
+    soundSynth.playPinch();
+  });
+
+  tabBtnIphone?.addEventListener('click', () => {
+    tabBtnIphone.classList.add('active');
+    tabBtnWebcam.classList.remove('active');
+    fetch('/api/switch_tab', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tab: 'iphone' })
     });
-  }
-
-  sliderSmooth.addEventListener('input', (e) => {
-    valSmooth.textContent = `${e.target.value} Hz`;
-  });
-  sliderSmooth.addEventListener('change', async (e) => {
-    await sendSettings({ smoothing_alpha: parseFloat(e.target.value) });
+    soundSynth.playRadialChime();
+    // Switch to iPhone Studio view in dock as well
+    document.querySelector('.dock-btn[data-view="view-iphone"]')?.click();
   });
 
-  sliderDeadzone.addEventListener('input', (e) => {
-    valDeadzone.textContent = `${e.target.value} px`;
-  });
-  sliderDeadzone.addEventListener('change', async (e) => {
-    await sendSettings({ deadzone_radius: parseFloat(e.target.value) });
-  });
-
-  sliderReach.addEventListener('input', (e) => {
-    const pct = Math.round(parseFloat(e.target.value) * 100);
-    valReach.textContent = `${pct}% (${pct <= 8 ? 'Широкий' : 'Компактный'})`;
-  });
-  sliderReach.addEventListener('change', async (e) => {
-    const val = parseFloat(e.target.value);
-    await sendSettings({ margin_x: val, margin_y: val + 0.02 });
-  });
-
-  sliderPinch.addEventListener('input', (e) => {
-    valPinch.textContent = e.target.value;
-  });
-  sliderPinch.addEventListener('change', async (e) => {
-    await sendSettings({ pinch_activate_ratio: parseFloat(e.target.value) });
-  });
-
-  // --- 5. Switches ---
-  switchAnchor.addEventListener('change', async (e) => {
-    await sendSettings({ enable_anchor: e.target.checked });
-  });
-  switchAcceleration.addEventListener('change', async (e) => {
-    await sendSettings({ enable_acceleration: e.target.checked });
-  });
-  switchClahe.addEventListener('change', async (e) => {
-    await sendSettings({ use_clahe: e.target.checked });
-  });
-  switchSkeleton.addEventListener('change', async (e) => {
-    await sendSettings({ show_skeleton: e.target.checked });
-  });
-  switchSound.addEventListener('change', async (e) => {
-    await sendSettings({ enable_sound: e.target.checked });
-  });
-
-  async function sendSettings(payload) {
-    try {
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+  // iPhone Rear LiDAR Mirror Toggle
+  btnToggleMirror?.addEventListener('click', () => {
+    fetch('/api/spatial/mirror', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(res => res.json())
+      .then(data => {
+        const isM = !!data.mirror_x;
+        txtMirrorStatus.textContent = isM ? 'ЗЕРКАЛЬНО: ВКЛ' : 'ПРЯМО: ВЫКЛ';
+        btnToggleMirror.style.borderColor = isM ? 'var(--aero-cyan)' : 'rgba(255,255,255,0.2)';
+        soundSynth.playPinch();
       });
-    } catch (err) {
-      console.error('Error updating settings:', err);
-    }
+  });
+
+  // Copy mobile Safari URL
+  btnCopyUrl?.addEventListener('click', () => {
+    const text = mobileUrlText.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btnCopyUrl.textContent = 'Скопировано!';
+      setTimeout(() => btnCopyUrl.textContent = 'Копировать', 1500);
+      soundSynth.playPinch();
+    });
+  });
+
+  // =========================================================================
+  // 7. DirectShow Camera Discovery
+  // =========================================================================
+  function refreshCameras() {
+    fetch('/api/cameras')
+      .then(r => r.json())
+      .then(data => {
+        cameraSelect.innerHTML = '';
+        if (data.cameras && data.cameras.length > 0) {
+          data.cameras.forEach(cam => {
+            const opt = document.createElement('option');
+            opt.value = cam.id;
+            opt.textContent = `${cam.name} (${cam.width}x${cam.height})`;
+            if (cam.id === data.active_id) opt.selected = true;
+            cameraSelect.appendChild(opt);
+          });
+        } else {
+          const opt = document.createElement('option');
+          opt.value = 0;
+          opt.textContent = 'Камера #0 (По умолчанию)';
+          cameraSelect.appendChild(opt);
+        }
+      })
+      .catch(err => console.error('[!] Failed to load cameras:', err));
   }
 
-  // --- 6. Telemetry Polling Loop ---
-  async function pollStatus() {
-    try {
-      const res = await fetch('/api/status');
-      if (res.ok) {
-        const data = await res.json();
-        
-        badgeFps.textContent = `${data.fps} FPS`;
-        badgeLatency.textContent = `${data.latency_ms} ms`;
-        badgeCpu.textContent = `${data.cpu} %`;
-        badgePinchRatio.textContent = data.pinch_ratio;
+  btnRefreshCams?.addEventListener('click', refreshCameras);
+  cameraSelect?.addEventListener('change', (e) => {
+    const camId = parseInt(e.target.value);
+    loadingOverlay.style.display = 'flex';
+    fetch('/api/select_camera', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ camera_id: camId })
+    }).finally(() => {
+      setTimeout(() => loadingOverlay.style.display = 'none', 600);
+    });
+  });
 
-        if (data.fps > 0) {
-          markFrameLoaded();
+  refreshCameras();
+
+  // =========================================================================
+  // 8. 20 Hz Real-Time Telemetry Polling Loop
+  // =========================================================================
+  function pollStatus() {
+    fetch('/api/status')
+      .then(r => r.json())
+      .then(data => {
+        loadingOverlay.style.display = 'none';
+
+        // Telemetry top badges
+        badgeFps.textContent = `${data.fps || 0} FPS`;
+        badgeLatency.textContent = `${data.latency_ms || 0} ms`;
+        if (badgeCpu) badgeCpu.textContent = `${data.cpu || 0}%`;
+
+        // Anchor status
+        if (data.is_anchored) {
+          badgeAnchor.textContent = 'Якорь: ЗАФИКСИРОВАН';
+          pillAnchorStatus.style.borderColor = 'rgba(0, 242, 254, 0.7)';
+        } else {
+          badgeAnchor.textContent = 'Курсор: Свободен';
+          pillAnchorStatus.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+        }
+
+        // Hands Mode
+        if (data.is_dual_hand) {
+          badgeHandsIcon.textContent = '🙌';
+          badgeHandsMode.textContent = '2 Руки (Bimanual)';
+          pillHandsMode.style.borderColor = 'var(--aero-violet)';
+        } else if (data.hand_detected) {
+          badgeHandsIcon.textContent = '🖐️';
+          badgeHandsMode.textContent = '1 Рука';
+          pillHandsMode.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+        } else {
+          badgeHandsIcon.textContent = '🔍';
+          badgeHandsMode.textContent = 'Поиск руки...';
+          pillHandsMode.style.borderColor = 'rgba(255, 255, 255, 0.12)';
         }
 
         // Tracking status badge
-        if (data.hand_detected) {
-          trackingStatusBadge.textContent = data.is_dual_hand ? '2 РУКИ (BIMANUAL)' : 'ТРЕКИНГ';
-          trackingStatusBadge.style.color = data.is_dual_hand ? 'var(--aero-violet)' : 'var(--aero-emerald)';
-          trackingStatusBadge.style.background = data.is_dual_hand ? 'rgba(139, 92, 246, 0.20)' : 'rgba(16, 185, 129, 0.16)';
-        } else {
-          trackingStatusBadge.textContent = 'СКАНИРОВАНИЕ';
-          trackingStatusBadge.style.color = 'var(--text-secondary)';
-          trackingStatusBadge.style.background = 'rgba(255, 255, 255, 0.08)';
-        }
-
-        // Bimanual / Two-handed mode capsule indicator
-        if (pillHandsMode && badgeHandsMode && badgeHandsIcon) {
-          if (data.is_dual_hand) {
-            pillHandsMode.classList.add('dual-active');
-            badgeHandsIcon.textContent = '🖐️🖐️';
-            badgeHandsMode.textContent = '2 Руки (Бимануальный)';
-            badgeHandsMode.style.color = 'var(--aero-violet)';
-          } else if (data.hands_count === 1) {
-            pillHandsMode.classList.remove('dual-active');
-            badgeHandsIcon.textContent = '🖐️';
-            badgeHandsMode.textContent = '1 Рука';
-            badgeHandsMode.style.color = 'var(--aero-cyan)';
+        if (trackingStatusBadge) {
+          if (data.hand_detected) {
+            trackingStatusBadge.textContent = 'АКТИВЕН';
+            trackingStatusBadge.style.color = '#00e676';
+            trackingStatusBadge.style.borderColor = 'rgba(0, 230, 118, 0.4)';
           } else {
-            pillHandsMode.classList.remove('dual-active');
-            badgeHandsIcon.textContent = '🔍';
-            badgeHandsMode.textContent = '0 Рук';
-            badgeHandsMode.style.color = 'var(--text-tertiary)';
+            trackingStatusBadge.textContent = 'СКАНИРОВАНИЕ';
+            trackingStatusBadge.style.color = 'var(--aero-cyan)';
+            trackingStatusBadge.style.borderColor = 'rgba(0, 242, 254, 0.3)';
           }
         }
 
-        // Click Anchor Indicator
-        if (data.is_anchored) {
-          pillAnchorStatus.classList.add('anchor-active');
-          badgeAnchor.textContent = 'Якорь: ЗАФИКСИРОВАН';
-          badgeAnchor.style.color = 'var(--aero-blue)';
-        } else {
-          pillAnchorStatus.classList.remove('anchor-active');
-          badgeAnchor.textContent = 'Якорь: Свободно';
-          badgeAnchor.style.color = 'var(--aero-cyan)';
-        }
-
-        // Update iPhone Spatial Status
-        if (data.iphone_status) {
-          const iph = data.iphone_status;
-          if (badgeIphoneConn) {
-            badgeIphoneConn.textContent = iph.connected ? 'ПОДКЛЮЧЕНО' : 'ОЖИДАНИЕ';
-            badgeIphoneConn.className = `sensor-badge ${iph.connected ? 'active' : 'disconnected'}`;
-          }
-          if (valIphoneSensor) valIphoneSensor.textContent = iph.sensor;
-          if (valIphonePing) valIphonePing.textContent = `${iph.latency_ms.toFixed(1)} ms`;
-          if (valIphoneBattery) valIphoneBattery.textContent = `${iph.battery}%`;
-          if (valIphoneDepth) valIphoneDepth.textContent = `${Math.round(iph.depth_mm)} mm`;
-          if (barIphoneDepth) {
-            const zPct = Math.max(10, Math.min(100, (iph.depth_mm / 800.0) * 100));
-            barIphoneDepth.style.width = `${zPct}%`;
-          }
-        }
-
-        // Live Dynamic Gauge update
-        const pct = Math.max(0, Math.min(100, data.pinch_pct || 0));
+        // Pinch force gauge
+        const pct = Math.max(0, Math.min(100, Math.round(data.pinch_pct || 0)));
+        pinchPercentText.textContent = `${pct}%`;
         pinchBarFill.style.width = `${pct}%`;
-        pinchPercentText.textContent = `${Math.round(pct)}%`;
-        if (pct >= 90) {
-          pinchBarFill.style.background = 'linear-gradient(90deg, var(--aero-cyan), var(--aero-emerald))';
-        } else {
-          pinchBarFill.style.background = 'linear-gradient(90deg, var(--aero-blue), var(--aero-cyan))';
-        }
 
-        // Gesture Trigger Events (Sound & Shockwave)
-        const isLeftClick = (data.gesture === 'PINCH (LEFT CLICK)' || data.gesture === 'THUMB BEND (LEFT CLICK)');
-        const wasLeftClick = (prevGesture === 'PINCH (LEFT CLICK)' || prevGesture === 'THUMB BEND (LEFT CLICK)');
-        if (isLeftClick && !wasLeftClick) {
-          playHapticClick(false);
-          triggerShockwave();
-        } else if (data.gesture === 'RIGHT CLICK' && prevGesture !== 'RIGHT CLICK') {
-          playHapticClick(true);
-          triggerShockwave();
-        }
-        prevGesture = data.gesture;
+        // Update active gesture card
+        updateCoreGestureHighlight(data.gesture);
 
-        // Sync click mode indicator
-        if (data.click_mode === 'thumb_bend') {
-          if (btnModeThumb && !btnModeThumb.classList.contains('active')) {
-            btnModeThumb.classList.add('active');
-            btnModePinch.classList.remove('active');
-            tagCurrentMode.textContent = 'Сгиб пальца';
-            if (gaugeLabelTitle) gaugeLabelTitle.textContent = 'Угол сгиба пальца';
-          }
-        } else if (data.click_mode === 'pinch') {
-          if (btnModePinch && !btnModePinch.classList.contains('active')) {
-            btnModePinch.classList.add('active');
-            btnModeThumb.classList.remove('active');
-            tagCurrentMode.textContent = 'Щипок (Pinch)';
-            if (gaugeLabelTitle) gaugeLabelTitle.textContent = 'Сила щипка (Pinch)';
+        // iPhone Sensor telemetry
+        const iph = data.iphone_status;
+        if (iph) {
+          if (iph.connected) {
+            badgeIphoneConn.textContent = 'ПОДКЛЮЧЕН';
+            badgeIphoneConn.className = 'sensor-badge connected';
+            valIphoneSensor.textContent = iph.sensor || 'TrueDepth';
+            valIphonePing.textContent = `${iph.latency_ms || 0.8} ms`;
+            valIphoneBattery.textContent = `${iph.battery || 100}%`;
+            valIphoneDepth.textContent = `${Math.round(iph.depth_mm || 420)} mm`;
+            valIphoneDepthDisplay.textContent = `${Math.round(iph.depth_mm || 420)} mm`;
+
+            const depthPct = Math.max(5, Math.min(100, (iph.depth_mm / 800.0) * 100));
+            barIphoneDepth.style.width = `${depthPct}%`;
+
+            const isMirr = !!iph.mirror_x;
+            txtMirrorStatus.textContent = isMirr ? 'ЗЕРКАЛЬНО: ВКЛ' : 'ПРЯМО: ВЫКЛ';
+          } else {
+            badgeIphoneConn.textContent = 'ОЖИДАНИЕ';
+            badgeIphoneConn.className = 'sensor-badge disconnected';
           }
         }
+      })
+      .catch(() => {})
+      .finally(() => setTimeout(pollStatus, 50));
+  }
 
-        // Gesture Banner update with guaranteed resolution
-        const gestureInfo = resolveGestureInfo(data.gesture);
-        bannerIcon.textContent = gestureInfo.icon;
-        bannerTitle.textContent = gestureInfo.title;
-        if (data.is_dual_hand && data.action_gesture && data.action_gesture !== 'NONE') {
-          const actInfo = resolveGestureInfo(data.action_gesture);
-          bannerSub.textContent = `Командная рука: ${actInfo.title}`;
-        } else {
-          bannerSub.textContent = gestureInfo.sub;
-        }
+  // Start telemetry loop
+  pollStatus();
 
-        // Gesture Cards Highlighting
-        Object.values(gestureCards).forEach(g => {
-          if (g.card) {
-            const el = document.getElementById(g.card);
-            if (el) el.classList.remove('active');
-          }
-        });
-
-        if (gestureInfo.card) {
-          const activeEl = document.getElementById(gestureInfo.card);
-          if (activeEl) activeEl.classList.add('active');
+  // Load LAN Info for QR code
+  fetch('/api/lan_info')
+    .then(r => r.json())
+    .then(data => {
+      if (data.mobile_url) {
+        mobileUrlText.textContent = data.mobile_url;
+        const qrEl = document.getElementById('qr-code-img');
+        if (qrEl) {
+          qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(data.mobile_url)}`;
         }
       }
-    } catch (e) {
-      // Telemetry poll error
+    });
+
+  // =========================================================================
+  // 9. Ambient Canvas Particle Nebula (Subtle 30 FPS Background Animation)
+  // =========================================================================
+  const canvas = document.getElementById('ambient-canvas');
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    const particles = [];
+    for (let i = 0; i < 45; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        radius: Math.random() * 1.5 + 0.5,
+        alpha: Math.random() * 0.5 + 0.2
+      });
     }
+
+    function renderNebula() {
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#00f2fe';
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
+
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Connect nearby particles
+        for (let j = i + 1; j < particles.length; j++) {
+          const p2 = particles[j];
+          const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+          if (dist < 110) {
+            ctx.strokeStyle = '#6366f1';
+            ctx.globalAlpha = (1 - dist / 110) * 0.15;
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      setTimeout(() => requestAnimationFrame(renderNebula), 33);
+    }
+    renderNebula();
   }
 
-  // Initial load
-  loadCameras();
-  setInterval(pollStatus, 100);
-  const inspector = document.querySelector('.inspector-section');
-  if (inspector) {
-    setTimeout(() => { inspector.scrollTop = 0; }, 100);
-  }
 });
