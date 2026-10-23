@@ -328,6 +328,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCopyUrl = document.getElementById('btn-copy-url');
   const mobileUrlText = document.getElementById('mobile-url-text');
   const btnOpenIpaFolder = document.getElementById('btn-open-ipa-folder');
+  btnOpenIpaFolder?.addEventListener('click', () => {
+    fetch('/api/open_ipa_folder', { method: 'POST' }).catch(() => {});
+    soundSynth.playClick();
+    flashActionCapsule('📂', 'Папка с IPA открыта');
+  });
 
   // Audio Controls
   const switchSoundMaster = document.getElementById('switch-sound-master');

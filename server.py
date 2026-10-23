@@ -72,6 +72,19 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
     def download_ipa():
         return bottle.static_file('AeroPointSpatial.ipa', root=os.path.dirname(__file__), download='AeroPointSpatial.ipa')
 
+    @app.route('/api/open_ipa_folder', method='POST')
+    def open_ipa_folder():
+        try:
+            ipa_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "AeroPointSpatial.ipa"))
+            if os.path.exists(ipa_path):
+                import subprocess
+                subprocess.Popen(f'explorer /select,"{ipa_path}"')
+                return {"status": "ok"}
+            else:
+                return {"status": "not_found"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
     @app.route('/<filename:path>')
     def static_files(filename):
         return bottle.static_file(filename, root=WEB_DIR)
