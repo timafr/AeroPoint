@@ -208,6 +208,16 @@ class TestMultiMonitorManagement(unittest.TestCase):
         mc.set_active_monitor(-1)
         self.assertEqual(mc.active_monitor_index, -1)
 
+    def test_distance_estimation(self):
+        # Normal palm size in px (~94px) corresponds to ~50cm distance
+        palm_px = 94.0
+        dist_cm = round(max(15.0, min(300.0, 4700.0 / max(12.0, palm_px))), 1)
+        self.assertAlmostEqual(dist_cm, 50.0, delta=2.0)
+        # Small palm size in px (~25px, hand far away) -> ~188cm
+        palm_far = 25.0
+        dist_far = round(max(15.0, min(300.0, 4700.0 / max(12.0, palm_far))), 1)
+        self.assertGreater(dist_far, 150.0)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

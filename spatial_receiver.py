@@ -187,7 +187,8 @@ class SpatialReceiver:
                         landmarks_world=lms_world,
                         palm_size=palm_metric,
                         palm_size_px=float(palm_mm * 0.8),
-                        handedness=handedness
+                        handedness=handedness,
+                        estimated_distance_cm=round(self.depth_mm / 10.0, 1)
                     )
                     new_hands.append(h_data)
 
@@ -273,7 +274,8 @@ class SpatialReceiver:
                     landmarks_world=lms_world,
                     palm_size=palm_metric,
                     palm_size_px=float(palm_mm * 0.8),
-                    handedness=handedness
+                    handedness=handedness,
+                    estimated_distance_cm=round(self.depth_mm / 10.0, 1)
                 )
                 new_hands.append(h_data)
 

@@ -631,6 +631,7 @@ class CameraManager:
             "min_cutoff": round(self.precision_engine.one_euro.min_cutoff, 2),
             "active_monitor": self.mouse.active_monitor_index,
             "monitors": self.mouse.monitors,
+            "distance_cm": round(getattr(self.pointer_hand or (self.current_hands[0] if self.current_hands else None), 'estimated_distance_cm', 50.0), 1) if (self.pointer_hand or self.current_hands) else 0.0,
             "active_tab": self.active_tab,
             "iphone_status": self.spatial_receiver.get_status()
         }

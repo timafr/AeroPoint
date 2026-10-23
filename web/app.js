@@ -269,6 +269,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const badgeLightingText = document.getElementById('badge-lighting-text');
   const pillVelocity = document.getElementById('pill-velocity');
   const badgeVelocity = document.getElementById('badge-velocity');
+  const pillDistance = document.getElementById('pill-distance');
+  const badgeDistance = document.getElementById('badge-distance');
   const trackingStatusBadge = document.getElementById('tracking-status-badge');
 
   // Gesture Banner & Pinch Gauge
@@ -989,6 +991,21 @@ document.addEventListener('DOMContentLoaded', () => {
           pillVelocity.style.borderColor = 'rgba(255, 255, 255, 0.12)';
         }
       }
+    }
+
+    // Distance Caliper telemetry
+    if (badgeDistance && typeof data.distance_cm === 'number' && data.distance_cm > 0) {
+      badgeDistance.textContent = `${Math.round(data.distance_cm)} cm`;
+      if (pillDistance) {
+        if (data.distance_cm >= 35 && data.distance_cm <= 85) {
+          pillDistance.style.borderColor = 'rgba(0, 242, 254, 0.5)';
+        } else {
+          pillDistance.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+        }
+      }
+    } else if (badgeDistance && !data.hand_detected) {
+      badgeDistance.textContent = '-- cm';
+      if (pillDistance) pillDistance.style.borderColor = 'rgba(255, 255, 255, 0.12)';
     }
 
     // Tracking status badge

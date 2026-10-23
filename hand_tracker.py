@@ -70,6 +70,7 @@ class HandData:
     palm_size: float                                   # Invariant 3D palm scale
     palm_size_px: float = 60.0                         # Projected 2D scale in pixels for scroll
     handedness: str = "Right"                          # "Left" or "Right"
+    estimated_distance_cm: float = 50.0                # Physical estimated distance from camera in cm
 
 
 class HandTracker:
@@ -197,6 +198,9 @@ class HandTracker:
                 if palm_size_px < 10.0:
                     palm_size_px = 50.0
 
+                # Metric distance estimation: focal length ~550px for standard 640px webcam, adult palm ~8.5cm
+                dist_cm = round(max(15.0, min(300.0, 4700.0 / max(12.0, palm_size_px))), 1)
+
                 handedness = "Right"
                 if result.handedness and len(result.handedness) > hand_idx and len(result.handedness[hand_idx]) > 0:
                     handedness = result.handedness[hand_idx][0].category_name
@@ -207,7 +211,8 @@ class HandTracker:
                     landmarks_world=lms_3d,
                     palm_size=palm_size_3d,
                     palm_size_px=palm_size_px,
-                    handedness=handedness
+                    handedness=handedness,
+                    estimated_distance_cm=dist_cm
                 )
                 all_hands.append(h_data)
 

@@ -165,6 +165,13 @@ class CyberHUD:
         cv2.putText(frame, role_label, (max(10, w_pt[0] - 50), w_pt[1]),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.42, bone_col, 1, cv2.LINE_AA)
 
+        # Distance Caliper tag below wrist
+        dist_val = getattr(hand, 'estimated_distance_cm', 50.0)
+        dist_col = (0, 242, 254) if 35 <= dist_val <= 85 else ((0, 180, 255) if dist_val < 35 else (200, 120, 255))
+        dist_tag = f"DIST: {int(dist_val)}cm"
+        cv2.putText(frame, dist_tag, (max(10, w_pt[0] - 32), min(frame.shape[0] - 8, pts[WRIST][1] + 18)),
+                    cv2.FONT_HERSHEY_PLAIN, 0.85, dist_col, 1, cv2.LINE_AA)
+
         # Interactive Pinch Proximity Halo & Magnetic Snap Spark
         thumb_pt = (int(pts[THUMB_TIP][0]), int(pts[THUMB_TIP][1]))
         index_pt = (int(pts[INDEX_TIP][0]), int(pts[INDEX_TIP][1]))
