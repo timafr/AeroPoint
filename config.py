@@ -101,6 +101,7 @@ class GestureConfig:
     show_jitter_graph: bool = True
     show_cpu_load: bool = True
     hud_compact_mode: bool = False
+    hud_theme: str = "cyberpunk"  # "cyberpunk", "visionos", "matrix", "solar"
 
     # Colors in BGR format for OpenCV
     COLOR_CYAN: Tuple[int, int, int] = (254, 242, 0)      # #00f2fe
@@ -110,6 +111,35 @@ class GestureConfig:
     COLOR_WHITE: Tuple[int, int, int] = (255, 255, 255)
     COLOR_DARK_BG: Tuple[int, int, int] = (10, 7, 6)     # #06070a
     COLOR_RED: Tuple[int, int, int] = (85, 0, 255)       # Raw jitter noise color
+
+    def apply_hud_theme(self, theme: str) -> str:
+        """Applies real-time color palettes for OpenCV HUD and Skeleton rendering."""
+        t = (theme or "cyberpunk").strip().lower()
+        if t in ("visionos", "apple", "white"):
+            self.hud_theme = "visionos"
+            self.COLOR_CYAN = (255, 255, 255)      # Crisp frosted white
+            self.COLOR_VIOLET = (235, 205, 175)    # Lavender frost
+            self.COLOR_MAGENTA = (255, 180, 50)    # Soft amber
+            self.COLOR_GREEN = (180, 240, 100)     # Apple mint
+        elif t in ("matrix", "terminal", "emerald"):
+            self.hud_theme = "matrix"
+            self.COLOR_CYAN = (50, 255, 100)       # Phosphor green
+            self.COLOR_VIOLET = (30, 200, 70)      # Deep terminal green
+            self.COLOR_MAGENTA = (80, 255, 180)    # Digital lime
+            self.COLOR_GREEN = (0, 255, 65)        # Pure matrix green
+        elif t in ("solar", "amber", "gold"):
+            self.hud_theme = "solar"
+            self.COLOR_CYAN = (0, 185, 255)        # Solar gold
+            self.COLOR_VIOLET = (0, 100, 255)      # Molten orange
+            self.COLOR_MAGENTA = (50, 50, 255)     # Crimson red
+            self.COLOR_GREEN = (0, 230, 255)       # Amber glow
+        else:
+            self.hud_theme = "cyberpunk"
+            self.COLOR_CYAN = (254, 242, 0)        # #00f2fe
+            self.COLOR_VIOLET = (255, 0, 127)      # #7f00ff
+            self.COLOR_MAGENTA = (127, 0, 255)     # #ff007f
+            self.COLOR_GREEN = (136, 255, 0)       # #00ff88
+        return self.hud_theme
 
     def to_dict(self) -> dict:
         """Serializes current configuration properties to JSON-compatible dictionary."""
@@ -132,6 +162,7 @@ class GestureConfig:
             "sound_enabled": self.sound_enabled,
             "sound_theme": self.sound_theme,
             "sound_volume": self.sound_volume,
+            "hud_theme": self.hud_theme,
             "show_skeleton": self.show_skeleton,
             "show_hud": self.show_hud,
         }
@@ -157,6 +188,8 @@ class GestureConfig:
                     for k, v in data.items():
                         if hasattr(cfg, k):
                             setattr(cfg, k, v)
+                    if hasattr(cfg, 'hud_theme'):
+                        cfg.apply_hud_theme(cfg.hud_theme)
             except Exception:
                 pass
         return cfg

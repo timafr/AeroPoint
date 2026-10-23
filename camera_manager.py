@@ -635,6 +635,7 @@ class CameraManager:
             "is_night_mode": getattr(self.tracker, 'is_night_mode', False),
             "use_clahe": self.config.use_clahe,
             "show_skeleton": self.config.show_skeleton,
+            "hud_theme": getattr(self.config, 'hud_theme', 'cyberpunk'),
             "enable_sound": self.config.enable_sound_feedback,
             "sound_enabled": getattr(self.config, 'sound_enabled', True),
             "sound_theme": getattr(self.config, 'sound_theme', 'quantum'),

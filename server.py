@@ -211,6 +211,9 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.sound_theme = str(data["sound_theme"])
             if "sound_volume" in data:
                 manager.config.sound_volume = float(data["sound_volume"])
+            if "hud_theme" in data:
+                theme = str(data["hud_theme"])
+                manager.config.apply_hud_theme(theme)
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()

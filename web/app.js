@@ -790,6 +790,29 @@ document.addEventListener('DOMContentLoaded', () => {
     postSettings({ dominant_hand: 'Left' });
   });
 
+  // HUD Visual Skin Switcher
+  const badgeHudThemeLabel = document.getElementById('badge-hud-theme-label');
+  const skinButtons = document.querySelectorAll('.seg-mini-btn[data-skin]');
+
+  function updateActiveSkin(skin) {
+    if (!skin) return;
+    skinButtons.forEach(b => b.classList.toggle('active', b.getAttribute('data-skin') === skin));
+    if (badgeHudThemeLabel) {
+      badgeHudThemeLabel.textContent = skin.toUpperCase();
+    }
+  }
+
+  skinButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const skin = btn.getAttribute('data-skin');
+      if (!skin) return;
+      updateActiveSkin(skin);
+      soundSynth.playClick();
+      flashActionCapsule('🎨', `Скин HUD: ${skin.toUpperCase()}`);
+      postSettings({ hud_theme: skin });
+    });
+  });
+
   // Tab Switcher (Webcam vs iPhone)
   tabBtnWebcam?.addEventListener('click', () => {
     tabBtnWebcam.classList.add('active');
@@ -974,6 +997,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (data.precision_profile) {
         updateProfileButtons(data.precision_profile);
+      }
+      if (data.hud_theme) {
+        updateActiveSkin(data.hud_theme);
       }
     }
 

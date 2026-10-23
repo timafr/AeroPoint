@@ -76,6 +76,27 @@ class TestConfigPersistence(unittest.TestCase):
             if os.path.exists(test_file):
                 os.remove(test_file)
 
+    def test_hud_theme_palettes(self):
+        cfg = GestureConfig()
+        # Default
+        self.assertEqual(cfg.hud_theme, "cyberpunk")
+        self.assertEqual(cfg.COLOR_CYAN, (254, 242, 0))
+
+        # visionOS theme
+        cfg.apply_hud_theme("visionos")
+        self.assertEqual(cfg.hud_theme, "visionos")
+        self.assertEqual(cfg.COLOR_CYAN, (255, 255, 255))
+
+        # Matrix theme
+        cfg.apply_hud_theme("matrix")
+        self.assertEqual(cfg.hud_theme, "matrix")
+        self.assertEqual(cfg.COLOR_GREEN, (0, 255, 65))
+
+        # Solar theme
+        cfg.apply_hud_theme("solar")
+        self.assertEqual(cfg.hud_theme, "solar")
+        self.assertEqual(cfg.COLOR_CYAN, (0, 185, 255))
+
 
 class TestAeroPrecisionEngine(unittest.TestCase):
     """Tests click anchor locking, micro-movement deadzones, and boundary magnets."""
