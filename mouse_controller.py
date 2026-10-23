@@ -10,6 +10,8 @@ Includes Per-Monitor High-DPI awareness to support full native screen resolution
 import sys
 import time
 from typing import Tuple, Optional, List, Dict
+import cv2
+import numpy as np
 
 # Check if running on Windows for direct User32 API
 IS_WINDOWS = sys.platform.startswith("win")
@@ -536,3 +538,35 @@ class MouseController:
     def _play_click_sound(self):
         """OS click sound disabled to avoid Windows error dings."""
         pass
+
+    def get_screen_loupe(self, screen_x: int, screen_y: int, radius: int = 40, zoom: float = 2.0) -> np.ndarray:
+        """
+        Captures a magnified region around the screen cursor.
+        If desktop grab is unavailable (headless / lockscreen), generates a synthetic CAD reticle grid.
+        """
+        patch_size = radius * 2
+        try:
+            from PIL import ImageGrab
+            x1, y1 = max(0, screen_x - radius), max(0, screen_y - radius)
+            x2, y2 = x1 + patch_size, y1 + patch_size
+            pil_img = ImageGrab.grab(bbox=(x1, y1, x2, y2))
+            img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+            if img.shape[0] != patch_size or img.shape[1] != patch_size:
+                img = cv2.resize(img, (patch_size, patch_size))
+        except Exception:
+            # Synthetic CAD precision grid fallback
+            img = np.full((patch_size, patch_size, 3), 24, dtype=np.uint8)
+            cv2.line(img, (0, radius), (patch_size, radius), (60, 60, 70), 1)
+            cv2.line(img, (radius, 0), (radius, patch_size), (60, 60, 70), 1)
+
+        # Magnify by zoom factor
+        zoom_size = int(patch_size * zoom)
+        zoomed = cv2.resize(img, (zoom_size, zoom_size), interpolation=cv2.INTER_NEAREST)
+
+        # Reticle in zoomed center
+        cx, cy = zoom_size // 2, zoom_size // 2
+        cv2.line(zoomed, (cx - 10, cy), (cx + 10, cy), (0, 242, 254), 1, cv2.LINE_AA)
+        cv2.line(zoomed, (cx, cy - 10), (cx, cy + 10), (0, 242, 254), 1, cv2.LINE_AA)
+        cv2.circle(zoomed, (cx, cy), 2, (255, 255, 255), -1, cv2.LINE_AA)
+
+        return zoomed

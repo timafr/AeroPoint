@@ -421,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchSpotlight = document.getElementById('switch-spotlight');
   const switchVirtualSurface = document.getElementById('switch-virtual-surface');
   const btnCalibrateSurface = document.getElementById('btn-calibrate-surface');
+  const switchScreenLoupe = document.getElementById('switch-screen-loupe');
 
   // Legacy Gestures Switch
   const switchLegacyGestures = document.getElementById('switch-legacy-gestures');
@@ -1038,6 +1039,12 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(() => {});
   });
 
+  switchScreenLoupe?.addEventListener('change', (e) => {
+    soundSynth.playLaserFx();
+    postSettings({ enable_screen_magnifier: e.target.checked });
+    flashActionCapsule('🔍', e.target.checked ? 'Микро-лупа ВКЛ' : 'Микро-лупа ВЫКЛ');
+  });
+
   // Two-Hand Dominant Hand
   switchTwoHands?.addEventListener('change', (e) => postSettings({ enable_two_hands: e.target.checked }));
   btnDomRight?.addEventListener('click', () => {
@@ -1252,6 +1259,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (switchVirtualSurface && typeof data.enable_virtual_touch_surface === 'boolean') {
         switchVirtualSurface.checked = data.enable_virtual_touch_surface;
+      }
+      if (switchScreenLoupe && typeof data.enable_screen_magnifier === 'boolean') {
+        switchScreenLoupe.checked = data.enable_screen_magnifier;
       }
       if (switchDistanceAdaptation && typeof data.enable_distance_adaptation === 'boolean') {
         switchDistanceAdaptation.checked = data.enable_distance_adaptation;

@@ -1279,6 +1279,49 @@ class CyberHUD:
                 cv2.circle(frame, (tx, proj_y), 26, (255, 255, 255), 1, cv2.LINE_AA)
                 cv2.putText(frame, "TOUCH SURFACE", (tx + 12, proj_y + 4), cv2.FONT_HERSHEY_PLAIN, 0.75, (0, 242, 254), 1, cv2.LINE_AA)
 
+    def draw_screen_magnifier_pip(
+        self,
+        frame: np.ndarray,
+        loupe_img: np.ndarray,
+        tip_pt: Tuple[int, int]
+    ):
+        """
+        Embeds the circular magnified screen patch next to the user's cursor tip in the HUD.
+        Features a glowing visionOS glass border, 2.0x label, and specular ring.
+        """
+        fh, fw, _ = frame.shape
+        lh, lw, _ = loupe_img.shape
+        tx, ty = int(tip_pt[0]), int(tip_pt[1])
+
+        # Position loupe offset to top-right of finger tip (or top-left if near right edge)
+        lx = tx + 35 if (tx + 35 + lw) < fw else tx - lw - 35
+        ly = ty - lh // 2
+        lx = max(8, min(fw - lw - 8, lx))
+        ly = max(8, min(fh - lh - 8, ly))
+
+        # Create circular mask for loupe
+        mask = np.zeros((lh, lw), dtype=np.uint8)
+        cr = min(lh, lw) // 2 - 2
+        cv2.circle(mask, (lw // 2, lh // 2), cr, 255, -1)
+
+        # Blend circular loupe onto frame
+        roi = frame[ly:ly + lh, lx:lx + lw]
+        mask_3c = cv2.merge([mask, mask, mask]) / 255.0
+        blended = (loupe_img * mask_3c + roi * (1.0 - mask_3c)).astype(np.uint8)
+        frame[ly:ly + lh, lx:lx + lw] = blended
+
+        # Glowing cyan border
+        cv2.circle(frame, (lx + lw // 2, ly + lh // 2), cr, (0, 242, 254), 2, cv2.LINE_AA)
+        cv2.circle(frame, (lx + lw // 2, ly + lh // 2), cr + 2, (255, 255, 255), 1, cv2.LINE_AA)
+
+        # Connector tether line from finger tip to loupe rim
+        tether_x = lx + 8 if lx > tx else lx + lw - 8
+        cv2.line(frame, (tx, ty), (tether_x, ly + lh // 2), (0, 242, 254), 1, cv2.LINE_AA)
+        cv2.circle(frame, (tx, ty), 3, (0, 242, 254), -1, cv2.LINE_AA)
+
+        # 2.0X Badge
+        cv2.putText(frame, "2.0X LOUPE", (lx + 10, ly + 14), cv2.FONT_HERSHEY_PLAIN, 0.70, (0, 242, 254), 1, cv2.LINE_AA)
+
     def render_clean(
         self,
         frame: np.ndarray,
@@ -1302,12 +1345,19 @@ class CyberHUD:
         spotlight_radius: int = 85,
         confidence_pct: Optional[float] = None,
         virtual_surface_mode: bool = False,
-        virtual_surface_touch: bool = False
+        virtual_surface_touch: bool = False,
+        loupe_img: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
         if virtual_surface_mode:
             target_h = pointer_hand or (hands[0] if hands else hand)
             self.draw_virtual_touch_plane(frame, hand=target_h, is_touching=virtual_surface_touch)
+
+        if loupe_img is not None:
+            target_h = pointer_hand or (hands[0] if hands else hand)
+            if target_h and hasattr(target_h, 'landmarks_px') and len(target_h.landmarks_px) > INDEX_TIP:
+                tip = (int(target_h.landmarks_px[INDEX_TIP][0]), int(target_h.landmarks_px[INDEX_TIP][1]))
+                self.draw_screen_magnifier_pip(frame, loupe_img, tip)
 
         if confidence_pct is not None and confidence_pct > 0.0:
             self.draw_tracking_confidence_meter(frame, confidence_pct)

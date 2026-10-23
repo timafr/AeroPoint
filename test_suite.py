@@ -314,6 +314,14 @@ class TestCyberHUD(unittest.TestCase):
         self.assertIsNotNone(rendered)
         self.assertEqual(rendered.shape, (480, 640, 3))
 
+    def test_render_screen_magnifier_pip(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        loupe = np.full((140, 140, 3), 100, dtype=np.uint8)
+        self.hud.draw_screen_magnifier_pip(frame, loupe, (320, 240))
+        rendered = self.hud.render_clean(frame, loupe_img=loupe)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+
     def test_render_clean_with_calibration_and_ripples(self):
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
         self.hud.trigger_click_ripple((320, 240), is_right=False)
@@ -511,6 +519,12 @@ class TestMultiMonitorManagement(unittest.TestCase):
             mc.snap_window_minimize()
             # 4 actions * 2 keys * 2 events (down + up) = 16 events
             self.assertEqual(mock_keybd.call_count, 16)
+
+    def test_screen_magnifier_loupe_capture(self):
+        mc = MouseController()
+        loupe = mc.get_screen_loupe(100, 100, radius=35, zoom=2.0)
+        self.assertIsNotNone(loupe)
+        self.assertEqual(loupe.shape, (140, 140, 3))
 
 
 class TestDynamicPowerSaver(unittest.TestCase):

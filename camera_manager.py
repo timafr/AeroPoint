@@ -797,6 +797,15 @@ class CameraManager:
                         if self.continuous_hand_elevated_sec >= getattr(self.config, 'ergonomic_alert_interval_sec', 1500.0):
                             ergo_min = int(self.continuous_hand_elevated_sec / 60.0)
 
+                    loupe_patch = None
+                    if getattr(self.config, 'enable_screen_magnifier', False) and target_x is not None and target_y is not None:
+                        loupe_patch = self.mouse.get_screen_loupe(
+                            int(target_x),
+                            int(target_y),
+                            radius=35,
+                            zoom=getattr(self.config, 'magnifier_zoom', 2.0)
+                        )
+
                     rendered = self.hud.render_clean(
                         frame=frame,
                         hands=all_hands,
@@ -818,7 +827,8 @@ class CameraManager:
                         spotlight_radius=getattr(self.config, 'spotlight_radius', 85),
                         confidence_pct=self.tracking_confidence_pct,
                         virtual_surface_mode=getattr(self.config, 'enable_virtual_touch_surface', False),
-                        virtual_surface_touch=events.get("virtual_surface_touch", False)
+                        virtual_surface_touch=events.get("virtual_surface_touch", False),
+                        loupe_img=loupe_patch
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)

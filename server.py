@@ -228,6 +228,10 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.virtual_surface_z = float(data["virtual_surface_z"])
                 if hasattr(manager.recognizer, 'touch_plane'):
                     manager.recognizer.touch_plane.plane_z = manager.config.virtual_surface_z
+            if "enable_screen_magnifier" in data:
+                manager.config.enable_screen_magnifier = bool(data["enable_screen_magnifier"])
+            if "magnifier_zoom" in data:
+                manager.config.magnifier_zoom = float(data["magnifier_zoom"])
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()
