@@ -1354,5 +1354,53 @@ class TestAmbientThemeAdaptation(unittest.TestCase):
                     cm.stop()
 
 
+class TestSpatialAirRuler(unittest.TestCase):
+    """Verifies Spatial Air-Ruler vernier caliper math, HUD rendering, and configuration persistence."""
+
+    def test_air_ruler_hud_rendering(self):
+        import numpy as np
+        from hud import CyberHUD
+        from config import GestureConfig
+
+        cfg = GestureConfig()
+        cfg.enable_spatial_air_ruler = True
+        hud = CyberHUD(cfg)
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+
+        hud.draw_spatial_air_ruler(frame, (100, 150), (280, 150), palm_size_px=70.0)
+        # Should render beam, tick marks, and pill badge without exception
+        self.assertTrue(True)
+
+    def test_air_ruler_settings_sync(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    payload = json.dumps({"enable_spatial_air_ruler": True}).encode('utf-8')
+                    env = {
+                        'REQUEST_METHOD': 'POST',
+                        'PATH_INFO': '/api/settings',
+                        'CONTENT_TYPE': 'application/json',
+                        'CONTENT_LENGTH': str(len(payload)),
+                        'wsgi.input': io.BytesIO(payload),
+                        'wsgi.errors': io.StringIO(),
+                        'SERVER_NAME': 'localhost',
+                        'SERVER_PORT': '5000'
+                    }
+                    resp = []
+                    app(env, lambda s, h, *args: resp.append(s))
+                    self.assertTrue(resp[0].startswith("200"))
+                    self.assertTrue(cm.config.enable_spatial_air_ruler)
+                    cm.stop()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -648,6 +648,11 @@ class CyberHUD:
             cv2.circle(frame, (mid_x, mid_y), int(3 + 4 * prox), (255, 255, 255), -1, cv2.LINE_AA)
             cv2.circle(frame, (mid_x, mid_y), int(5 + 6 * prox), guide_color, 1, cv2.LINE_AA)
 
+        # Spatial Air-Ruler Vernier Caliper
+        if getattr(self.config, 'enable_spatial_air_ruler', False):
+            palm_px = getattr(hand, 'palm_size_px', 65.0)
+            self.draw_spatial_air_ruler(frame, thumb_pt, index_pt, palm_size_px=palm_px)
+
         # Kinetic velocity tracking and precision reticle for Pointer Hand
         if not is_action_hand:
             now = time.time()
@@ -708,6 +713,68 @@ class CyberHUD:
             is_active = note_id in active_set
             txt_col = (255, 255, 255) if is_active else (0, 242, 254)
             cv2.putText(frame, note_lbl, (fx - 4, ky + 4), self.font_mono, 0.85, txt_col, 1, cv2.LINE_AA)
+
+    def draw_spatial_air_ruler(
+        self,
+        frame: np.ndarray,
+        pt1: Tuple[int, int],
+        pt2: Tuple[int, int],
+        palm_size_px: float = 65.0
+    ):
+        """
+        Renders a futuristic holographic vernier caliper ruler between two mid-air points
+        with millimeter tick marks, reticles, and real-world distance estimation.
+        """
+        dx = float(pt2[0] - pt1[0])
+        dy = float(pt2[1] - pt1[1])
+        dist_px = math.hypot(dx, dy)
+        if dist_px < 6.0:
+            return
+
+        ux = dx / dist_px
+        uy = dy / dist_px
+        px = -uy
+        py = ux
+
+        h, w, _ = frame.shape
+        col = (0, 242, 254)
+
+        # Main caliper beam
+        cv2.line(frame, pt1, pt2, col, 1, cv2.LINE_AA)
+
+        # End crosshairs
+        for p in (pt1, pt2):
+            cv2.circle(frame, p, 3, (255, 255, 255), -1, cv2.LINE_AA)
+            cv2.circle(frame, p, 6, col, 1, cv2.LINE_AA)
+
+        # Vernier Caliper Tick Marks
+        step_px = 12.0
+        num_ticks = int(dist_px // step_px)
+        for i in range(1, num_ticks):
+            tx = pt1[0] + ux * (i * step_px)
+            ty = pt1[1] + uy * (i * step_px)
+            tick_len = 7.0 if (i % 3 == 0) else 4.0
+            x_end = int(tx + px * tick_len)
+            y_end = int(ty + py * tick_len)
+            cv2.line(frame, (int(tx), int(ty)), (x_end, y_end), col, 1, cv2.LINE_AA)
+
+        # Metric estimation: adult palm width ~8.5cm
+        cm_est = (dist_px / max(10.0, palm_size_px)) * 8.5
+        label = f"{int(dist_px)}px | {cm_est:.1f}cm"
+
+        mx = int((pt1[0] + pt2[0]) / 2 + px * 16)
+        my = int((pt1[1] + pt2[1]) / 2 + py * 16)
+        mx = max(40, min(w - 70, mx))
+        my = max(18, min(h - 18, my))
+
+        tw, th = 84, 18
+        x1, y1 = mx - tw // 2, my - th // 2
+        x2, y2 = mx + tw // 2, my + th // 2
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (x1, y1), (x2, y2), (18, 16, 24), -1)
+        cv2.rectangle(overlay, (x1, y1), (x2, y2), col, 1, cv2.LINE_AA)
+        cv2.addWeighted(overlay, 0.70, frame, 0.30, 0, frame)
+        cv2.putText(frame, label, (x1 + 6, my + 4), self.font_mono, 0.75, (255, 255, 255), 1, cv2.LINE_AA)
 
     def draw_wrist_holographic_clock(self, frame: np.ndarray, hand: HandData):
         """

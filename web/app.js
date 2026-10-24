@@ -453,6 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchAmbientTheme = document.getElementById('switch-ambient-theme');
   const switchWristClock = document.getElementById('switch-wrist-clock');
   const switchAirPiano = document.getElementById('switch-air-piano');
+  const switchAirRuler = document.getElementById('switch-air-ruler');
   const valLaserStatus = document.getElementById('val-laser-status');
   const btnProfCad = document.getElementById('btn-prof-cad');
   const btnProfDesktop = document.getElementById('btn-prof-desktop');
@@ -795,6 +796,12 @@ document.addEventListener('DOMContentLoaded', () => {
     soundSynth.playPianoNote('C4');
     postSettings({ enable_air_piano: e.target.checked });
     flashActionCapsule('🎹', e.target.checked ? 'Air-Piano ВКЛ' : 'Air-Piano ВЫКЛ');
+  });
+
+  switchAirRuler?.addEventListener('change', (e) => {
+    soundSynth.playLaserFx();
+    postSettings({ enable_spatial_air_ruler: e.target.checked });
+    flashActionCapsule('📐', e.target.checked ? 'Воздушная линейка ВКЛ' : 'Воздушная линейка ВЫКЛ');
   });
 
   document.querySelectorAll('.piano-test-key').forEach(btn => {
@@ -1439,6 +1446,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (switchAmbientTheme && typeof data.ambient_theme_auto_sync === 'boolean') {
         switchAmbientTheme.checked = data.ambient_theme_auto_sync;
+      }
+      if (switchAirRuler && typeof data.enable_spatial_air_ruler === 'boolean') {
+        switchAirRuler.checked = data.enable_spatial_air_ruler;
       }
       if (data.precision_profile) {
         updateProfileButtons(data.precision_profile);

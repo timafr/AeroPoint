@@ -245,6 +245,8 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.enable_air_piano = bool(data["enable_air_piano"])
             if "ambient_theme_auto_sync" in data:
                 manager.config.ambient_theme_auto_sync = bool(data["ambient_theme_auto_sync"])
+            if "enable_spatial_air_ruler" in data:
+                manager.config.enable_spatial_air_ruler = bool(data["enable_spatial_air_ruler"])
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()

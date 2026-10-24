@@ -57,6 +57,7 @@ class GestureConfig:
     show_wrist_hud_clock: bool = True       # visionOS holographic smart timepiece over wrist landmark
     enable_air_piano: bool = False          # 5-Note Pentatonic In-Air Synthesizer Chimes on fingertip taps
     ambient_theme_auto_sync: bool = False   # Automatically adapt HUD and Web theme based on room illuminance
+    enable_spatial_air_ruler: bool = False  # In-Air Holographic Vernier Caliper & Distance Measuring Tape
 
     # --- Audio & Sonic Synthesizer ---
     sound_enabled: bool = True
@@ -192,6 +193,7 @@ class GestureConfig:
             "show_wrist_hud_clock": self.show_wrist_hud_clock,
             "enable_air_piano": self.enable_air_piano,
             "ambient_theme_auto_sync": self.ambient_theme_auto_sync,
+            "enable_spatial_air_ruler": self.enable_spatial_air_ruler,
             "enable_power_saver": self.enable_power_saver,
             "sound_enabled": self.sound_enabled,
             "sound_theme": self.sound_theme,

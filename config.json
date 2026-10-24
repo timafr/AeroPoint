@@ -25,6 +25,7 @@
   "show_wrist_hud_clock": false,
   "enable_air_piano": true,
   "ambient_theme_auto_sync": true,
+  "enable_spatial_air_ruler": true,
   "enable_power_saver": true,
   "sound_enabled": true,
   "sound_theme": "quantum",
