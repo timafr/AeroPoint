@@ -56,6 +56,7 @@ class GestureConfig:
     magnifier_zoom: float = 2.0             # Zoom scale (1.5x - 4.0x)
     show_wrist_hud_clock: bool = True       # visionOS holographic smart timepiece over wrist landmark
     enable_air_piano: bool = False          # 5-Note Pentatonic In-Air Synthesizer Chimes on fingertip taps
+    ambient_theme_auto_sync: bool = False   # Automatically adapt HUD and Web theme based on room illuminance
 
     # --- Audio & Sonic Synthesizer ---
     sound_enabled: bool = True
@@ -148,6 +149,12 @@ class GestureConfig:
             self.COLOR_VIOLET = (0, 100, 255)      # Molten orange
             self.COLOR_MAGENTA = (50, 50, 255)     # Crimson red
             self.COLOR_GREEN = (0, 230, 255)       # Amber glow
+        elif t in ("stealth", "obsidian", "monochrome", "dark"):
+            self.hud_theme = "stealth"
+            self.COLOR_CYAN = (220, 225, 230)      # Slate white
+            self.COLOR_VIOLET = (140, 150, 165)    # Graphite
+            self.COLOR_MAGENTA = (180, 190, 205)   # Platinum
+            self.COLOR_GREEN = (160, 200, 180)     # Muted sage
         else:
             self.hud_theme = "cyberpunk"
             self.COLOR_CYAN = (254, 242, 0)        # #00f2fe
@@ -184,6 +191,7 @@ class GestureConfig:
             "magnifier_zoom": self.magnifier_zoom,
             "show_wrist_hud_clock": self.show_wrist_hud_clock,
             "enable_air_piano": self.enable_air_piano,
+            "ambient_theme_auto_sync": self.ambient_theme_auto_sync,
             "enable_power_saver": self.enable_power_saver,
             "sound_enabled": self.sound_enabled,
             "sound_theme": self.sound_theme,

@@ -1311,5 +1311,48 @@ class TestSpatialAirPiano(unittest.TestCase):
                     cm.stop()
 
 
+class TestAmbientThemeAdaptation(unittest.TestCase):
+    """Verifies Stealth Obsidian theme palette and Ambient Illuminance Auto-Theme Adaptation."""
+
+    def test_stealth_theme_palette(self):
+        from config import GestureConfig
+        cfg = GestureConfig()
+        applied = cfg.apply_hud_theme("stealth")
+        self.assertEqual(applied, "stealth")
+        self.assertEqual(cfg.hud_theme, "stealth")
+        self.assertEqual(cfg.COLOR_CYAN, (220, 225, 230))
+        self.assertEqual(cfg.COLOR_VIOLET, (140, 150, 165))
+
+    def test_ambient_theme_auto_sync_settings(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    payload = json.dumps({"ambient_theme_auto_sync": True}).encode('utf-8')
+                    env = {
+                        'REQUEST_METHOD': 'POST',
+                        'PATH_INFO': '/api/settings',
+                        'CONTENT_TYPE': 'application/json',
+                        'CONTENT_LENGTH': str(len(payload)),
+                        'wsgi.input': io.BytesIO(payload),
+                        'wsgi.errors': io.StringIO(),
+                        'SERVER_NAME': 'localhost',
+                        'SERVER_PORT': '5000'
+                    }
+                    resp = []
+                    app(env, lambda s, h, *args: resp.append(s))
+                    self.assertTrue(resp[0].startswith("200"))
+                    self.assertTrue(cm.config.ambient_theme_auto_sync)
+                    cm.stop()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

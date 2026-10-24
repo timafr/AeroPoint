@@ -450,6 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchDistanceAdaptation = document.getElementById('switch-distance-adaptation');
   const switchLaser = document.getElementById('switch-laser');
   const switchClahe = document.getElementById('switch-clahe');
+  const switchAmbientTheme = document.getElementById('switch-ambient-theme');
   const switchWristClock = document.getElementById('switch-wrist-clock');
   const switchAirPiano = document.getElementById('switch-air-piano');
   const valLaserStatus = document.getElementById('val-laser-status');
@@ -778,6 +779,11 @@ document.addEventListener('DOMContentLoaded', () => {
   switchWindowSnap?.addEventListener('change', (e) => postSettings({ enable_window_snap_zones: e.target.checked }));
   switchDistanceAdaptation?.addEventListener('change', (e) => postSettings({ enable_distance_adaptation: e.target.checked }));
   switchClahe?.addEventListener('change', (e) => postSettings({ use_clahe: e.target.checked }));
+  switchAmbientTheme?.addEventListener('change', (e) => {
+    soundSynth.playLaserFx();
+    postSettings({ ambient_theme_auto_sync: e.target.checked });
+    flashActionCapsule('🌗', e.target.checked ? 'Авто-тема освещения ВКЛ' : 'Авто-тема освещения ВЫКЛ');
+  });
   switchLegacyGestures?.addEventListener('change', (e) => postSettings({ enable_legacy_shortcuts: e.target.checked }));
   switchWristClock?.addEventListener('change', (e) => {
     soundSynth.playLaserFx();
@@ -1208,7 +1214,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!skin) return;
     const cleanSkin = skin.toLowerCase();
     skinButtons.forEach(b => b.classList.toggle('active', b.getAttribute('data-skin') === cleanSkin));
-    document.body.classList.remove('theme-cyberpunk', 'theme-visionos', 'theme-matrix', 'theme-solar');
+    document.body.classList.remove('theme-cyberpunk', 'theme-visionos', 'theme-matrix', 'theme-solar', 'theme-stealth');
     document.body.classList.add(`theme-${cleanSkin}`);
     if (badgeHudThemeLabel) {
       badgeHudThemeLabel.textContent = cleanSkin.toUpperCase();
@@ -1430,6 +1436,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (switchAirPiano && typeof data.enable_air_piano === 'boolean') {
         switchAirPiano.checked = data.enable_air_piano;
+      }
+      if (switchAmbientTheme && typeof data.ambient_theme_auto_sync === 'boolean') {
+        switchAmbientTheme.checked = data.ambient_theme_auto_sync;
       }
       if (data.precision_profile) {
         updateProfileButtons(data.precision_profile);

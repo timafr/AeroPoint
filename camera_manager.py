@@ -151,6 +151,7 @@ class CameraManager:
 
         # Recent Air-Snap captures
         self.recent_screenshots: List[Dict[str, any]] = []
+        self.last_theme_adaptation_time = 0.0
 
     def capture_screenshot(self) -> dict:
         """Captures a screenshot, triggers HUD shutter flash, and saves metadata."""
@@ -820,6 +821,15 @@ class CameraManager:
                     sample["tilt"] = round(getattr(pointer_hand, 'roll_deg', 0.0), 1)
                 self.telemetry_history.append(sample)
 
+            # Ambient Illuminance Auto-Theme Adaptation (check every 2.5s)
+            if getattr(self.config, 'ambient_theme_auto_sync', False) and (loop_now - self.last_theme_adaptation_time > 2.5):
+                self.last_theme_adaptation_time = loop_now
+                lum = getattr(self.tracker, 'current_luminance', 120.0)
+                if lum < 55.0 and self.config.hud_theme != "stealth":
+                    self.config.apply_hud_theme("stealth")
+                elif lum > 145.0 and self.config.hud_theme != "visionos":
+                    self.config.apply_hud_theme("visionos")
+
             # Render clean video stream for GUI only when client is actively viewing
             client_active = (loop_now - self.last_client_request_time) < 4.0
             if client_active and (loop_now - self.last_jpeg_time) >= 0.033:
@@ -947,6 +957,7 @@ class CameraManager:
             "use_clahe": self.config.use_clahe,
             "show_skeleton": self.config.show_skeleton,
             "hud_theme": getattr(self.config, 'hud_theme', 'cyberpunk'),
+            "ambient_theme_auto_sync": getattr(self.config, 'ambient_theme_auto_sync', False),
             "enable_sound": self.config.enable_sound_feedback,
             "sound_enabled": getattr(self.config, 'sound_enabled', True),
             "sound_theme": getattr(self.config, 'sound_theme', 'quantum'),

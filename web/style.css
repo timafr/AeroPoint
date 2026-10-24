@@ -71,6 +71,15 @@ body.theme-cyberpunk {
   --aero-magenta: #ec4899;
 }
 
+body.theme-stealth {
+  --aero-cyan: #e2e8f0;
+  --aero-blue: #94a3b8;
+  --aero-glow: rgba(226, 232, 240, 0.35);
+  --aero-violet: #64748b;
+  --aero-magenta: #cbd5e1;
+  --surface-border: rgba(255, 255, 255, 0.16);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

@@ -243,6 +243,8 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.show_wrist_hud_clock = bool(data["show_wrist_hud_clock"])
             if "enable_air_piano" in data:
                 manager.config.enable_air_piano = bool(data["enable_air_piano"])
+            if "ambient_theme_auto_sync" in data:
+                manager.config.ambient_theme_auto_sync = bool(data["ambient_theme_auto_sync"])
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()
