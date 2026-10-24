@@ -448,6 +448,19 @@ class TestCyberHUD(unittest.TestCase):
         rendered = self.hud.render_clean(frame, scroll_velocity=-1.8)
         self.assertIsNotNone(rendered)
         self.assertEqual(rendered.shape, (480, 640, 3))
+
+        # Test with actual hand present during scroll
+        mock_hand = HandData(
+            landmarks_norm=[(0.5, 0.5, 0.0)] * 21,
+            landmarks_px=[(320, 240, 0.0)] * 21,
+            landmarks_world=[(0.0, 0.0, 0.5)] * 21,
+            palm_size=0.08,
+            palm_size_px=60.0,
+            handedness="Right"
+        )
+        rendered_hand = self.hud.render_clean(frame, hand=mock_hand, scroll_velocity=-2.5)
+        self.assertIsNotNone(rendered_hand)
+
         # Direct cylinder drawing
         self.hud.draw_scroll_cylinder(frame, (320, 240), velocity=2.5)
         self.hud.draw_scroll_cylinder(frame, (320, 240), velocity=-2.5)
