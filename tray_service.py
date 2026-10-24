@@ -62,7 +62,14 @@ if IS_WINDOWS:
     ID_TRAY_RADIAL = 1005
     ID_TRAY_CYCLE_MONITOR = 1006
 
-    WNDPROC = ctypes.WINFUNCTYPE(ctypes.c_long, w.HWND, w.UINT, w.WPARAM, w.LPARAM)
+    LRESULT = ctypes.c_ssize_t
+    try:
+        user32.DefWindowProcW.argtypes = [w.HWND, w.UINT, w.WPARAM, w.LPARAM]
+        user32.DefWindowProcW.restype = LRESULT
+    except Exception:
+        pass
+
+    WNDPROC = ctypes.WINFUNCTYPE(LRESULT, w.HWND, w.UINT, w.WPARAM, w.LPARAM)
     HCURSOR = w.HANDLE
 
     class WNDCLASSEXW(ctypes.Structure):
@@ -165,7 +172,10 @@ class WindowsTrayService:
         elif msg == WM_DESTROY:
             user32.PostQuitMessage(0)
             return 0
-        return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
+        try:
+            return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
+        except Exception:
+            return 0
 
     def _show_context_menu(self, hwnd):
         hmenu = user32.CreatePopupMenu()

@@ -166,6 +166,22 @@ class MouseController:
         """Returns (width, height) of display space."""
         return self.screen_width, self.screen_height
 
+    @property
+    def current_screen_w(self) -> int:
+        return self.screen_width
+
+    @property
+    def current_screen_h(self) -> int:
+        return self.screen_height
+
+    @property
+    def current_x_origin(self) -> int:
+        return self.x_origin
+
+    @property
+    def current_y_origin(self) -> int:
+        return self.y_origin
+
     def get_cursor_pos(self) -> Tuple[int, int]:
         """Returns current mouse coordinates."""
         if IS_WINDOWS:

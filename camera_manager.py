@@ -662,10 +662,12 @@ class CameraManager:
                         self.mouse.mouse_down("left")
                     # Spatial Window Snap drop zone preview when dragging near display borders
                     if getattr(self.config, 'enable_window_snap_zones', True) and 'smooth_x' in locals() and 'smooth_y' in locals():
-                        sw = max(1.0, float(self.mouse.current_screen_w))
-                        sh = max(1.0, float(self.mouse.current_screen_h))
-                        norm_x = (smooth_x - self.mouse.current_x_origin) / sw
-                        norm_y = (smooth_y - self.mouse.current_y_origin) / sh
+                        sw = max(1.0, float(getattr(self.mouse, 'screen_width', 1920)))
+                        sh = max(1.0, float(getattr(self.mouse, 'screen_height', 1080)))
+                        ox = float(getattr(self.mouse, 'x_origin', 0))
+                        oy = float(getattr(self.mouse, 'y_origin', 0))
+                        norm_x = (smooth_x - ox) / sw
+                        norm_y = (smooth_y - oy) / sh
                         if norm_x < 0.04:
                             self.active_snap_zone = 'left'
                         elif norm_x > 0.96:
