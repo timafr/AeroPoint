@@ -284,6 +284,36 @@ document.addEventListener('DOMContentLoaded', () => {
       osc.stop(now + 0.095);
     }
 
+    playPianoNote(noteName) {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const freqs = {
+        'C4': 261.63,
+        'D4': 293.66,
+        'E4': 329.63,
+        'G4': 392.00,
+        'A4': 440.00
+      };
+      const freq = freqs[noteName] || 440.0;
+      const now = this.ctx.currentTime;
+
+      [1.0, 2.01].forEach((mult, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = idx === 0 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(freq * mult, now);
+        const amp = (this.volume * (idx === 0 ? 0.45 : 0.20));
+        gain.gain.setValueAtTime(amp, now);
+        gain.gain.exponentialRampToValueAtTime(0.0005, now + (idx === 0 ? 0.35 : 0.18));
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.36);
+      });
+    }
+
     playZoom(isZoomIn = true) {
       if (!this.enabled) return;
       this.init();
@@ -421,6 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchLaser = document.getElementById('switch-laser');
   const switchClahe = document.getElementById('switch-clahe');
   const switchWristClock = document.getElementById('switch-wrist-clock');
+  const switchAirPiano = document.getElementById('switch-air-piano');
   const valLaserStatus = document.getElementById('val-laser-status');
   const btnProfCad = document.getElementById('btn-prof-cad');
   const btnProfDesktop = document.getElementById('btn-prof-desktop');
@@ -752,6 +783,22 @@ document.addEventListener('DOMContentLoaded', () => {
     soundSynth.playLaserFx();
     postSettings({ show_wrist_hud_clock: e.target.checked });
     flashActionCapsule('⌚', e.target.checked ? 'Часы на запястье ВКЛ' : 'Часы на запястье ВЫКЛ');
+  });
+
+  switchAirPiano?.addEventListener('change', (e) => {
+    soundSynth.playPianoNote('C4');
+    postSettings({ enable_air_piano: e.target.checked });
+    flashActionCapsule('🎹', e.target.checked ? 'Air-Piano ВКЛ' : 'Air-Piano ВЫКЛ');
+  });
+
+  document.querySelectorAll('.piano-test-key').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const note = btn.getAttribute('data-note');
+      if (note) {
+        soundSynth.playPianoNote(note);
+        flashActionCapsule('🎵', `Нота: ${note}`);
+      }
+    });
   });
   
   switchLaser?.addEventListener('change', (e) => {
@@ -1381,6 +1428,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (switchWristClock && typeof data.show_wrist_hud_clock === 'boolean') {
         switchWristClock.checked = data.show_wrist_hud_clock;
       }
+      if (switchAirPiano && typeof data.enable_air_piano === 'boolean') {
+        switchAirPiano.checked = data.enable_air_piano;
+      }
       if (data.precision_profile) {
         updateProfileButtons(data.precision_profile);
       }
@@ -1391,6 +1441,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Store live landmarks for 3D Holographic Visualizer
     window._latestLandmarks3D = data.landmarks_3d || null;
+
+    // Play live Air-Piano notes if triggered
+    if (data.air_piano_notes && Array.isArray(data.air_piano_notes) && data.air_piano_notes.length > 0) {
+      data.air_piano_notes.forEach(note => {
+        soundSynth.playPianoNote(note);
+        flashActionCapsule('🎹', `Нота: ${note}`);
+      });
+    }
 
     // Multi-Monitor sync from telemetry / hotkey cycle
     if (typeof data.active_monitor === 'number' && data.active_monitor !== currentActiveMonitorId) {

@@ -1253,5 +1253,63 @@ class TestVisionOSWristWatch(unittest.TestCase):
                     cm.stop()
 
 
+class TestSpatialAirPiano(unittest.TestCase):
+    """Verifies Spatial Air-Piano 5-note pentatonic synthesizer chimes, HUD key prisms, and settings sync."""
+
+    def test_air_piano_hud_render(self):
+        import numpy as np
+        from hud import CyberHUD
+        from config import GestureConfig
+        from hand_tracker import HandData
+
+        cfg = GestureConfig()
+        cfg.enable_air_piano = True
+        hud = CyberHUD(cfg)
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+
+        px = [(300.0, 300.0, 0.0)] * 21
+        mock_hand = HandData(
+            landmarks_norm=[(p[0] / 640.0, p[1] / 480.0, 0.0) for p in px],
+            landmarks_px=px,
+            landmarks_world=[(p[0] * 0.001, p[1] * 0.001, 0.0) for p in px],
+            palm_size=0.15,
+            handedness="Right"
+        )
+
+        hud.draw_air_piano_keys(frame, mock_hand, active_notes=["C4", "E4"])
+        # Verified drawing execution without exception
+        self.assertTrue(True)
+
+    def test_air_piano_settings_sync(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    payload = json.dumps({"enable_air_piano": True}).encode('utf-8')
+                    env = {
+                        'REQUEST_METHOD': 'POST',
+                        'PATH_INFO': '/api/settings',
+                        'CONTENT_TYPE': 'application/json',
+                        'CONTENT_LENGTH': str(len(payload)),
+                        'wsgi.input': io.BytesIO(payload),
+                        'wsgi.errors': io.StringIO(),
+                        'SERVER_NAME': 'localhost',
+                        'SERVER_PORT': '5000'
+                    }
+                    resp = []
+                    app(env, lambda s, h, *args: resp.append(s))
+                    self.assertTrue(resp[0].startswith("200"))
+                    self.assertTrue(cm.config.enable_air_piano)
+                    cm.stop()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

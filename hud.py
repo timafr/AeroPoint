@@ -20,7 +20,7 @@ from typing import List, Tuple, Optional, Dict
 from config import GestureConfig
 from hand_tracker import (
     HandData, HAND_CONNECTIONS,
-    WRIST, THUMB_TIP, INDEX_MCP, INDEX_TIP, MIDDLE_TIP
+    WRIST, THUMB_TIP, INDEX_MCP, INDEX_TIP, MIDDLE_TIP, RING_TIP, PINKY_TIP
 )
 from gestures import GestureType
 
@@ -662,6 +662,52 @@ class CyberHUD:
             self.prev_pointer_time = now
 
             self.draw_speedometer_and_precision_reticle(frame, index_pt, self.smoothed_velocity, self.velocity_vector)
+
+        if getattr(self.config, 'enable_air_piano', False):
+            self.draw_air_piano_keys(frame, hand)
+
+    def draw_air_piano_keys(self, frame: np.ndarray, hand: HandData, active_notes: Optional[List[str]] = None):
+        """
+        Renders 5 floating neon holographic pentatonic synthesizer keys over the 5 fingertips.
+        """
+        pts = hand.landmarks_px
+        h, w, _ = frame.shape
+        tips = [
+            (THUMB_TIP, "C4", "C"),
+            (INDEX_TIP, "D4", "D"),
+            (MIDDLE_TIP, "E4", "E"),
+            (RING_TIP, "G4", "G"),
+            (PINKY_TIP, "A4", "A")
+        ]
+        active_set = set(active_notes or [])
+
+        overlay = frame.copy()
+        for tip_idx, note_id, note_lbl in tips:
+            pt = pts[tip_idx]
+            fx, fy = int(pt[0]), int(pt[1])
+            ky = max(18, fy - 24)
+            is_active = note_id in active_set
+
+            rw, rh = 12, 10
+            x1, y1 = max(0, fx - rw), max(0, ky - rh)
+            x2, y2 = min(w, fx + rw), min(h, ky + rh)
+
+            col = (255, 0, 128) if is_active else (0, 242, 254)
+            bg_col = (255, 100, 200) if is_active else (25, 20, 35)
+
+            cv2.rectangle(overlay, (x1, y1), (x2, y2), bg_col, -1)
+            cv2.rectangle(overlay, (x1, y1), (x2, y2), col, 1, cv2.LINE_AA)
+            cv2.line(frame, (fx, fy), (fx, ky + rh), col, 1, cv2.LINE_AA)
+
+        cv2.addWeighted(overlay, 0.65, frame, 0.35, 0, frame)
+
+        for tip_idx, note_id, note_lbl in tips:
+            pt = pts[tip_idx]
+            fx, fy = int(pt[0]), int(pt[1])
+            ky = max(18, fy - 24)
+            is_active = note_id in active_set
+            txt_col = (255, 255, 255) if is_active else (0, 242, 254)
+            cv2.putText(frame, note_lbl, (fx - 4, ky + 4), self.font_mono, 0.85, txt_col, 1, cv2.LINE_AA)
 
     def draw_wrist_holographic_clock(self, frame: np.ndarray, hand: HandData):
         """

@@ -168,6 +168,10 @@ class GestureRecognizer:
         self.prev_bimanual_pinch_dist: Optional[float] = None
         self.last_zoom_time = 0.0
         self.last_air_clap_time = 0.0
+
+        # Spatial Air-Piano key states
+        self.prev_piano_finger_states = {"thumb": True, "index": True, "middle": True, "ring": True, "pinky": True}
+        self.last_piano_note_times = {"thumb": 0.0, "index": 0.0, "middle": 0.0, "ring": 0.0, "pinky": 0.0}
         self.last_action_gesture = GestureType.NONE
 
     def get_finger_states(self, hand: HandData) -> Dict[str, bool]:
@@ -335,6 +339,25 @@ class GestureRecognizer:
         finger_states = self.get_finger_states(hand)
         num_extended = sum(finger_states.values())
 
+        # Spatial Air-Piano Pentatonic Chimes
+        air_piano_notes = []
+        if getattr(self.config, 'enable_air_piano', False):
+            note_map = {
+                "thumb": "C4",
+                "index": "D4",
+                "middle": "E4",
+                "ring": "G4",
+                "pinky": "A4"
+            }
+            for f_name, note in note_map.items():
+                was_ext = self.prev_piano_finger_states.get(f_name, True)
+                is_ext = finger_states.get(f_name, True)
+                if was_ext and not is_ext:
+                    if (now - self.last_piano_note_times.get(f_name, 0.0)) > 0.15:
+                        self.last_piano_note_times[f_name] = now
+                        air_piano_notes.append(note)
+                self.prev_piano_finger_states[f_name] = is_ext
+
         # Blended tracking anchor: 70% Index Tip + 30% Index DIP for high physical stability
         # Always uses 2D camera viewport pixels for screen mapping
         blended_tip = (
@@ -369,6 +392,7 @@ class GestureRecognizer:
             "virtual_surface_touch": False,
             "click_mode": self.config.click_mode,
             "finger_states": finger_states,
+            "air_piano_notes": air_piano_notes,
         }
 
         # --- A. PAUSE MODE (🖐️ Open palm: 5 fingers extended) ---

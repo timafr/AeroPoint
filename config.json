@@ -23,6 +23,7 @@
   "enable_screen_magnifier": false,
   "magnifier_zoom": 2.0,
   "show_wrist_hud_clock": false,
+  "enable_air_piano": true,
   "enable_power_saver": true,
   "sound_enabled": true,
   "sound_theme": "quantum",

@@ -109,6 +109,7 @@ class CameraManager:
         self.pinch_ratio = 0.0
         self.pinch_pct = 0.0
         self.latest_air_tap_pct = 0.0
+        self.latest_piano_notes: List[str] = []
         self.fps = 0.0
         self.latency_ms = 0.0
         self.cpu_percent = 0.0
@@ -625,6 +626,7 @@ class CameraManager:
                     self.mouse.move_to(smooth_x, smooth_y)
 
                 self.latest_air_tap_pct = events.get("air_tap_pct", 0.0)
+                self.latest_piano_notes = events.get("air_piano_notes", [])
 
                 if self.is_rotary_tuning and self.mouse.is_dragging:
                     self.mouse.mouse_up("left")
@@ -970,5 +972,7 @@ class CameraManager:
             "radial_menu_open": self.radial_menu_open,
             "active_radial_sector": self.active_radial_sector,
             "active_tab": self.active_tab,
+            "air_piano_notes": self.latest_piano_notes,
+            "enable_air_piano": getattr(self.config, 'enable_air_piano', False),
             "iphone_status": self.spatial_receiver.get_status()
         }

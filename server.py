@@ -241,6 +241,8 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.magnifier_zoom = float(data["magnifier_zoom"])
             if "show_wrist_hud_clock" in data:
                 manager.config.show_wrist_hud_clock = bool(data["show_wrist_hud_clock"])
+            if "enable_air_piano" in data:
+                manager.config.enable_air_piano = bool(data["enable_air_piano"])
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()
