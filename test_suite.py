@@ -322,6 +322,15 @@ class TestCyberHUD(unittest.TestCase):
         self.assertIsNotNone(rendered)
         self.assertEqual(rendered.shape, (480, 640, 3))
 
+    def test_render_color_temperature_badge(self):
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        self.hud.draw_color_temperature_badge(frame, 2900)
+        self.hud.draw_color_temperature_badge(frame, 5200)
+        self.hud.draw_color_temperature_badge(frame, 7500)
+        rendered = self.hud.render_clean(frame, color_temp_kelvin=5500)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.shape, (480, 640, 3))
+
     def test_render_clean_with_calibration_and_ripples(self):
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
         self.hud.trigger_click_ripple((320, 240), is_right=False)
@@ -469,6 +478,17 @@ class TestNightVisionBooster(unittest.TestCase):
         boosted = cv2.LUT(dark_img, table)
         # Shadow values (30/255) must be non-linearly brightened
         self.assertGreater(int(boosted[50, 50, 0]), 50)
+
+    def test_color_temperature_estimation(self):
+        # Warm image: Red dominant (BGR: 50, 100, 240)
+        ratio_warm = 50.0 / 240.0
+        kelvin_warm = int(5500.0 * math.sqrt(ratio_warm))
+        self.assertLess(kelvin_warm, 3500)
+
+        # Cool image: Blue dominant (BGR: 230, 120, 60)
+        ratio_cool = 230.0 / 60.0
+        kelvin_cool = int(5500.0 * math.sqrt(ratio_cool))
+        self.assertGreater(kelvin_cool, 6500)
 
 
 class TestMultiMonitorManagement(unittest.TestCase):

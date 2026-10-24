@@ -1322,6 +1322,23 @@ class CyberHUD:
         # 2.0X Badge
         cv2.putText(frame, "2.0X LOUPE", (lx + 10, ly + 14), cv2.FONT_HERSHEY_PLAIN, 0.70, (0, 242, 254), 1, cv2.LINE_AA)
 
+    def draw_color_temperature_badge(self, frame: np.ndarray, kelvin: int):
+        """Renders ambient color temperature indicator in Kelvin (Warm / Neutral / Cool)."""
+        h, w, _ = frame.shape
+        x, y = 14, 44
+        if kelvin < 3500:
+            status = "WARM"
+            col = (0, 165, 255)
+        elif kelvin > 6500:
+            status = "COOL"
+            col = (255, 200, 100)
+        else:
+            status = "NEUTRAL"
+            col = (0, 242, 254)
+
+        badge_txt = f"{kelvin}K {status}"
+        cv2.putText(frame, badge_txt, (x, y), cv2.FONT_HERSHEY_PLAIN, 0.75, col, 1, cv2.LINE_AA)
+
     def render_clean(
         self,
         frame: np.ndarray,
@@ -1346,9 +1363,12 @@ class CyberHUD:
         confidence_pct: Optional[float] = None,
         virtual_surface_mode: bool = False,
         virtual_surface_touch: bool = False,
-        loupe_img: Optional[np.ndarray] = None
+        loupe_img: Optional[np.ndarray] = None,
+        color_temp_kelvin: Optional[int] = None
     ) -> np.ndarray:
         """Clean rendering for GUI stream: draws distinct glowing skeletons for both hands."""
+        if color_temp_kelvin is not None:
+            self.draw_color_temperature_badge(frame, color_temp_kelvin)
         if virtual_surface_mode:
             target_h = pointer_hand or (hands[0] if hands else hand)
             self.draw_virtual_touch_plane(frame, hand=target_h, is_touching=virtual_surface_touch)

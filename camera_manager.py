@@ -828,7 +828,8 @@ class CameraManager:
                         confidence_pct=self.tracking_confidence_pct,
                         virtual_surface_mode=getattr(self.config, 'enable_virtual_touch_surface', False),
                         virtual_surface_touch=events.get("virtual_surface_touch", False),
-                        loupe_img=loupe_patch
+                        loupe_img=loupe_patch,
+                        color_temp_kelvin=getattr(self.tracker, 'color_temp_kelvin', 5500)
                     )
 
                 # High performance JPEG encoding (quality 68 saves ~60% CPU)
@@ -892,6 +893,7 @@ class CameraManager:
             "confidence_pct": round(self.tracking_confidence_pct, 1),
             "luminance": round(getattr(self.tracker, 'current_luminance', 120.0), 1),
             "is_night_mode": getattr(self.tracker, 'is_night_mode', False),
+            "color_temp_kelvin": getattr(self.tracker, 'color_temp_kelvin', 5500),
             "use_clahe": self.config.use_clahe,
             "show_skeleton": self.config.show_skeleton,
             "hud_theme": getattr(self.config, 'hud_theme', 'cyberpunk'),

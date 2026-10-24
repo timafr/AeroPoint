@@ -1339,17 +1339,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lighting Telemetry Badge
     if (badgeLightingText && typeof data.luminance === 'number') {
       const lx = Math.round(data.luminance);
+      const k = data.color_temp_kelvin ? ` | ${data.color_temp_kelvin}K` : '';
       if (data.is_night_mode) {
         if (badgeLightingIcon) badgeLightingIcon.textContent = '🌙';
-        badgeLightingText.textContent = `${lx} lx (Ночь)`;
+        badgeLightingText.textContent = `${lx} lx${k} (Ночь)`;
         if (pillLighting) pillLighting.style.borderColor = 'rgba(255, 170, 0, 0.45)';
       } else if (lx >= 100) {
         if (badgeLightingIcon) badgeLightingIcon.textContent = '☀️';
-        badgeLightingText.textContent = `${lx} lx (Светло)`;
+        badgeLightingText.textContent = `${lx} lx${k}`;
         if (pillLighting) pillLighting.style.borderColor = 'rgba(0, 242, 254, 0.3)';
       } else {
         if (badgeLightingIcon) badgeLightingIcon.textContent = '⛅';
-        badgeLightingText.textContent = `${lx} lx`;
+        badgeLightingText.textContent = `${lx} lx${k}`;
         if (pillLighting) pillLighting.style.borderColor = 'rgba(255, 255, 255, 0.12)';
       }
     }

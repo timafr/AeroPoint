@@ -98,6 +98,7 @@ class HandTracker:
         self.fps = 0.0
         self.latency_ms = 0.0
         self.current_luminance = 120.0
+        self.color_temp_kelvin = 5500
         self.is_night_mode = False
         self._prev_frame_time = time.time()
         self._clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -134,10 +135,20 @@ class HandTracker:
         if self.config.flip_horizontal:
             frame = cv2.flip(frame, 1)
 
-        # Step 2: Dynamic Auto-Illumination (Smart Low-Light Booster)
-        # Fast subsampled luminance check (takes < 0.03 ms)
-        mean_lum = float(np.mean(frame[::16, ::16, 0]))
+        # Step 2: Dynamic Auto-Illumination (Smart Low-Light Booster) & Kelvin Estimation
+        # Fast subsampled photometric check (takes < 0.04 ms)
+        sub = frame[::16, ::16]
+        mean_b = float(np.mean(sub[:, :, 0]))
+        mean_g = float(np.mean(sub[:, :, 1]))
+        mean_r = float(np.mean(sub[:, :, 2]))
+        mean_lum = float(0.299 * mean_r + 0.587 * mean_g + 0.114 * mean_b)
         self.current_luminance = mean_lum
+
+        # Color Temperature Estimation in Kelvin
+        ratio_br = mean_b / max(1.0, mean_r)
+        raw_kelvin = int(5500.0 * math.sqrt(ratio_br))
+        self.color_temp_kelvin = max(2400, min(8500, raw_kelvin))
+
         self.is_night_mode = bool(self.config.use_clahe or mean_lum < 75.0)
         if self.is_night_mode:
             clip = 3.2 if mean_lum < 45.0 else 2.0
