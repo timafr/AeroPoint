@@ -46,6 +46,7 @@ class SpatialReceiver:
         # Latest decoded hand data
         self.latest_hands: List[HandData] = []
         self.lock = threading.Lock()
+        self.new_frame_event = threading.Event()
 
         # Canvas for depth rendering (640x480)
         self.depth_canvas = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -193,6 +194,7 @@ class SpatialReceiver:
                     new_hands.append(h_data)
 
                 self.latest_hands = new_hands
+            self.new_frame_event.set()
         except Exception as e:
             pass
 
@@ -280,6 +282,7 @@ class SpatialReceiver:
                 new_hands.append(h_data)
 
             self.latest_hands = new_hands
+            self.new_frame_event.set()
 
     def get_hands(self) -> List[HandData]:
         """Returns the latest spatial hand data from iPhone."""

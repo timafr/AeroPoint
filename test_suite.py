@@ -330,6 +330,33 @@ class TestSpatialNetworking(unittest.TestCase):
         self.assertAlmostEqual(hands[0].landmarks_norm[0][0], 0.8, places=2)
         receiver.stop()
 
+    def test_two_hands_spatial_web_feed(self):
+        """Verifies high-speed two-hand decoding, event signaling, and depth rendering."""
+        receiver = SpatialReceiver(port=9998)
+        self.assertFalse(receiver.new_frame_event.is_set())
+
+        raw_lms1 = [[0.2, 0.5, 0.4] for _ in range(21)]
+        raw_lms2 = [[0.8, 0.5, 0.4] for _ in range(21)]
+        payload = {
+            "device": "iPhone (Mobile Safari)",
+            "sensor": "LiDAR Pro",
+            "fps": 60,
+            "hands": [
+                {"handedness": "Right", "landmarks_norm": raw_lms1, "palm_size_mm": 85, "depth_avg_mm": 420},
+                {"handedness": "Left", "landmarks_norm": raw_lms2, "palm_size_mm": 85, "depth_avg_mm": 430}
+            ]
+        }
+        receiver.feed_web_payload(payload)
+        self.assertTrue(receiver.new_frame_event.is_set())
+        hands = receiver.get_hands()
+        self.assertEqual(len(hands), 2)
+
+        # Ensure render depth view runs without errors
+        frame = receiver.render_depth_view()
+        self.assertEqual(frame.shape, (480, 640, 3))
+        self.assertGreater(int(np.sum(frame)), 0)
+        receiver.stop()
+
 
 class TestCyberHUD(unittest.TestCase):
     """Ensures HUD renderer never crashes regardless of frame size, hands count or modes."""

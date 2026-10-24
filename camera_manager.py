@@ -472,6 +472,11 @@ class CameraManager:
 
         while self.running:
             if self.active_tab == "iphone":
+                # Synchronize loop with incoming spatial frames (avoids tight loop CPU spinning & lock contention)
+                if hasattr(self.spatial_receiver, 'new_frame_event'):
+                    self.spatial_receiver.new_frame_event.wait(timeout=0.033)
+                    self.spatial_receiver.new_frame_event.clear()
+
                 iphone_hands = self.spatial_receiver.get_hands()
                 frame = self.spatial_receiver.render_depth_view()
                 all_hands = iphone_hands
@@ -561,6 +566,16 @@ class CameraManager:
                             pointer_hand = h0 if x0 > x1 else h1
                             action_hand = h1 if pointer_hand is h0 else h0
 
+                    # Persistent Temporal Hand Identity Tracking (prevents rapid left-right role swapping)
+                    if getattr(self, '_prev_pointer_wrist', None) is not None:
+                        w0 = h0.landmarks_px[WRIST]
+                        w1 = h1.landmarks_px[WRIST]
+                        d0 = math.hypot(w0[0] - self._prev_pointer_wrist[0], w0[1] - self._prev_pointer_wrist[1])
+                        d1 = math.hypot(w1[0] - self._prev_pointer_wrist[0], w1[1] - self._prev_pointer_wrist[1])
+                        if abs(d0 - d1) > 50:
+                            pointer_hand = h0 if d0 < d1 else h1
+                            action_hand = h1 if pointer_hand is h0 else h0
+
                     effective_gesture, events = self.recognizer.update_bimanual(pointer_hand, action_hand, frame.shape[:2])
                     act_str = events.get("action_gesture", "NONE")
                     self.action_gesture = getattr(GestureType, act_str, GestureType.NONE) if hasattr(GestureType, act_str) else GestureType.NONE
@@ -578,6 +593,7 @@ class CameraManager:
 
             self.pointer_hand = pointer_hand
             self.action_hand = action_hand
+            self._prev_pointer_wrist = pointer_hand.landmarks_px[WRIST] if pointer_hand else None
             self.current_gesture = effective_gesture
             self.pinch_ratio = events.get("thumb_idx_ratio", 0.0) if events else 0.0
             self.pinch_pct = events.get("pinch_proximity_pct", 0.0) if events else 0.0
@@ -645,11 +661,11 @@ class CameraManager:
                     if not self.mouse.is_dragging:
                         self.mouse.mouse_down("left")
                     # Spatial Window Snap drop zone preview when dragging near display borders
-                    if getattr(self.config, 'enable_window_snap_zones', True) and target_x is not None and target_y is not None:
+                    if getattr(self.config, 'enable_window_snap_zones', True) and 'smooth_x' in locals() and 'smooth_y' in locals():
                         sw = max(1.0, float(self.mouse.current_screen_w))
                         sh = max(1.0, float(self.mouse.current_screen_h))
-                        norm_x = (target_x - self.mouse.current_x_origin) / sw
-                        norm_y = (target_y - self.mouse.current_y_origin) / sh
+                        norm_x = (smooth_x - self.mouse.current_x_origin) / sw
+                        norm_y = (smooth_y - self.mouse.current_y_origin) / sh
                         if norm_x < 0.04:
                             self.active_snap_zone = 'left'
                         elif norm_x > 0.96:
@@ -873,10 +889,10 @@ class CameraManager:
                             ergo_min = int(self.continuous_hand_elevated_sec / 60.0)
 
                     loupe_patch = None
-                    if getattr(self.config, 'enable_screen_magnifier', False) and target_x is not None and target_y is not None:
+                    if getattr(self.config, 'enable_screen_magnifier', False) and 'smooth_x' in locals() and 'smooth_y' in locals():
                         loupe_patch = self.mouse.get_screen_loupe(
-                            int(target_x),
-                            int(target_y),
+                            int(smooth_x),
+                            int(smooth_y),
                             radius=35,
                             zoom=getattr(self.config, 'magnifier_zoom', 2.0)
                         )
