@@ -72,6 +72,45 @@ class CyberHUD:
         self.media_action_icon: str = "PLAY"
         self.media_action_label: str = ""
 
+        # Privacy Shield visual feedback
+        self.privacy_shield_time: float = 0.0
+
+    def trigger_privacy_shield(self):
+        """Triggers the biometric privacy shield lockdown visual effect in HUD."""
+        self.privacy_shield_time = time.time()
+
+    def draw_privacy_shield(self, frame: np.ndarray):
+        """Renders glowing biometric security lockdown shield when workstation is locked."""
+        now = time.time()
+        dt = now - self.privacy_shield_time
+        if dt > 0.85:
+            return
+
+        h, w, _ = frame.shape
+        alpha = min(0.85, (0.85 - dt) / 0.25)
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (0, 0), (w, h), (10, 8, 15), -1)
+        cv2.addWeighted(overlay, alpha * 0.70, frame, 1.0 - (alpha * 0.70), 0, frame)
+
+        cx, cy = w // 2, h // 2
+        r = int(55 + 10 * (1.0 - dt / 0.85))
+        pts_hex = []
+        for i in range(6):
+            ang = math.radians(60 * i - 30)
+            pts_hex.append((int(cx + r * math.cos(ang)), int(cy + r * math.sin(ang))))
+        pts_hex = np.array(pts_hex, np.int32)
+        cv2.polylines(frame, [pts_hex], True, (0, 242, 254), 2, cv2.LINE_AA)
+
+        # Padlock graphic
+        pw, ph = 24, 20
+        cv2.rectangle(frame, (cx - pw // 2, cy - 2), (cx + pw // 2, cy + ph), (0, 242, 254), -1, cv2.LINE_AA)
+        cv2.ellipse(frame, (cx, cy - 2), (8, 10), 0, 180, 360, (0, 242, 254), 2, cv2.LINE_AA)
+        cv2.circle(frame, (cx, cy + 7), 2, (18, 16, 24), -1, cv2.LINE_AA)
+
+        # Banner text
+        cv2.putText(frame, "WORKSTATION SECURED", (cx - 105, cy + ph + 28),
+                    self.font_mono, 1.0, (255, 255, 255), 2, cv2.LINE_AA)
+
     def trigger_media_feedback(self, action: str, label: str):
         """Triggers the floating HUD media playback capsule."""
         self.last_media_action_time = time.time()
@@ -1751,4 +1790,5 @@ class CyberHUD:
         self.draw_footer_bar(frame)
         self.draw_shutter_flash(frame)
         self.draw_media_capsule(frame)
+        self.draw_privacy_shield(frame)
         return frame

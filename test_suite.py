@@ -1402,5 +1402,87 @@ class TestSpatialAirRuler(unittest.TestCase):
                     cm.stop()
 
 
+class TestPrivacyShieldLock(unittest.TestCase):
+    """Verifies Privacy Shield visual HUD overlay, system lock REST route, and dual-fist gesture."""
+
+    def test_hud_privacy_shield_render(self):
+        import numpy as np
+        from hud import CyberHUD
+        from config import GestureConfig
+
+        cfg = GestureConfig()
+        hud = CyberHUD(cfg)
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+
+        hud.trigger_privacy_shield()
+        hud.draw_privacy_shield(frame)
+        self.assertGreater(hud.privacy_shield_time, 0.0)
+
+    def test_system_lock_route(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    with patch.object(cm.mouse, 'lock_workstation') as mock_lock:
+                        env = {
+                            'REQUEST_METHOD': 'POST',
+                            'PATH_INFO': '/api/system/lock',
+                            'wsgi.input': io.BytesIO(),
+                            'wsgi.errors': io.StringIO(),
+                            'SERVER_NAME': 'localhost',
+                            'SERVER_PORT': '5000'
+                        }
+                        resp = []
+                        body = b"".join(app(env, lambda s, h, *args: resp.append(s)))
+                        self.assertTrue(resp[0].startswith("200"))
+                        data = json.loads(body.decode('utf-8'))
+                        self.assertEqual(data["status"], "ok")
+                        mock_lock.assert_called_once()
+                    cm.stop()
+
+    def test_bimanual_dual_fist_privacy_trigger(self):
+        import time
+        from config import GestureConfig
+        from gestures import GestureRecognizer
+        from hand_tracker import HandData
+
+        cfg = GestureConfig()
+        cfg.enable_privacy_gesture = True
+        rec = GestureRecognizer(cfg, screen_size=(1920, 1080), screen_origin=(0, 0))
+
+        # Make 0-finger fist hand
+        def make_fist_hand(handedness="Right"):
+            px = [(300.0, 300.0, 0.0)] * 21
+            # Wrist at 300, 350
+            px[0] = (300.0, 350.0, 0.0)
+            # All fingertips curled close to wrist
+            for tip in [4, 8, 12, 16, 20]:
+                px[tip] = (300.0, 320.0, 0.0)
+            return HandData(
+                landmarks_norm=[(p[0] / 640.0, p[1] / 480.0, 0.0) for p in px],
+                landmarks_px=px,
+                landmarks_world=[(p[0] * 0.001, p[1] * 0.001, 0.0) for p in px],
+                palm_size=0.15,
+                handedness=handedness
+            )
+
+        h_ptr = make_fist_hand("Right")
+        h_act = make_fist_hand("Left")
+
+        # Initial dual-fist start
+        rec.update_bimanual(h_ptr, h_act, (480, 640))
+        time.sleep(0.48)
+        gest, events = rec.update_bimanual(h_ptr, h_act, (480, 640))
+        self.assertTrue(events.get("trigger_privacy_lock", False))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

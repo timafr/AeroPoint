@@ -58,6 +58,7 @@ class GestureConfig:
     enable_air_piano: bool = False          # 5-Note Pentatonic In-Air Synthesizer Chimes on fingertip taps
     ambient_theme_auto_sync: bool = False   # Automatically adapt HUD and Web theme based on room illuminance
     enable_spatial_air_ruler: bool = False  # In-Air Holographic Vernier Caliper & Distance Measuring Tape
+    enable_privacy_gesture: bool = True     # Simultaneous dual-fist hold triggers instant workstation privacy lock
 
     # --- Audio & Sonic Synthesizer ---
     sound_enabled: bool = True
@@ -194,6 +195,7 @@ class GestureConfig:
             "enable_air_piano": self.enable_air_piano,
             "ambient_theme_auto_sync": self.ambient_theme_auto_sync,
             "enable_spatial_air_ruler": self.enable_spatial_air_ruler,
+            "enable_privacy_gesture": self.enable_privacy_gesture,
             "enable_power_saver": self.enable_power_saver,
             "sound_enabled": self.sound_enabled,
             "sound_theme": self.sound_theme,

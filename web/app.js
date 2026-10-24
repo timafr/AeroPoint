@@ -454,6 +454,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchWristClock = document.getElementById('switch-wrist-clock');
   const switchAirPiano = document.getElementById('switch-air-piano');
   const switchAirRuler = document.getElementById('switch-air-ruler');
+  const switchPrivacyGesture = document.getElementById('switch-privacy-gesture');
+  const btnLockPcNow = document.getElementById('btn-lock-pc-now');
   const valLaserStatus = document.getElementById('val-laser-status');
   const btnProfCad = document.getElementById('btn-prof-cad');
   const btnProfDesktop = document.getElementById('btn-prof-desktop');
@@ -802,6 +804,18 @@ document.addEventListener('DOMContentLoaded', () => {
     soundSynth.playLaserFx();
     postSettings({ enable_spatial_air_ruler: e.target.checked });
     flashActionCapsule('📐', e.target.checked ? 'Воздушная линейка ВКЛ' : 'Воздушная линейка ВЫКЛ');
+  });
+
+  switchPrivacyGesture?.addEventListener('change', (e) => {
+    soundSynth.playLaserFx();
+    postSettings({ enable_privacy_gesture: e.target.checked });
+    flashActionCapsule('🛡️', e.target.checked ? 'Privacy Shield ВКЛ' : 'Privacy Shield ВЫКЛ');
+  });
+
+  btnLockPcNow?.addEventListener('click', () => {
+    soundSynth.playLaserFx();
+    flashActionCapsule('🔒', 'Блокировка ПК...');
+    fetch('/api/system/lock', { method: 'POST' }).catch(() => {});
   });
 
   document.querySelectorAll('.piano-test-key').forEach(btn => {
@@ -1449,6 +1463,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (switchAirRuler && typeof data.enable_spatial_air_ruler === 'boolean') {
         switchAirRuler.checked = data.enable_spatial_air_ruler;
+      }
+      if (switchPrivacyGesture && typeof data.enable_privacy_gesture === 'boolean') {
+        switchPrivacyGesture.checked = data.enable_privacy_gesture;
       }
       if (data.precision_profile) {
         updateProfileButtons(data.precision_profile);

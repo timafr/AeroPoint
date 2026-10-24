@@ -174,6 +174,10 @@ class GestureRecognizer:
         self.last_piano_note_times = {"thumb": 0.0, "index": 0.0, "middle": 0.0, "ring": 0.0, "pinky": 0.0}
         self.last_action_gesture = GestureType.NONE
 
+        # Dual-fist Privacy Shield Lock
+        self.dual_fist_start_time = 0.0
+        self.last_privacy_lock_time = 0.0
+
     def get_finger_states(self, hand: HandData) -> Dict[str, bool]:
         """Determines whether each finger is extended (True) or curled (False) using true 3D kinematics with desk-rest tilt compensation."""
         pts = hand.landmarks_world if (hasattr(hand, "landmarks_world") and hand.landmarks_world) else hand.landmarks_px
@@ -377,6 +381,7 @@ class GestureRecognizer:
             "trigger_show_desktop": False,
             "trigger_next_slide": False,
             "trigger_prev_slide": False,
+            "trigger_privacy_lock": False,
             "drag_active": False,
             "scroll_delta": 0,
             "cursor_target": self.map_to_screen(blended_tip, cam_shape, getattr(hand, 'palm_size_px', 60.0)),
@@ -746,6 +751,19 @@ class GestureRecognizer:
                 events["air_clap_midpoint"] = (int((ptr_wrist[0] + act_wrist[0]) / 2), int((ptr_wrist[1] + act_wrist[1]) / 2))
                 events["action_gesture"] = "AIR CLAP"
                 return GestureType.PAUSE, events
+
+        # --- B0.2 BIMANUAL DUAL-FIST PRIVACY SHIELD LOCK ---
+        if getattr(self.config, 'enable_privacy_gesture', True) and ptr_num_extended == 0 and action_num_extended == 0:
+            if self.dual_fist_start_time == 0.0:
+                self.dual_fist_start_time = now
+            elif (now - self.dual_fist_start_time) >= 0.45 and (now - self.last_privacy_lock_time > 3.0):
+                self.last_privacy_lock_time = now
+                self.dual_fist_start_time = 0.0
+                events["trigger_privacy_lock"] = True
+                events["action_gesture"] = "PRIVACY LOCK"
+                return GestureType.DRAG, events
+        else:
+            self.dual_fist_start_time = 0.0
 
         # --- A. ACTION HAND SAFETY PAUSE (🖐️ Open palm on action hand: 5 fingers extended) ---
         if action_num_extended == 5:

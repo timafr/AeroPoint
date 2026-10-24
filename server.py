@@ -247,6 +247,8 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.ambient_theme_auto_sync = bool(data["ambient_theme_auto_sync"])
             if "enable_spatial_air_ruler" in data:
                 manager.config.enable_spatial_air_ruler = bool(data["enable_spatial_air_ruler"])
+            if "enable_privacy_gesture" in data:
+                manager.config.enable_privacy_gesture = bool(data["enable_privacy_gesture"])
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()
@@ -375,6 +377,14 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             if res.get("status") == "error":
                 bottle.response.status = 400
             return res
+        except Exception as e:
+            bottle.response.status = 500
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/system/lock', method='POST')
+    def system_lock_route():
+        try:
+            return manager.lock_workstation()
         except Exception as e:
             bottle.response.status = 500
             return {"status": "error", "message": str(e)}

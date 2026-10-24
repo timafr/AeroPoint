@@ -169,6 +169,12 @@ class CameraManager:
             self.recent_screenshots = self.recent_screenshots[:12]
         return snap_info
 
+    def lock_workstation(self) -> dict:
+        """Triggers privacy shield overlay and locks Windows workstation."""
+        self.hud.trigger_privacy_shield()
+        self.mouse.lock_workstation()
+        return {"status": "ok", "action": "lock_workstation"}
+
     def get_session_telemetry(self) -> dict:
         """Returns historical session timeline for diagnostics, telemetry export, and ergonomic analysis."""
         return {
@@ -733,6 +739,11 @@ class CameraManager:
                         else:
                             self.mouse.play_pause()
                             self.hud.trigger_media_feedback("play/pause", "PLAY / PAUSE")
+
+                    if events.get("trigger_privacy_lock"):
+                        self.scroll_engine.brake()
+                        self.hud.trigger_privacy_shield()
+                        self.mouse.lock_workstation()
 
                 # 3. Spatial Rotary Volume Dial (twist wrist while holding pinch or fist)
                 rotary_hand = action_hand if (action_hand and events.get("is_dual_hand")) else pointer_hand
