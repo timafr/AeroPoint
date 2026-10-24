@@ -786,8 +786,22 @@ class CyberHUD:
         tx = max(8, min(w - 8, tx))
         ty = max(8, min(h - 8, ty))
 
-        beam_color = (0, 242, 254) if not is_clicking else (50, 50, 255)
-        glow_color = (0, 180, 255) if not is_clicking else (80, 80, 255)
+        l_col_name = getattr(self.config, 'laser_color', 'cyan').lower()
+        if is_clicking:
+            beam_color = (50, 50, 255) # Red on click
+            glow_color = (80, 80, 255)
+        elif l_col_name == "green":
+            beam_color = (0, 240, 100) # Emerald green
+            glow_color = (0, 230, 80)
+        elif l_col_name == "red":
+            beam_color = (50, 60, 255) # Crimson plasma
+            glow_color = (80, 80, 255)
+        elif l_col_name == "gold":
+            beam_color = (0, 215, 255) # Solar gold
+            glow_color = (40, 190, 255)
+        else:
+            beam_color = (0, 242, 254) # Electric cyan
+            glow_color = (0, 180, 255)
 
         # 0. Ephemeral Glowing Plasma Ribbon Trail
         now = time.time()
@@ -814,12 +828,13 @@ class CyberHUD:
 
         # 1. Outer glowing beam (alpha blended)
         overlay = frame.copy()
-        cv2.line(overlay, (tip[0], tip[1]), (tx, ty), glow_color, 5, cv2.LINE_AA)
+        tip_pt = (int(tip[0]), int(tip[1]))
+        cv2.line(overlay, tip_pt, (tx, ty), glow_color, 5, cv2.LINE_AA)
         cv2.addWeighted(overlay, 0.45, frame, 0.55, 0, frame)
 
         # 2. Core crisp laser beam
-        cv2.line(frame, (tip[0], tip[1]), (tx, ty), (255, 255, 255), 1, cv2.LINE_AA)
-        cv2.circle(frame, (tip[0], tip[1]), 3, (255, 255, 255), -1, cv2.LINE_AA)
+        cv2.line(frame, tip_pt, (tx, ty), (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.circle(frame, tip_pt, 3, (255, 255, 255), -1, cv2.LINE_AA)
 
         # 3. Holographic Reticle at target
         reticle_rad = 12 if not is_clicking else 7

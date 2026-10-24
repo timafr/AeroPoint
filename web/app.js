@@ -735,6 +735,22 @@ document.addEventListener('DOMContentLoaded', () => {
     postSettings({ laser_pointer_mode: e.target.checked });
   });
 
+  // Laser Pointer Palette Selection (Cyan, Green, Red, Gold)
+  document.querySelectorAll('.laser-color-pill .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.laser-color-pill .seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const color = btn.getAttribute('data-laser-color');
+      soundSynth.playLaserFx();
+      fetch('/api/laser/color', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ color })
+      }).catch(() => {});
+      flashActionCapsule('🎨', `Цвет лазера: ${btn.textContent.trim()}`);
+    });
+  });
+
   // Precision Profile Presets (CAD / Desktop / Gaming)
   function updateProfileButtons(profile) {
     [btnProfCad, btnProfDesktop, btnProfGaming].forEach(btn => btn?.classList.remove('active'));
@@ -1274,6 +1290,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (switchLaser && typeof data.laser_pointer_mode === 'boolean') {
         switchLaser.checked = data.laser_pointer_mode;
+      }
+      if (data.laser_color) {
+        document.querySelectorAll('.laser-color-pill .seg-btn').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-laser-color') === data.laser_color);
+        });
       }
       if (switchClahe && typeof data.use_clahe === 'boolean') {
         switchClahe.checked = data.use_clahe;

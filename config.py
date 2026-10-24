@@ -43,6 +43,7 @@ class GestureConfig:
     pinch_hold_drag_delay_sec: float = 0.22 # Delay before drag locks in
     radial_menu_enabled: bool = True        # Radial Quick-Dial Pie Menu
     laser_pointer_mode: bool = False        # Laser vector aiming mode with snap assistance
+    laser_color: str = "cyan"               # "cyan", "green", "red", "gold"
     presentation_spotlight_mode: bool = False # Keynote-style circular stage spotlight with dimmed vignette
     spotlight_radius: int = 85              # Pixel radius of spotlight beam
     enable_air_draw_stream: bool = False    # Live glowing air-draw annotations directly in the camera stream
@@ -172,6 +173,7 @@ class GestureConfig:
             "acceleration_curve": self.acceleration_curve,
             "enable_legacy_shortcuts": self.enable_legacy_shortcuts,
             "laser_pointer_mode": self.laser_pointer_mode,
+            "laser_color": self.laser_color,
             "presentation_spotlight_mode": self.presentation_spotlight_mode,
             "spotlight_radius": self.spotlight_radius,
             "enable_virtual_touch_surface": self.enable_virtual_touch_surface,

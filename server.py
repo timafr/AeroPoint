@@ -199,6 +199,8 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.enable_legacy_shortcuts = bool(data["enable_legacy_shortcuts"])
             if "laser_pointer_mode" in data:
                 manager.config.laser_pointer_mode = bool(data["laser_pointer_mode"])
+            if "laser_color" in data:
+                manager.config.laser_color = str(data["laser_color"]).lower()
             if "enable_power_saver" in data:
                 manager.config.enable_power_saver = bool(data["enable_power_saver"])
             if "precision_profile" in data:
@@ -268,6 +270,19 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             col = str(data.get('color', 'cyan')).lower()
             manager.config.air_draw_color = col
             return {"status": "ok", "color": manager.config.air_draw_color}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/laser/color', method='POST')
+    def laser_color_route():
+        try:
+            data = bottle.request.json or {}
+            col = str(data.get('color', 'cyan')).lower()
+            if col in ('cyan', 'green', 'red', 'gold'):
+                manager.config.laser_color = col
+            manager.config.save_to_file()
+            return {"status": "ok", "laser_color": manager.config.laser_color}
         except Exception as e:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}

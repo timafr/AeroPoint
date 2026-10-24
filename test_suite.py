@@ -981,5 +981,73 @@ class TestDoubleClickGesture(unittest.TestCase):
         self.assertTrue(ev2.get("trigger_double_click", False))
 
 
+class TestLaserPointerPalette(unittest.TestCase):
+    """Verifies Laser Pointer 4-color palette configuration, HUD rendering, and REST endpoint."""
+
+    def test_laser_palette_config_and_hud(self):
+        import numpy as np
+        from hud import CyberHUD
+        from config import GestureConfig
+        from hand_tracker import HandData
+        cfg = GestureConfig()
+        cfg.laser_pointer_mode = True
+        self.assertEqual(cfg.laser_color, "cyan")
+
+        hud = CyberHUD(cfg)
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+
+        px = [(300.0, 300.0, 0.0)] * 21
+        px[5] = (300.0, 260.0, 0.0) # Index MCP
+        px[8] = (300.0, 180.0, 0.0) # Index Tip
+        mock_hand = HandData(
+            landmarks_norm=[(p[0] / 640.0, p[1] / 480.0, 0.0) for p in px],
+            landmarks_px=px,
+            landmarks_world=[(p[0] * 0.001, p[1] * 0.001, 0.0) for p in px],
+            palm_size=0.15,
+            handedness="Right"
+        )
+
+        # Test each palette color rendering without exception
+        for col in ["cyan", "green", "red", "gold"]:
+            cfg.laser_color = col
+            hud.draw_laser_pointer(frame, mock_hand, is_clicking=False)
+            hud.draw_laser_pointer(frame, mock_hand, is_clicking=True)
+
+        self.assertTrue(True)
+
+    def test_laser_color_rest_api(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    payload = json.dumps({"color": "gold"}).encode('utf-8')
+                    env = {
+                        'REQUEST_METHOD': 'POST',
+                        'PATH_INFO': '/api/laser/color',
+                        'CONTENT_TYPE': 'application/json',
+                        'CONTENT_LENGTH': str(len(payload)),
+                        'wsgi.input': io.BytesIO(payload),
+                        'wsgi.errors': io.StringIO(),
+                        'SERVER_NAME': 'localhost',
+                        'SERVER_PORT': '5000'
+                    }
+                    status_captured = []
+                    def start_response(status, headers, *args):
+                        status_captured.append(status)
+
+                    body = b"".join(app(env, start_response))
+                    self.assertTrue(status_captured[0].startswith("200"))
+                    self.assertEqual(cm.config.laser_color, "gold")
+                    cm.stop()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
