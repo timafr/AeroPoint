@@ -614,6 +614,9 @@ class CyberHUD:
         cv2.line(frame, (bx1, by1), (bx2, by2), dist_col, 1, cv2.LINE_AA)
         cv2.circle(frame, (w_pt[0], min(frame.shape[0] - 6, pts[WRIST][1] + 42)), 2, (255, 255, 255), -1, cv2.LINE_AA)
 
+        # visionOS Holographic Smart Watch Widget anchored to wrist
+        self.draw_wrist_holographic_clock(frame, hand)
+
         # Interactive Pinch Proximity Halo & Magnetic Snap Spark
         thumb_pt = (int(pts[THUMB_TIP][0]), int(pts[THUMB_TIP][1]))
         index_pt = (int(pts[INDEX_TIP][0]), int(pts[INDEX_TIP][1]))
@@ -659,6 +662,55 @@ class CyberHUD:
             self.prev_pointer_time = now
 
             self.draw_speedometer_and_precision_reticle(frame, index_pt, self.smoothed_velocity, self.velocity_vector)
+
+    def draw_wrist_holographic_clock(self, frame: np.ndarray, hand: HandData):
+        """
+        Renders an Apple visionOS styled floating holographic smart watch widget
+        anchored directly beside the wrist joint in mid-air.
+        """
+        if not getattr(self.config, 'show_wrist_hud_clock', True):
+            return
+
+        pts = hand.landmarks_px
+        h, w, _ = frame.shape
+        wrist = pts[WRIST]
+        wx, wy = int(wrist[0]), int(wrist[1])
+
+        # Position watch to the side of the wrist
+        handedness = getattr(hand, 'handedness', 'Right')
+        offset_x = -56 if handedness == 'Right' else 56
+        offset_y = -10
+        cx = wx + offset_x
+        cy = wy + offset_y
+
+        # Clamp within frame margins
+        r = 26
+        cx = max(r + 6, min(w - r - 6, cx))
+        cy = max(r + 6, min(h - r - 6, cy))
+
+        # 1. Subtle glowing tether line connecting wrist joint to floating timepiece
+        cv2.line(frame, (wx, wy), (cx, cy), (0, 242, 254), 1, cv2.LINE_AA)
+        cv2.circle(frame, (wx, wy), 2, (0, 242, 254), -1, cv2.LINE_AA)
+
+        # 2. Translucent VisionOS Glass Watch Bezel
+        overlay = frame.copy()
+        cv2.circle(overlay, (cx, cy), r, (18, 16, 24), -1)
+        cv2.circle(overlay, (cx, cy), r, (0, 242, 254), 1, cv2.LINE_AA)
+        cv2.addWeighted(overlay, 0.70, frame, 0.30, 0, frame)
+
+        # 3. Seconds Progress Arc along perimeter
+        now_ts = time.time()
+        sec_frac = (now_ts % 60.0) / 60.0
+        end_angle = int(sec_frac * 360)
+        cv2.ellipse(frame, (cx, cy), (r - 2, r - 2), -90, 0, end_angle, (0, 242, 254), 2, cv2.LINE_AA)
+
+        # 4. Digital Time Display (HH:MM)
+        timestr = time.strftime("%H:%M")
+        cv2.putText(frame, timestr, (cx - 16, cy + 3), cv2.FONT_HERSHEY_PLAIN, 0.75, (255, 255, 255), 1, cv2.LINE_AA)
+
+        # 5. Seconds sub-tag
+        sec_str = time.strftime("%S")
+        cv2.putText(frame, sec_str, (cx - 7, cy + 13), cv2.FONT_HERSHEY_PLAIN, 0.55, (0, 242, 254), 1, cv2.LINE_AA)
 
     def draw_ripples(self, frame: np.ndarray):
         """Renders click shockwave rings with optimized local ROI blending (zero full-frame copying)."""

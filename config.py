@@ -54,6 +54,7 @@ class GestureConfig:
     virtual_surface_z: float = -0.045       # Calibrated virtual surface depth plane (meters)
     enable_screen_magnifier: bool = False   # Floating 2.0x Screen Magnifier Loupe beside cursor
     magnifier_zoom: float = 2.0             # Zoom scale (1.5x - 4.0x)
+    show_wrist_hud_clock: bool = True       # visionOS holographic smart timepiece over wrist landmark
 
     # --- Audio & Sonic Synthesizer ---
     sound_enabled: bool = True
@@ -180,6 +181,7 @@ class GestureConfig:
             "virtual_surface_z": self.virtual_surface_z,
             "enable_screen_magnifier": self.enable_screen_magnifier,
             "magnifier_zoom": self.magnifier_zoom,
+            "show_wrist_hud_clock": self.show_wrist_hud_clock,
             "enable_power_saver": self.enable_power_saver,
             "sound_enabled": self.sound_enabled,
             "sound_theme": self.sound_theme,

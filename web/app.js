@@ -420,6 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchDistanceAdaptation = document.getElementById('switch-distance-adaptation');
   const switchLaser = document.getElementById('switch-laser');
   const switchClahe = document.getElementById('switch-clahe');
+  const switchWristClock = document.getElementById('switch-wrist-clock');
   const valLaserStatus = document.getElementById('val-laser-status');
   const btnProfCad = document.getElementById('btn-prof-cad');
   const btnProfDesktop = document.getElementById('btn-prof-desktop');
@@ -747,6 +748,11 @@ document.addEventListener('DOMContentLoaded', () => {
   switchDistanceAdaptation?.addEventListener('change', (e) => postSettings({ enable_distance_adaptation: e.target.checked }));
   switchClahe?.addEventListener('change', (e) => postSettings({ use_clahe: e.target.checked }));
   switchLegacyGestures?.addEventListener('change', (e) => postSettings({ enable_legacy_shortcuts: e.target.checked }));
+  switchWristClock?.addEventListener('change', (e) => {
+    soundSynth.playLaserFx();
+    postSettings({ show_wrist_hud_clock: e.target.checked });
+    flashActionCapsule('⌚', e.target.checked ? 'Часы на запястье ВКЛ' : 'Часы на запястье ВЫКЛ');
+  });
   
   switchLaser?.addEventListener('change', (e) => {
     valLaserStatus.textContent = e.target.checked ? 'ЛАЗЕР ВКЛ' : 'Обычный';
@@ -1371,6 +1377,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (switchClahe && typeof data.use_clahe === 'boolean') {
         switchClahe.checked = data.use_clahe;
+      }
+      if (switchWristClock && typeof data.show_wrist_hud_clock === 'boolean') {
+        switchWristClock.checked = data.show_wrist_hud_clock;
       }
       if (data.precision_profile) {
         updateProfileButtons(data.precision_profile);

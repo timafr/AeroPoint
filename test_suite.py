@@ -1194,5 +1194,64 @@ class TestSpatialMediaController(unittest.TestCase):
                     cm.stop()
 
 
+class TestVisionOSWristWatch(unittest.TestCase):
+    """Verifies visionOS spatial holographic wrist watch rendering, configuration, and settings sync."""
+
+    def test_wrist_clock_hud_rendering(self):
+        import numpy as np
+        from hud import CyberHUD
+        from config import GestureConfig
+        from hand_tracker import HandData
+
+        cfg = GestureConfig()
+        cfg.show_wrist_hud_clock = True
+        hud = CyberHUD(cfg)
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+
+        px = [(300.0, 300.0, 0.0)] * 21
+        px[0] = (300.0, 380.0, 0.0) # Wrist
+        mock_hand = HandData(
+            landmarks_norm=[(p[0] / 640.0, p[1] / 480.0, 0.0) for p in px],
+            landmarks_px=px,
+            landmarks_world=[(p[0] * 0.001, p[1] * 0.001, 0.0) for p in px],
+            palm_size=0.15,
+            handedness="Right"
+        )
+
+        hud.draw_wrist_holographic_clock(frame, mock_hand)
+        # Should render without error
+        self.assertTrue(True)
+
+    def test_wrist_clock_toggle_in_settings(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    payload = json.dumps({"show_wrist_hud_clock": False}).encode('utf-8')
+                    env = {
+                        'REQUEST_METHOD': 'POST',
+                        'PATH_INFO': '/api/settings',
+                        'CONTENT_TYPE': 'application/json',
+                        'CONTENT_LENGTH': str(len(payload)),
+                        'wsgi.input': io.BytesIO(payload),
+                        'wsgi.errors': io.StringIO(),
+                        'SERVER_NAME': 'localhost',
+                        'SERVER_PORT': '5000'
+                    }
+                    resp = []
+                    app(env, lambda s, h, *args: resp.append(s))
+                    self.assertTrue(resp[0].startswith("200"))
+                    self.assertFalse(cm.config.show_wrist_hud_clock)
+                    cm.stop()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

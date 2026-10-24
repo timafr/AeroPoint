@@ -239,6 +239,8 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.enable_screen_magnifier = bool(data["enable_screen_magnifier"])
             if "magnifier_zoom" in data:
                 manager.config.magnifier_zoom = float(data["magnifier_zoom"])
+            if "show_wrist_hud_clock" in data:
+                manager.config.show_wrist_hud_clock = bool(data["show_wrist_hud_clock"])
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()
