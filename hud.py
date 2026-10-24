@@ -365,10 +365,16 @@ class CyberHUD:
 
         self.zoom_feedbacks = active
 
-    def add_air_draw_point(self, pt: Tuple[int, int], color: Tuple[int, int, int]):
-        """Appends a new point to the active air-drawing stroke."""
+    def add_air_draw_point(self, pt: Tuple[int, int], color: Tuple[int, int, int], brush_mode: str = "marker", brush_size: int = 6):
+        """Appends a new point to the active air-drawing stroke with mode and thickness."""
+        pt = (int(pt[0]), int(pt[1]))
         if self.current_air_stroke is None:
-            self.current_air_stroke = {"color": color, "points": [pt]}
+            self.current_air_stroke = {
+                "color": color,
+                "points": [pt],
+                "mode": brush_mode,
+                "size": max(2, int(brush_size))
+            }
             self.air_draw_strokes.append(self.current_air_stroke)
         else:
             last_pt = self.current_air_stroke["points"][-1]
@@ -388,22 +394,58 @@ class CyberHUD:
         """Renders glowing multi-colored spatial whiteboard strokes directly into video frame."""
         if not self.air_draw_strokes:
             return
-        overlay = frame.copy()
+
+        hl_overlay = np.zeros_like(frame)
+        has_highlighter = False
+        glow_overlay = frame.copy()
+
         for stroke in self.air_draw_strokes:
             pts = stroke.get("points", [])
             col = stroke.get("color", (0, 242, 254))
+            mode = stroke.get("mode", "marker")
+            size = stroke.get("size", 6)
+
             if len(pts) < 2:
                 if len(pts) == 1:
-                    cv2.circle(frame, pts[0], 3, col, -1, cv2.LINE_AA)
+                    p0 = (int(pts[0][0]), int(pts[0][1]))
+                    cv2.circle(frame, p0, max(2, size // 2), col, -1, cv2.LINE_AA)
                 continue
-            # Outer neon glow
-            for i in range(len(pts) - 1):
-                cv2.line(overlay, pts[i], pts[i + 1], col, 5, cv2.LINE_AA)
-            # Crisp white core
-            for i in range(len(pts) - 1):
-                cv2.line(frame, pts[i], pts[i + 1], (255, 255, 255), 2, cv2.LINE_AA)
 
-        cv2.addWeighted(overlay, 0.45, frame, 0.55, 0, frame)
+            if mode == "highlighter":
+                has_highlighter = True
+                hl_width = max(14, int(size * 2.2))
+                for i in range(len(pts) - 1):
+                    p1 = (int(pts[i][0]), int(pts[i][1]))
+                    p2 = (int(pts[i + 1][0]), int(pts[i + 1][1]))
+                    cv2.line(hl_overlay, p1, p2, col, hl_width, cv2.LINE_AA)
+            elif mode == "calligraphy":
+                for i in range(len(pts) - 1):
+                    p1 = (int(pts[i][0]), int(pts[i][1]))
+                    p2 = (int(pts[i + 1][0]), int(pts[i + 1][1]))
+                    dx = abs(p2[0] - p1[0])
+                    dy = abs(p2[1] - p1[1])
+                    angle_factor = math.atan2(dy, dx + 1e-4) / (math.pi / 2.0)
+                    dyn_w = max(2, int(size * (0.5 + 1.2 * angle_factor)))
+                    cv2.line(glow_overlay, p1, p2, col, dyn_w + 3, cv2.LINE_AA)
+                    cv2.line(frame, p1, p2, (255, 255, 255), max(1, dyn_w // 2), cv2.LINE_AA)
+            else:
+                # Default "marker" mode: neon aura + crisp center core
+                glow_w = max(4, size + 4)
+                core_w = max(1, size // 2)
+                for i in range(len(pts) - 1):
+                    p1 = (int(pts[i][0]), int(pts[i][1]))
+                    p2 = (int(pts[i + 1][0]), int(pts[i + 1][1]))
+                    cv2.line(glow_overlay, p1, p2, col, glow_w, cv2.LINE_AA)
+                    cv2.line(frame, p1, p2, (255, 255, 255), core_w, cv2.LINE_AA)
+
+        # Blend glowing marker/calligraphy lines
+        cv2.addWeighted(glow_overlay, 0.45, frame, 0.55, 0, frame)
+
+        # Blend highlighter layer softly (38% alpha) preserving legibility of content underneath
+        if has_highlighter:
+            mask = cv2.cvtColor(hl_overlay, cv2.COLOR_BGR2GRAY) > 0
+            blended_hl = cv2.addWeighted(hl_overlay, 0.38, frame, 0.62, 0)
+            frame[mask] = blended_hl[mask]
 
     def update_jitter_chart(self, raw_coord: float, ema_coord: float):
         """Appends latest coordinates for real-time jitter graph rendering."""

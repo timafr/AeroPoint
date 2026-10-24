@@ -705,6 +705,32 @@ class TestSpatialAirCanvas(unittest.TestCase):
         self.assertEqual(len(hud.air_draw_strokes), 0)
         self.assertIsNone(hud.current_air_stroke)
 
+    def test_air_canvas_brush_modes_and_sizes(self):
+        """Verifies multi-mode spatial whiteboard (neon marker, broad highlighter, calligraphy)."""
+        config = GestureConfig()
+        hud = CyberHUD(config)
+
+        # 1. Highlighter stroke
+        hud.add_air_draw_point((50, 50), (0, 255, 255), brush_mode="highlighter", brush_size=14)
+        hud.add_air_draw_point((120, 50), (0, 255, 255), brush_mode="highlighter", brush_size=14)
+        hud.finish_air_draw_stroke()
+
+        # 2. Calligraphy stroke
+        hud.add_air_draw_point((200, 100), (255, 50, 50), brush_mode="calligraphy", brush_size=8)
+        hud.add_air_draw_point((250, 180), (255, 50, 50), brush_mode="calligraphy", brush_size=8)
+        hud.finish_air_draw_stroke()
+
+        self.assertEqual(len(hud.air_draw_strokes), 2)
+        self.assertEqual(hud.air_draw_strokes[0]["mode"], "highlighter")
+        self.assertEqual(hud.air_draw_strokes[0]["size"], 14)
+        self.assertEqual(hud.air_draw_strokes[1]["mode"], "calligraphy")
+        self.assertEqual(hud.air_draw_strokes[1]["size"], 8)
+
+        # 3. Render onto synthetic frame
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        hud.draw_air_canvas(frame)
+        self.assertGreater(int(np.sum(frame)), 0)
+
     def test_air_canvas_api_endpoints(self):
         import io
         import json
@@ -754,6 +780,14 @@ class TestSpatialAirCanvas(unittest.TestCase):
                     status, res = make_request('/api/canvas/clear', 'POST', {})
                     self.assertTrue(status.startswith("200"))
                     self.assertEqual(len(cm.hud.air_draw_strokes), 0)
+
+                    # Test brush mode and thickness
+                    status, res = make_request('/api/canvas/brush', 'POST', {'mode': 'highlighter', 'size': 14})
+                    self.assertTrue(status.startswith("200"))
+                    self.assertEqual(res['canvas_brush_mode'], 'highlighter')
+                    self.assertEqual(res['canvas_brush_size'], 14)
+                    self.assertEqual(cm.config.canvas_brush_mode, 'highlighter')
+                    self.assertEqual(cm.config.canvas_brush_size, 14)
 
                     # Test spotlight toggle
                     status, res = make_request('/api/spotlight/toggle', 'POST', {'enabled': True, 'radius': 95})

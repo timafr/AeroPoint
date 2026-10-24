@@ -1477,6 +1477,18 @@ document.addEventListener('DOMContentLoaded', () => {
           b.classList.toggle('active', b.getAttribute('data-laser-stencil') === data.laser_stencil);
         });
       }
+      if (data.canvas_brush_mode) {
+        currentBrushMode = data.canvas_brush_mode;
+        document.querySelectorAll('[data-brush-mode]').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-brush-mode') === data.canvas_brush_mode);
+        });
+      }
+      if (data.canvas_brush_size) {
+        currentBrushSize = parseInt(data.canvas_brush_size) || 6;
+        document.querySelectorAll('[data-brush-size]').forEach(b => {
+          b.classList.toggle('active', parseInt(b.getAttribute('data-brush-size')) === currentBrushSize);
+        });
+      }
       if (switchClahe && typeof data.use_clahe === 'boolean') {
         switchClahe.checked = data.use_clahe;
       }
@@ -2272,9 +2284,39 @@ document.addEventListener('DOMContentLoaded', () => {
   const airBrushCursor = document.getElementById('air-brush-cursor');
   let isAirDrawActive = false;
   let currentColor = '#00f2fe';
+  let currentBrushMode = 'marker'; // 'marker', 'highlighter', 'calligraphy'
+  let currentBrushSize = 6;
   let isPainting = false;
   let lastPaintPos = null;
   let airTipPrevPos = null;
+
+  function applyBrushStyleToContext(dCtx, fromX, fromY, toX, toY) {
+    dCtx.strokeStyle = currentColor;
+    if (currentBrushMode === 'highlighter') {
+      dCtx.globalAlpha = 0.38;
+      dCtx.lineWidth = Math.max(14, currentBrushSize * 2.2);
+      dCtx.shadowBlur = 0;
+      dCtx.lineCap = 'square';
+      dCtx.lineJoin = 'miter';
+    } else if (currentBrushMode === 'calligraphy') {
+      dCtx.globalAlpha = 0.95;
+      const dx = Math.abs(toX - fromX);
+      const dy = Math.abs(toY - fromY);
+      const angleFactor = Math.atan2(dy, dx + 1e-4) / (Math.PI / 2);
+      dCtx.lineWidth = Math.max(2, currentBrushSize * (0.5 + 1.2 * angleFactor));
+      dCtx.shadowColor = currentColor;
+      dCtx.shadowBlur = 8;
+      dCtx.lineCap = 'round';
+      dCtx.lineJoin = 'round';
+    } else {
+      dCtx.globalAlpha = 1.0;
+      dCtx.lineWidth = currentBrushSize;
+      dCtx.shadowColor = currentColor;
+      dCtx.shadowBlur = 14;
+      dCtx.lineCap = 'round';
+      dCtx.lineJoin = 'round';
+    }
+  }
 
   function updateAirDrawFromTelemetry(data) {
     if (!isAirDrawActive || !airDrawCanvas) {
@@ -2306,12 +2348,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (airBrushCursor) airBrushCursor.classList.add('drawing');
       const dCtx = airDrawCanvas.getContext('2d');
       if (airTipPrevPos) {
-        dCtx.strokeStyle = currentColor;
-        dCtx.shadowColor = currentColor;
-        dCtx.shadowBlur = 14;
-        dCtx.lineWidth = 5;
-        dCtx.lineCap = 'round';
-        dCtx.lineJoin = 'round';
+        applyBrushStyleToContext(dCtx, airTipPrevPos.x, airTipPrevPos.y, curX, curY);
         dCtx.beginPath();
         dCtx.moveTo(airTipPrevPos.x, airTipPrevPos.y);
         dCtx.lineTo(curX, curY);
@@ -2429,12 +2466,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     airDrawCanvas.addEventListener('mousemove', (e) => {
       if (!isPainting || !lastPaintPos) return;
-      dCtx.strokeStyle = currentColor;
-      dCtx.shadowColor = currentColor;
-      dCtx.shadowBlur = 12;
-      dCtx.lineWidth = 4;
-      dCtx.lineCap = 'round';
-      dCtx.lineJoin = 'round';
+      applyBrushStyleToContext(dCtx, lastPaintPos.x, lastPaintPos.y, e.offsetX, e.offsetY);
       dCtx.beginPath();
       dCtx.moveTo(lastPaintPos.x, lastPaintPos.y);
       dCtx.lineTo(e.offsetX, e.offsetY);
@@ -2446,6 +2478,45 @@ document.addEventListener('DOMContentLoaded', () => {
       lastPaintPos = null;
     });
   }
+
+  // Brush Mode & Brush Size segmented handlers
+  function setBrushMode(mode) {
+    currentBrushMode = mode;
+    document.querySelectorAll('[data-brush-mode]').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-brush-mode') === mode);
+    });
+    fetch('/api/canvas/brush', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: currentBrushMode, size: currentBrushSize })
+    }).catch(() => {});
+    soundSynth.playClick();
+  }
+
+  function setBrushSize(sz) {
+    currentBrushSize = parseInt(sz) || 6;
+    document.querySelectorAll('[data-brush-size]').forEach(b => {
+      b.classList.toggle('active', parseInt(b.getAttribute('data-brush-size')) === currentBrushSize);
+    });
+    fetch('/api/canvas/brush', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: currentBrushMode, size: currentBrushSize })
+    }).catch(() => {});
+    soundSynth.playClick();
+  }
+
+  document.querySelectorAll('[data-brush-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setBrushMode(btn.getAttribute('data-brush-mode'));
+    });
+  });
+
+  document.querySelectorAll('[data-brush-size]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setBrushSize(btn.getAttribute('data-brush-size'));
+    });
+  });
 
   // =========================================================================
   // 17. Deep System Health Diagnostics & Resource Telemetry

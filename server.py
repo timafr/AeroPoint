@@ -253,6 +253,15 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.enable_privacy_gesture = bool(data["enable_privacy_gesture"])
             if "show_spatial_horizon_gyro" in data:
                 manager.config.show_spatial_horizon_gyro = bool(data["show_spatial_horizon_gyro"])
+            if "canvas_brush_mode" in data:
+                mode = str(data["canvas_brush_mode"]).lower()
+                if mode in ("marker", "highlighter", "calligraphy"):
+                    manager.config.canvas_brush_mode = mode
+            if "canvas_brush_size" in data:
+                try:
+                    manager.config.canvas_brush_size = max(2, min(36, int(data["canvas_brush_size"])))
+                except Exception:
+                    pass
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()
@@ -289,6 +298,28 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             col = str(data.get('color', 'cyan')).lower()
             manager.config.air_draw_color = col
             return {"status": "ok", "color": manager.config.air_draw_color}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/canvas/brush', method='POST')
+    def canvas_brush():
+        try:
+            data = bottle.request.json or {}
+            if "mode" in data:
+                mode = str(data.get("mode", "")).lower()
+                if mode in ("marker", "highlighter", "calligraphy"):
+                    manager.config.canvas_brush_mode = mode
+            if "size" in data or "thickness" in data:
+                sz = data.get("size") if "size" in data else data.get("thickness")
+                if isinstance(sz, (int, float)):
+                    manager.config.canvas_brush_size = max(2, min(36, int(sz)))
+            manager.config.save_to_file()
+            return {
+                "status": "ok",
+                "canvas_brush_mode": manager.config.canvas_brush_mode,
+                "canvas_brush_size": manager.config.canvas_brush_size
+            }
         except Exception as e:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}

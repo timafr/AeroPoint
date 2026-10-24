@@ -264,17 +264,31 @@
               </div>
 
               <!-- Air-Draw Floating Toolbar -->
-              <div class="air-draw-toolbar" id="air-draw-toolbar" style="display: none;">
-                <div class="color-picker-row">
-                  <button class="color-btn active" style="background: #00f2fe;" data-color="#00f2fe" title="Неоновый Циан"></button>
-                  <button class="color-btn" style="background: #8a2be2;" data-color="#8a2be2" title="Электрик Фиолетовый"></button>
-                  <button class="color-btn" style="background: #00e676;" data-color="#00e676" title="Лазерный Изумруд"></button>
-                  <button class="color-btn" style="background: #ff007f;" data-color="#ff007f" title="Неоновый Розовый"></button>
-                  <button class="color-btn" style="background: #ffd700;" data-color="#ffd700" title="Золотой"></button>
+              <div class="air-draw-toolbar" id="air-draw-toolbar" style="display: none; flex-direction: column; gap: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                  <div class="color-picker-row">
+                    <button class="color-btn active" style="background: #00f2fe;" data-color="#00f2fe" title="Неоновый Циан"></button>
+                    <button class="color-btn" style="background: #8a2be2;" data-color="#8a2be2" title="Электрик Фиолетовый"></button>
+                    <button class="color-btn" style="background: #00e676;" data-color="#00e676" title="Лазерный Изумруд"></button>
+                    <button class="color-btn" style="background: #ff007f;" data-color="#ff007f" title="Неоновый Розовый"></button>
+                    <button class="color-btn" style="background: #ffd700;" data-color="#ffd700" title="Золотой"></button>
+                  </div>
+                  <div class="draw-tools-row">
+                    <button class="dt-btn" id="btn-draw-clear" title="Очистить холст">🧹 Стереть</button>
+                    <button class="dt-btn" id="btn-draw-save" title="Сохранить снимок">📸 Экспорт</button>
+                  </div>
                 </div>
-                <div class="draw-tools-row">
-                  <button class="dt-btn" id="btn-draw-clear" title="Очистить холст">🧹 Стереть</button>
-                  <button class="dt-btn" id="btn-draw-save" title="Сохранить снимок">📸 Экспорт</button>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;">
+                  <div class="segmented-pill brush-mode-pill" style="margin: 0; padding: 2px;">
+                    <button class="seg-btn active" data-brush-mode="marker" style="padding: 2px 7px; font-size: 0.70rem;">Маркер</button>
+                    <button class="seg-btn" data-brush-mode="highlighter" style="padding: 2px 7px; font-size: 0.70rem;">Выделитель</button>
+                    <button class="seg-btn" data-brush-mode="calligraphy" style="padding: 2px 7px; font-size: 0.70rem;">Перо</button>
+                  </div>
+                  <div class="segmented-pill brush-size-pill" style="margin: 0; padding: 2px;">
+                    <button class="seg-btn" data-brush-size="3" style="padding: 2px 6px; font-size: 0.70rem;">3px</button>
+                    <button class="seg-btn active" data-brush-size="6" style="padding: 2px 6px; font-size: 0.70rem;">6px</button>
+                    <button class="seg-btn" data-brush-size="14" style="padding: 2px 6px; font-size: 0.70rem;">14px</button>
+                  </div>
                 </div>
               </div>
 
@@ -945,6 +959,15 @@
                     <button class="seg-btn" data-laser-stencil="dot" style="padding: 2px 8px; font-size: 0.72rem;">Точка</button>
                     <button class="seg-btn" data-laser-stencil="circle_pulse" style="padding: 2px 8px; font-size: 0.72rem;">Сонар</button>
                     <button class="seg-btn" data-laser-stencil="diamond" style="padding: 2px 8px; font-size: 0.72rem;">Ромб</button>
+                  </div>
+                </div>
+
+                <div class="brush-settings-row" style="display: flex; align-items: center; justify-content: space-between; padding: 4px 12px 10px 12px; margin-top: -6px;">
+                  <span style="font-size: 0.78rem; color: var(--text-secondary);">Стиль кисти холста:</span>
+                  <div class="segmented-pill settings-brush-pill" style="margin: 0;">
+                    <button class="seg-btn active" data-brush-mode="marker" style="padding: 2px 8px; font-size: 0.72rem;">Маркер</button>
+                    <button class="seg-btn" data-brush-mode="highlighter" style="padding: 2px 8px; font-size: 0.72rem;">Выделитель</button>
+                    <button class="seg-btn" data-brush-mode="calligraphy" style="padding: 2px 8px; font-size: 0.72rem;">Перо</button>
                   </div>
                 </div>
 

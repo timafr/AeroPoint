@@ -49,6 +49,8 @@ class GestureConfig:
     spotlight_radius: int = 85              # Pixel radius of spotlight beam
     enable_air_draw_stream: bool = False    # Live glowing air-draw annotations directly in the camera stream
     air_draw_color: str = "cyan"            # "cyan", "magenta", "green", "gold", "white"
+    canvas_brush_mode: str = "marker"       # "marker", "highlighter", "calligraphy"
+    canvas_brush_size: int = 6              # Stroke width (3, 6, 14, 24)
     enable_ergonomic_alerts: bool = True    # Ergonomic rest alerts after prolonged mid-air hand elevation
     ergonomic_alert_interval_sec: float = 1500.0 # 25 minutes threshold
     enable_virtual_touch_surface: bool = False # Virtual Touchscreen Desk surface plane in 3D air
@@ -188,6 +190,8 @@ class GestureConfig:
             "laser_pointer_mode": self.laser_pointer_mode,
             "laser_color": self.laser_color,
             "laser_stencil": self.laser_stencil,
+            "canvas_brush_mode": self.canvas_brush_mode,
+            "canvas_brush_size": self.canvas_brush_size,
             "presentation_spotlight_mode": self.presentation_spotlight_mode,
             "spotlight_radius": self.spotlight_radius,
             "enable_virtual_touch_surface": self.enable_virtual_touch_surface,

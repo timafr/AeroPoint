@@ -808,7 +808,9 @@ class CameraManager:
                 if is_drawing:
                     ix, iy = pointer_hand.landmarks_px[INDEX_TIP]
                     col_bgr = AIR_DRAW_COLOR_MAP.get(str(self.config.air_draw_color).lower(), (254, 242, 0))
-                    self.hud.add_air_draw_point((int(ix), int(iy)), col_bgr)
+                    b_mode = getattr(self.config, 'canvas_brush_mode', 'marker')
+                    b_size = getattr(self.config, 'canvas_brush_size', 6)
+                    self.hud.add_air_draw_point((int(ix), int(iy)), col_bgr, brush_mode=b_mode, brush_size=b_size)
                 else:
                     self.hud.finish_air_draw_stroke()
             elif getattr(self.config, 'enable_air_draw_stream', False):
@@ -977,6 +979,8 @@ class CameraManager:
             "laser_pointer_mode": getattr(self.config, 'laser_pointer_mode', False),
             "enable_air_draw_stream": getattr(self.config, 'enable_air_draw_stream', False),
             "air_draw_color": getattr(self.config, 'air_draw_color', 'cyan'),
+            "canvas_brush_mode": getattr(self.config, 'canvas_brush_mode', 'marker'),
+            "canvas_brush_size": getattr(self.config, 'canvas_brush_size', 6),
             "air_draw_strokes_count": len(getattr(self.hud, 'air_draw_strokes', [])),
             "enable_corner_snap": getattr(self.config, 'enable_corner_snap', True),
             "enable_distance_adaptation": getattr(self.config, 'enable_distance_adaptation', True),

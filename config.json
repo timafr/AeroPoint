@@ -17,6 +17,8 @@
   "laser_pointer_mode": false,
   "laser_color": "gold",
   "laser_stencil": "diamond",
+  "canvas_brush_mode": "highlighter",
+  "canvas_brush_size": 14,
   "presentation_spotlight_mode": true,
   "spotlight_radius": 95,
   "enable_virtual_touch_surface": true,
