@@ -414,6 +414,13 @@ class DeadzoneFilter:
         return self.locked_x, self.locked_y
 
 
+SCROLL_PROFILES = {
+    "precision": {"friction": 0.72, "multiplier": 16.0, "flick_boost": 1.15, "max_velocity": 10.0},
+    "momentum":  {"friction": 0.88, "multiplier": 24.0, "flick_boost": 1.45, "max_velocity": 18.0},
+    "hyperscroll": {"friction": 0.96, "multiplier": 38.0, "flick_boost": 2.2, "max_velocity": 36.0},
+}
+
+
 class InertialScrollEngine:
     """
     Kinetic momentum scroll engine (like iOS / macOS trackpad).
@@ -425,16 +432,28 @@ class InertialScrollEngine:
         self.velocity = 0.0
         self.last_update = time.time()
         self.is_active = False
+        self.flick_boost = 1.45
+        self.max_velocity = 18.0
+        self.active_profile = "momentum"
+
+    def apply_profile(self, profile: str):
+        """Applies acceleration and friction coefficients according to preset curve."""
+        prof_key = str(profile).lower()
+        prof = SCROLL_PROFILES.get(prof_key, SCROLL_PROFILES["momentum"])
+        self.friction = prof["friction"]
+        self.flick_boost = prof["flick_boost"]
+        self.max_velocity = prof["max_velocity"]
+        self.active_profile = prof_key
 
     def push(self, delta: float):
         """Called on active scroll frame to update momentum with kinetic flick amplification."""
         now = time.time()
         self.last_update = now
         # Detect rapid flick (> 2.0 scroll ticks) and amplify glide momentum
-        flick_boost = 1.45 if abs(delta) >= 2.0 else 1.0
-        self.velocity = (self.velocity * 0.30 + delta * 0.70) * flick_boost
+        flick = self.flick_boost if abs(delta) >= 2.0 else 1.0
+        self.velocity = (self.velocity * 0.30 + delta * 0.70) * flick
         # Clamp velocity to avoid uncontrolled spinning
-        self.velocity = max(-16.0, min(16.0, self.velocity))
+        self.velocity = max(-self.max_velocity, min(self.max_velocity, self.velocity))
         self.is_active = True
 
     def brake(self):

@@ -75,6 +75,8 @@ class CameraManager:
         if hasattr(self.config, 'precision_profile'):
             self.precision_engine.apply_profile(self.config.precision_profile)
         self.scroll_engine = InertialScrollEngine()
+        if hasattr(self.config, 'scroll_profile'):
+            self.scroll_engine.apply_profile(self.config.scroll_profile)
 
         # Hand tracking & recognition
         self.tracker = HandTracker(self.config)
@@ -982,6 +984,8 @@ class CameraManager:
             "canvas_brush_mode": getattr(self.config, 'canvas_brush_mode', 'marker'),
             "canvas_brush_size": getattr(self.config, 'canvas_brush_size', 6),
             "air_draw_strokes_count": len(getattr(self.hud, 'air_draw_strokes', [])),
+            "scroll_natural": getattr(self.config, 'scroll_natural', True),
+            "scroll_profile": getattr(self.config, 'scroll_profile', 'momentum'),
             "enable_corner_snap": getattr(self.config, 'enable_corner_snap', True),
             "enable_distance_adaptation": getattr(self.config, 'enable_distance_adaptation', True),
             "enable_anchor": self.precision_engine.enable_click_anchor,

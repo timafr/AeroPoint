@@ -1502,14 +1502,29 @@ class CyberHUD:
                 cv2.LINE_AA
             )
 
-        # Directional Arrow Indicator
-        if velocity < -0.2:
-            cv2.putText(frame, "^", (cx - 4, cy - half_h - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.config.COLOR_GREEN, 1, cv2.LINE_AA)
-        elif velocity > 0.2:
-            cv2.putText(frame, "v", (cx - 4, cy + half_h + 12), cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.config.COLOR_GREEN, 1, cv2.LINE_AA)
+        # Kinetic Flywheel Momentum gauge beside cylinder
+        max_vel = 18.0
+        bar_ratio = min(1.0, abs(velocity) / max_vel)
+        if bar_ratio > 0.05:
+            bar_h = int(half_h * 1.8 * bar_ratio)
+            bx = cx + half_w + 5
+            by1 = cy + half_h - bar_h
+            by2 = cy + half_h
+            cv2.line(frame, (bx, by2), (bx, by1), self.config.COLOR_GREEN if bar_ratio > 0.5 else self.config.COLOR_CYAN, 2, cv2.LINE_AA)
 
-        # Label tag
-        cv2.putText(frame, "SCROLL", (cx - 20, cy + half_h + (22 if velocity > 0.2 else 12)), cv2.FONT_HERSHEY_PLAIN, 0.65, (220, 220, 220), 1, cv2.LINE_AA)
+        # Directional Arrow Indicator with double chevrons on fast flick
+        if velocity < -2.0:
+            cv2.putText(frame, "^^", (cx - 8, cy - half_h - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.45, self.config.COLOR_GREEN, 1, cv2.LINE_AA)
+        elif velocity < -0.2:
+            cv2.putText(frame, "^", (cx - 4, cy - half_h - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.45, self.config.COLOR_GREEN, 1, cv2.LINE_AA)
+        elif velocity > 2.0:
+            cv2.putText(frame, "vv", (cx - 8, cy + half_h + 12), cv2.FONT_HERSHEY_SIMPLEX, 0.45, self.config.COLOR_GREEN, 1, cv2.LINE_AA)
+        elif velocity > 0.2:
+            cv2.putText(frame, "v", (cx - 4, cy + half_h + 12), cv2.FONT_HERSHEY_SIMPLEX, 0.45, self.config.COLOR_GREEN, 1, cv2.LINE_AA)
+
+        # Label tag with active profile
+        prof_lbl = getattr(self.config, 'scroll_profile', 'MOMENTUM').upper()[:4]
+        cv2.putText(frame, f"SCRL {prof_lbl}", (cx - 24, cy + half_h + (24 if velocity > 0.2 else 14)), cv2.FONT_HERSHEY_PLAIN, 0.70, (230, 230, 230), 1, cv2.LINE_AA)
 
     def draw_radial_hud(
         self,

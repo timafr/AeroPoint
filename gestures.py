@@ -461,7 +461,8 @@ class GestureRecognizer:
                 dy = mid_y - self.prev_scroll_y
                 if abs(dy) > 1.8 and (now - self.last_scroll_time > self.config.scroll_cooldown_sec):
                     palm_px = getattr(hand, 'palm_size_px', 60.0)
-                    scroll_delta = -int(dy * (self.config.scroll_speed_multiplier / max(10.0, palm_px)))
+                    dir_mult = 1.0 if getattr(self.config, 'scroll_natural', True) else -1.0
+                    scroll_delta = -int(dir_mult * dy * (self.config.scroll_speed_multiplier / max(10.0, palm_px)))
                     if scroll_delta != 0:
                         events["scroll_delta"] = scroll_delta
                         self.last_scroll_time = now
@@ -827,7 +828,8 @@ class GestureRecognizer:
                 dy = mid_y - self.prev_action_scroll_y
                 if abs(dy) > 1.8 and (now - self.last_scroll_time > self.config.scroll_cooldown_sec):
                     palm_px = getattr(action_hand, 'palm_size_px', 60.0)
-                    scroll_delta = -int(dy * (self.config.scroll_speed_multiplier / max(10.0, palm_px)))
+                    dir_mult = 1.0 if getattr(self.config, 'scroll_natural', True) else -1.0
+                    scroll_delta = -int(dir_mult * dy * (self.config.scroll_speed_multiplier / max(10.0, palm_px)))
                     if scroll_delta != 0:
                         events["scroll_delta"] = scroll_delta
                         self.last_scroll_time = now

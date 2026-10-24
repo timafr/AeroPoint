@@ -448,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchCornerSnap = document.getElementById('switch-corner-snap');
   const switchWindowSnap = document.getElementById('switch-window-snap');
   const switchDistanceAdaptation = document.getElementById('switch-distance-adaptation');
+  const switchScrollNatural = document.getElementById('switch-scroll-natural');
   const switchLaser = document.getElementById('switch-laser');
   const switchClahe = document.getElementById('switch-clahe');
   const switchAmbientTheme = document.getElementById('switch-ambient-theme');
@@ -782,6 +783,16 @@ document.addEventListener('DOMContentLoaded', () => {
   switchCornerSnap?.addEventListener('change', (e) => postSettings({ enable_corner_snap: e.target.checked }));
   switchWindowSnap?.addEventListener('change', (e) => postSettings({ enable_window_snap_zones: e.target.checked }));
   switchDistanceAdaptation?.addEventListener('change', (e) => postSettings({ enable_distance_adaptation: e.target.checked }));
+  switchScrollNatural?.addEventListener('change', (e) => postSettings({ scroll_natural: e.target.checked }));
+  document.querySelectorAll('.scroll-profile-pill .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.scroll-profile-pill .seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const prof = btn.getAttribute('data-scroll-profile') || 'momentum';
+      postSettings({ scroll_profile: prof });
+      soundSynth.playClick();
+    });
+  });
   switchClahe?.addEventListener('change', (e) => postSettings({ use_clahe: e.target.checked }));
   switchAmbientTheme?.addEventListener('change', (e) => {
     soundSynth.playLaserFx();
@@ -1457,6 +1468,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (switchDistanceAdaptation && typeof data.enable_distance_adaptation === 'boolean') {
         switchDistanceAdaptation.checked = data.enable_distance_adaptation;
+      }
+      if (switchScrollNatural && typeof data.scroll_natural === 'boolean') {
+        switchScrollNatural.checked = data.scroll_natural;
+      }
+      if (data.scroll_profile) {
+        document.querySelectorAll('.scroll-profile-pill .seg-btn').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-scroll-profile') === data.scroll_profile);
+        });
       }
       if (switchAnchor && typeof data.enable_anchor === 'boolean') {
         switchAnchor.checked = data.enable_anchor;

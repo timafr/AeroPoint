@@ -220,6 +220,79 @@ class TestInertialScrollEngine(unittest.TestCase):
         self.assertEqual(engine.velocity, 0.0)
         self.assertEqual(engine.tick(), 0)
 
+    def test_scroll_profiles_adaptation(self):
+        """Verifies precision, momentum, and hyperscroll parameter scaling."""
+        engine = InertialScrollEngine()
+        self.assertEqual(engine.active_profile, "momentum")
+
+        # 1. Switch to Precision profile
+        engine.apply_profile("precision")
+        self.assertEqual(engine.active_profile, "precision")
+        self.assertEqual(engine.friction, 0.72)
+        self.assertEqual(engine.max_velocity, 10.0)
+
+        # 2. Switch to Hyperscroll profile
+        engine.apply_profile("hyperscroll")
+        self.assertEqual(engine.active_profile, "hyperscroll")
+        self.assertEqual(engine.friction, 0.96)
+        self.assertEqual(engine.max_velocity, 36.0)
+
+        # Push large delta clamped by max_velocity
+        engine.push(50.0)
+        self.assertLessEqual(engine.velocity, 36.0)
+        engine.brake()
+
+    def test_scroll_rest_api(self):
+        """Tests REST endpoints for dynamic scroll kinematics and direction inversion."""
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    def make_request(path, method='POST', body_dict=None):
+                        body_bytes = json.dumps(body_dict or {}).encode('utf-8')
+                        environ = {
+                            'PATH_INFO': path,
+                            'REQUEST_METHOD': method,
+                            'CONTENT_LENGTH': str(len(body_bytes)),
+                            'CONTENT_TYPE': 'application/json',
+                            'wsgi.input': io.BytesIO(body_bytes),
+                            'wsgi.errors': io.StringIO(),
+                            'SERVER_NAME': 'localhost',
+                            'SERVER_PORT': '5000'
+                        }
+                        status_cap = []
+                        def start_response(status, headers, *args):
+                            status_cap.append(status)
+                        resp = b"".join(app(environ, start_response))
+                        return status_cap[0], json.loads(resp.decode('utf-8'))
+
+                    # Configure scroll kinematics
+                    status, res = make_request('/api/scroll/config', 'POST', {
+                        'profile': 'hyperscroll',
+                        'natural': False,
+                        'multiplier': 32.0
+                    })
+                    self.assertTrue(status.startswith("200"))
+                    self.assertEqual(res['scroll_profile'], 'hyperscroll')
+                    self.assertFalse(res['scroll_natural'])
+                    self.assertEqual(res['scroll_speed_multiplier'], 32.0)
+                    self.assertEqual(cm.config.scroll_profile, 'hyperscroll')
+                    self.assertFalse(cm.config.scroll_natural)
+
+                    # Toggle scroll inversion
+                    status, res = make_request('/api/scroll/invert', 'POST', {})
+                    self.assertTrue(status.startswith("200"))
+                    self.assertTrue(res['scroll_natural'])
+                    self.assertTrue(cm.config.scroll_natural)
+
 
 class TestSpatialNetworking(unittest.TestCase):
     """Tests iPhone TrueDepth binary UDP struct unpacker and integrity verification."""

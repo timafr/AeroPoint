@@ -110,8 +110,10 @@ class GestureConfig:
     click_debounce_sec: float = 0.25     # Crisp click response with anti-stutter protection (250 ms)
     scroll_cooldown_sec: float = 0.04    # Smooth scrolling interval
 
-    # Scroll sensitivity
+    # Scroll sensitivity and kinematics
     scroll_speed_multiplier: float = 24.0
+    scroll_natural: bool = True          # Natural scrolling (like macOS trackpad) vs classic Windows wheel
+    scroll_profile: str = "momentum"     # "precision", "momentum", "hyperscroll"
 
     # Audio feedback (disabled in OS to avoid Windows error beeps; handled cleanly via UI)
     enable_sound_feedback: bool = False
@@ -204,6 +206,9 @@ class GestureConfig:
             "enable_spatial_air_ruler": self.enable_spatial_air_ruler,
             "enable_privacy_gesture": self.enable_privacy_gesture,
             "show_spatial_horizon_gyro": self.show_spatial_horizon_gyro,
+            "scroll_speed_multiplier": self.scroll_speed_multiplier,
+            "scroll_natural": self.scroll_natural,
+            "scroll_profile": self.scroll_profile,
             "enable_power_saver": self.enable_power_saver,
             "sound_enabled": self.sound_enabled,
             "sound_theme": self.sound_theme,

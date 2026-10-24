@@ -262,6 +262,14 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                     manager.config.canvas_brush_size = max(2, min(36, int(data["canvas_brush_size"])))
                 except Exception:
                     pass
+            if "scroll_natural" in data:
+                manager.config.scroll_natural = bool(data["scroll_natural"])
+            if "scroll_profile" in data:
+                prof = str(data["scroll_profile"]).lower()
+                if prof in ("precision", "momentum", "hyperscroll"):
+                    manager.config.scroll_profile = prof
+                    if hasattr(manager, 'scroll_engine'):
+                        manager.scroll_engine.apply_profile(prof)
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()
@@ -320,6 +328,43 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 "canvas_brush_mode": manager.config.canvas_brush_mode,
                 "canvas_brush_size": manager.config.canvas_brush_size
             }
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/scroll/config', method='POST')
+    def scroll_config_route():
+        try:
+            data = bottle.request.json or {}
+            if "profile" in data:
+                prof = str(data["profile"]).lower()
+                if prof in ("precision", "momentum", "hyperscroll"):
+                    manager.config.scroll_profile = prof
+                    if hasattr(manager, 'scroll_engine'):
+                        manager.scroll_engine.apply_profile(prof)
+            if "natural" in data or "scroll_natural" in data:
+                val = data.get("natural") if "natural" in data else data.get("scroll_natural")
+                manager.config.scroll_natural = bool(val)
+            if "multiplier" in data:
+                mult = float(data["multiplier"])
+                manager.config.scroll_speed_multiplier = max(2.0, min(80.0, mult))
+            manager.config.save_to_file()
+            return {
+                "status": "ok",
+                "scroll_profile": manager.config.scroll_profile,
+                "scroll_natural": manager.config.scroll_natural,
+                "scroll_speed_multiplier": manager.config.scroll_speed_multiplier
+            }
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/scroll/invert', method='POST')
+    def scroll_invert_route():
+        try:
+            manager.config.scroll_natural = not manager.config.scroll_natural
+            manager.config.save_to_file()
+            return {"status": "ok", "scroll_natural": manager.config.scroll_natural}
         except Exception as e:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}
