@@ -240,6 +240,27 @@ document.addEventListener('DOMContentLoaded', () => {
       osc.stop(now + 0.11);
     }
 
+    playShutterFx() {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      [0, 0.045].forEach((offset, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(idx === 0 ? 1800 : 1200, now + offset);
+        osc.frequency.exponentialRampToValueAtTime(300, now + offset + 0.035);
+        gain.gain.setValueAtTime(this.volume * 0.45, now + offset);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.045);
+      });
+    }
+
     playAirClap() {
       if (!this.enabled) return;
       this.init();
@@ -1060,6 +1081,58 @@ document.addEventListener('DOMContentLoaded', () => {
     postSettings({ enable_screen_magnifier: e.target.checked });
     flashActionCapsule('🔍', e.target.checked ? 'Микро-лупа ВКЛ' : 'Микро-лупа ВЫКЛ');
   });
+
+  // Air-Snap Screenshot Capture & Gallery
+  const btnAirSnap = document.getElementById('btn-air-snap-capture');
+  const airSnapGallery = document.getElementById('air-snap-gallery');
+
+  function renderAirSnapGallery(snaps) {
+    if (!airSnapGallery) return;
+    if (!snaps || snaps.length === 0) {
+      airSnapGallery.innerHTML = '<span style="font-size: 0.70rem; color: var(--text-secondary); align-self: center;">Снимков пока нет. Нажмите «Сделать снимок» для мгновенного захвата.</span>';
+      return;
+    }
+    airSnapGallery.innerHTML = '';
+    snaps.forEach(s => {
+      const card = document.createElement('a');
+      card.href = s.url;
+      card.target = '_blank';
+      card.title = `${s.filename} (${s.formatted_time || ''})`;
+      card.style.cssText = 'position: relative; flex-shrink: 0; width: 72px; height: 48px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(0, 242, 254, 0.3); background: #000; display: block;';
+      card.innerHTML = `<img src="${s.url}" alt="Snap" style="width: 100%; height: 100%; object-fit: cover;"><span style="position: absolute; bottom: 2px; right: 3px; font-size: 0.58rem; background: rgba(0,0,0,0.7); color: #fff; padding: 1px 3px; border-radius: 3px;">${s.formatted_time || ''}</span>`;
+      airSnapGallery.appendChild(card);
+    });
+  }
+
+  btnAirSnap?.addEventListener('click', () => {
+    soundSynth.playShutterFx();
+    btnAirSnap.disabled = true;
+    btnAirSnap.textContent = 'Захват...';
+    fetch('/api/screenshot/capture', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btnAirSnap.disabled = false;
+        btnAirSnap.textContent = 'Сделать снимок';
+        if (data.status === 'ok') {
+          flashActionCapsule('📸', `Снимок сохранен: ${data.screenshot.filename}`);
+          loadAirSnapGallery();
+        }
+      })
+      .catch(() => {
+        btnAirSnap.disabled = false;
+        btnAirSnap.textContent = 'Сделать снимок';
+      });
+  });
+
+  function loadAirSnapGallery() {
+    fetch('/api/screenshots')
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'ok') renderAirSnapGallery(data.screenshots);
+      })
+      .catch(() => {});
+  }
+  loadAirSnapGallery();
 
   // Two-Hand Dominant Hand
   switchTwoHands?.addEventListener('change', (e) => postSettings({ enable_two_hands: e.target.checked }));

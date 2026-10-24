@@ -85,6 +85,11 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
+    @app.route('/screenshots/<filename:path>')
+    def serve_screenshot(filename):
+        screenshots_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "screenshots"))
+        return bottle.static_file(filename, root=screenshots_dir)
+
     @app.route('/<filename:path>')
     def static_files(filename):
         return bottle.static_file(filename, root=WEB_DIR)
@@ -331,6 +336,26 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             return {"status": "ok", "virtual_surface_z": round(cal_z, 4), "enabled": True}
         except Exception as e:
             bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/screenshot/capture', method='POST')
+    def capture_screenshot_route():
+        try:
+            info = manager.capture_screenshot()
+            return {"status": "ok", "screenshot": info}
+        except Exception as e:
+            bottle.response.status = 500
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/screenshots', method='GET')
+    def list_screenshots_route():
+        try:
+            return {
+                "status": "ok",
+                "screenshots": manager.recent_screenshots
+            }
+        except Exception as e:
+            bottle.response.status = 500
             return {"status": "error", "message": str(e)}
 
     @app.route('/api/radial/action', method='POST')

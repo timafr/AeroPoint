@@ -148,6 +148,25 @@ class CameraManager:
         self.telemetry_history = collections.deque(maxlen=1000)
         self.last_telemetry_sample_time = 0.0
 
+        # Recent Air-Snap captures
+        self.recent_screenshots: List[Dict[str, any]] = []
+
+    def capture_screenshot(self) -> dict:
+        """Captures a screenshot, triggers HUD shutter flash, and saves metadata."""
+        abs_path, filename = self.mouse.take_screenshot()
+        self.hud.trigger_shutter_flash()
+        snap_info = {
+            "filename": filename,
+            "path": abs_path,
+            "url": f"/screenshots/{filename}",
+            "timestamp": time.time(),
+            "formatted_time": time.strftime("%H:%M:%S")
+        }
+        self.recent_screenshots.insert(0, snap_info)
+        if len(self.recent_screenshots) > 12:
+            self.recent_screenshots = self.recent_screenshots[:12]
+        return snap_info
+
     def get_session_telemetry(self) -> dict:
         """Returns historical session timeline for diagnostics, telemetry export, and ergonomic analysis."""
         return {

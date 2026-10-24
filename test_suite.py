@@ -1049,5 +1049,77 @@ class TestLaserPointerPalette(unittest.TestCase):
                     cm.stop()
 
 
+class TestAirSnapScreenshot(unittest.TestCase):
+    """Verifies Air-Snap screenshot capture engine, HUD shutter flash, and REST API."""
+
+    def test_mouse_controller_take_screenshot(self):
+        import os
+        from mouse_controller import MouseController
+        mc = MouseController()
+        abs_path, filename = mc.take_screenshot(output_dir="screenshots")
+        self.assertTrue(os.path.exists(abs_path))
+        self.assertTrue(filename.endswith(".png"))
+        self.assertGreater(os.path.getsize(abs_path), 0)
+
+    def test_hud_shutter_flash(self):
+        import numpy as np
+        from hud import CyberHUD
+        from config import GestureConfig
+        cfg = GestureConfig()
+        hud = CyberHUD(cfg)
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+
+        hud.trigger_shutter_flash()
+        hud.draw_shutter_flash(frame)
+        # Should render without exception
+        self.assertGreater(hud.shutter_flash_time, 0.0)
+
+    def test_screenshot_routes(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    # 1. Trigger capture via POST
+                    env_capture = {
+                        'REQUEST_METHOD': 'POST',
+                        'PATH_INFO': '/api/screenshot/capture',
+                        'wsgi.input': io.BytesIO(),
+                        'wsgi.errors': io.StringIO(),
+                        'SERVER_NAME': 'localhost',
+                        'SERVER_PORT': '5000'
+                    }
+                    resp = []
+                    body = b"".join(app(env_capture, lambda s, h, *args: resp.append(s)))
+                    self.assertTrue(resp[0].startswith("200"))
+                    data = json.loads(body.decode('utf-8'))
+                    self.assertEqual(data["status"], "ok")
+                    self.assertIn("filename", data["screenshot"])
+                    self.assertEqual(len(cm.recent_screenshots), 1)
+
+                    # 2. List recent screenshots via GET
+                    env_list = {
+                        'REQUEST_METHOD': 'GET',
+                        'PATH_INFO': '/api/screenshots',
+                        'wsgi.input': io.BytesIO(),
+                        'wsgi.errors': io.StringIO(),
+                        'SERVER_NAME': 'localhost',
+                        'SERVER_PORT': '5000'
+                    }
+                    resp_list = []
+                    body_list = b"".join(app(env_list, lambda s, h, *args: resp_list.append(s)))
+                    self.assertTrue(resp_list[0].startswith("200"))
+                    list_data = json.loads(body_list.decode('utf-8'))
+                    self.assertEqual(len(list_data["screenshots"]), 1)
+                    cm.stop()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

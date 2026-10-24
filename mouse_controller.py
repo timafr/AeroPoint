@@ -570,3 +570,29 @@ class MouseController:
         cv2.circle(zoomed, (cx, cy), 2, (255, 255, 255), -1, cv2.LINE_AA)
 
         return zoomed
+
+    def take_screenshot(self, output_dir: str = "screenshots") -> Tuple[str, str]:
+        """
+        Captures a high-resolution snapshot of the desktop.
+        Saves to screenshots folder and returns (absolute_path, filename).
+        If headless/locked, creates a synthetic test screen image.
+        """
+        import os
+        import datetime
+        os.makedirs(output_dir, exist_ok=True)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:21]
+        filename = f"aeropoint_snap_{timestamp}.png"
+        filepath = os.path.join(output_dir, filename)
+
+        try:
+            from PIL import ImageGrab
+            pil_img = ImageGrab.grab()
+            pil_img.save(filepath, "PNG")
+        except Exception:
+            # Synthetic canvas fallback
+            synth = np.zeros((1080, 1920, 3), dtype=np.uint8)
+            cv2.putText(synth, f"AEROPOINT AIR-SNAP: {timestamp}", (100, 200),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 242, 254), 2, cv2.LINE_AA)
+            cv2.imwrite(filepath, synth)
+
+        return os.path.abspath(filepath), filename

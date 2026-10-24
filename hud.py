@@ -64,6 +64,46 @@ class CyberHUD:
         self.last_cpu_check = 0.0
         self.cached_cpu = 0.0
 
+        # Camera Shutter Flash visual effect
+        self.shutter_flash_time: float = 0.0
+
+    def trigger_shutter_flash(self):
+        """Triggers a camera shutter white-flash bloom animation across the HUD frame."""
+        self.shutter_flash_time = time.time()
+
+    def draw_shutter_flash(self, frame: np.ndarray):
+        """Draws glowing camera shutter flash and viewfinder brackets."""
+        now = time.time()
+        dt = now - self.shutter_flash_time
+        if dt > 0.40:
+            return
+        progress = dt / 0.40
+        alpha = max(0.0, 1.0 - progress) * 0.70
+        h, w, _ = frame.shape
+        flash_overlay = np.full_like(frame, 255)
+        cv2.addWeighted(flash_overlay, alpha, frame, 1.0 - alpha, 0, frame)
+
+        # Camera viewfinder corner brackets
+        vf_color = (0, 242, 254)
+        c_len = 28
+        pad = 20
+        # Top-left
+        cv2.line(frame, (pad, pad), (pad + c_len, pad), vf_color, 2, cv2.LINE_AA)
+        cv2.line(frame, (pad, pad), (pad, pad + c_len), vf_color, 2, cv2.LINE_AA)
+        # Top-right
+        cv2.line(frame, (w - pad, pad), (w - pad - c_len, pad), vf_color, 2, cv2.LINE_AA)
+        cv2.line(frame, (w - pad, pad), (w - pad, pad + c_len), vf_color, 2, cv2.LINE_AA)
+        # Bottom-left
+        cv2.line(frame, (pad, h - pad), (pad + c_len, h - pad), vf_color, 2, cv2.LINE_AA)
+        cv2.line(frame, (pad, h - pad), (pad, h - pad - c_len), vf_color, 2, cv2.LINE_AA)
+        # Bottom-right
+        cv2.line(frame, (w - pad, h - pad), (w - pad - c_len, h - pad), vf_color, 2, cv2.LINE_AA)
+        cv2.line(frame, (w - pad, h - pad), (w - pad, h - pad - c_len), vf_color, 2, cv2.LINE_AA)
+
+        # Status text
+        cv2.putText(frame, "AIR-SNAP CAPTURED", (w // 2 - 80, pad + 24),
+                    self.font_mono, 1.0, (0, 242, 254), 2, cv2.LINE_AA)
+
     def trigger_click_ripple(self, px: Tuple[int, int], is_right: bool = False):
         """Spawns an expanding animated ripple at the click coordinate."""
         color = self.config.COLOR_MAGENTA if not is_right else self.config.COLOR_VIOLET
@@ -1497,4 +1537,5 @@ class CyberHUD:
             self.draw_jitter_chart(frame)
 
         self.draw_footer_bar(frame)
+        self.draw_shutter_flash(frame)
         return frame
