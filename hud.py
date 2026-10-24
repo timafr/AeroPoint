@@ -692,6 +692,10 @@ class CyberHUD:
             palm_px = getattr(hand, 'palm_size_px', 65.0)
             self.draw_spatial_air_ruler(frame, thumb_pt, index_pt, palm_size_px=palm_px)
 
+        # Spatial 3D Gyroscopic Horizon Rose
+        if getattr(self.config, 'show_spatial_horizon_gyro', False):
+            self.draw_spatial_horizon_gyro(frame, hand)
+
         # Kinetic velocity tracking and precision reticle for Pointer Hand
         if not is_action_hand:
             now = time.time()
@@ -863,6 +867,65 @@ class CyberHUD:
         # 5. Seconds sub-tag
         sec_str = time.strftime("%S")
         cv2.putText(frame, sec_str, (cx - 7, cy + 13), cv2.FONT_HERSHEY_PLAIN, 0.55, (0, 242, 254), 1, cv2.LINE_AA)
+
+    def draw_spatial_horizon_gyro(self, frame: np.ndarray, hand: HandData):
+        """
+        Renders a 3D aviation-grade artificial horizon gyroscope HUD rose
+        displaying roll angle, pitch ladder, and cardinal indicators.
+        """
+        pts = hand.landmarks_px
+        h, w, _ = frame.shape
+        wrist = pts[WRIST]
+        wx, wy = int(wrist[0]), int(wrist[1])
+
+        handedness = getattr(hand, 'handedness', 'Right')
+        offset_x = 64 if handedness == 'Right' else -64
+        cx = max(42, min(w - 42, wx + offset_x))
+        cy = max(42, min(h - 42, wy + 10))
+
+        rad = 32
+        roll = getattr(hand, 'roll_deg', 0.0)
+        pitch = getattr(hand, 'pitch_deg', 0.0)
+        roll_rad = math.radians(roll)
+
+        # 1. Translucent bezel background
+        overlay = frame.copy()
+        cv2.circle(overlay, (cx, cy), rad, (15, 12, 22), -1)
+        cv2.circle(overlay, (cx, cy), rad, (0, 242, 254), 1, cv2.LINE_AA)
+        cv2.addWeighted(overlay, 0.70, frame, 0.30, 0, frame)
+
+        # 2. Rotating Artificial Horizon Line
+        cos_r = math.cos(roll_rad)
+        sin_r = math.sin(roll_rad)
+
+        hx1 = int(cx - (rad - 6) * cos_r)
+        hy1 = int(cy - (rad - 6) * sin_r)
+        hx2 = int(cx + (rad - 6) * cos_r)
+        hy2 = int(cy + (rad - 6) * sin_r)
+        cv2.line(frame, (hx1, hy1), (hx2, hy2), (0, 242, 254), 2, cv2.LINE_AA)
+
+        # Pitch ladder ticks (+10 deg and -10 deg)
+        for offset_deg in [-10, 10]:
+            p_shift = offset_deg * 0.8
+            px_c = cx - int(p_shift * sin_r)
+            py_c = cy + int(p_shift * cos_r)
+            tx1 = int(px_c - 6 * cos_r)
+            ty1 = int(py_c - 6 * sin_r)
+            tx2 = int(px_c + 6 * cos_r)
+            ty2 = int(py_c + 6 * sin_r)
+            cv2.line(frame, (tx1, ty1), (tx2, ty2), (180, 240, 255), 1, cv2.LINE_AA)
+
+        # 3. Fixed center aircraft reticle
+        cv2.circle(frame, (cx, cy), 2, (255, 255, 255), -1, cv2.LINE_AA)
+        cv2.line(frame, (cx - 5, cy), (cx - 2, cy), (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.line(frame, (cx + 2, cy), (cx + 5, cy), (255, 255, 255), 1, cv2.LINE_AA)
+
+        # 4. Top zero-roll caret
+        cv2.line(frame, (cx, cy - rad + 1), (cx, cy - rad + 5), (0, 242, 254), 2, cv2.LINE_AA)
+
+        # 5. Angle Readout tag below
+        tag = f"R:{int(roll)} P:{int(pitch)}"
+        cv2.putText(frame, tag, (cx - 28, cy + rad + 12), self.font_mono, 0.70, (0, 242, 254), 1, cv2.LINE_AA)
 
     def draw_ripples(self, frame: np.ndarray):
         """Renders click shockwave rings with optimized local ROI blending (zero full-frame copying)."""

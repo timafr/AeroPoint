@@ -455,6 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchAirPiano = document.getElementById('switch-air-piano');
   const switchAirRuler = document.getElementById('switch-air-ruler');
   const switchPrivacyGesture = document.getElementById('switch-privacy-gesture');
+  const switchHorizonGyro = document.getElementById('switch-horizon-gyro');
   const btnLockPcNow = document.getElementById('btn-lock-pc-now');
   const valLaserStatus = document.getElementById('val-laser-status');
   const btnProfCad = document.getElementById('btn-prof-cad');
@@ -816,6 +817,12 @@ document.addEventListener('DOMContentLoaded', () => {
     soundSynth.playLaserFx();
     flashActionCapsule('🔒', 'Блокировка ПК...');
     fetch('/api/system/lock', { method: 'POST' }).catch(() => {});
+  });
+
+  switchHorizonGyro?.addEventListener('change', (e) => {
+    soundSynth.playLaserFx();
+    postSettings({ show_spatial_horizon_gyro: e.target.checked });
+    flashActionCapsule('🧭', e.target.checked ? '3D Авиа-Горизонт ВКЛ' : '3D Авиа-Горизонт ВЫКЛ');
   });
 
   document.querySelectorAll('.piano-test-key').forEach(btn => {
@@ -1466,6 +1473,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (switchPrivacyGesture && typeof data.enable_privacy_gesture === 'boolean') {
         switchPrivacyGesture.checked = data.enable_privacy_gesture;
+      }
+      if (switchHorizonGyro && typeof data.show_spatial_horizon_gyro === 'boolean') {
+        switchHorizonGyro.checked = data.show_spatial_horizon_gyro;
       }
       if (data.precision_profile) {
         updateProfileButtons(data.precision_profile);

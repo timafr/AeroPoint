@@ -249,6 +249,8 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.enable_spatial_air_ruler = bool(data["enable_spatial_air_ruler"])
             if "enable_privacy_gesture" in data:
                 manager.config.enable_privacy_gesture = bool(data["enable_privacy_gesture"])
+            if "show_spatial_horizon_gyro" in data:
+                manager.config.show_spatial_horizon_gyro = bool(data["show_spatial_horizon_gyro"])
 
             # Auto-persist user settings to disk
             manager.config.save_to_file()
