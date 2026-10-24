@@ -16,6 +16,7 @@
   "enable_legacy_shortcuts": false,
   "laser_pointer_mode": false,
   "laser_color": "gold",
+  "laser_stencil": "diamond",
   "presentation_spotlight_mode": true,
   "spotlight_radius": 95,
   "enable_virtual_touch_surface": true,

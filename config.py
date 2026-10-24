@@ -44,6 +44,7 @@ class GestureConfig:
     radial_menu_enabled: bool = True        # Radial Quick-Dial Pie Menu
     laser_pointer_mode: bool = False        # Laser vector aiming mode with snap assistance
     laser_color: str = "cyan"               # "cyan", "green", "red", "gold"
+    laser_stencil: str = "crosshair"        # "crosshair", "dot", "circle_pulse", "diamond"
     presentation_spotlight_mode: bool = False # Keynote-style circular stage spotlight with dimmed vignette
     spotlight_radius: int = 85              # Pixel radius of spotlight beam
     enable_air_draw_stream: bool = False    # Live glowing air-draw annotations directly in the camera stream
@@ -186,6 +187,7 @@ class GestureConfig:
             "enable_legacy_shortcuts": self.enable_legacy_shortcuts,
             "laser_pointer_mode": self.laser_pointer_mode,
             "laser_color": self.laser_color,
+            "laser_stencil": self.laser_stencil,
             "presentation_spotlight_mode": self.presentation_spotlight_mode,
             "spotlight_radius": self.spotlight_radius,
             "enable_virtual_touch_surface": self.enable_virtual_touch_surface,

@@ -206,6 +206,8 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.laser_pointer_mode = bool(data["laser_pointer_mode"])
             if "laser_color" in data:
                 manager.config.laser_color = str(data["laser_color"]).lower()
+            if "laser_stencil" in data:
+                manager.config.laser_stencil = str(data["laser_stencil"]).lower()
             if "enable_power_saver" in data:
                 manager.config.enable_power_saver = bool(data["enable_power_saver"])
             if "precision_profile" in data:
@@ -300,6 +302,19 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
                 manager.config.laser_color = col
             manager.config.save_to_file()
             return {"status": "ok", "laser_color": manager.config.laser_color}
+        except Exception as e:
+            bottle.response.status = 400
+            return {"status": "error", "message": str(e)}
+
+    @app.route('/api/laser/stencil', method='POST')
+    def laser_stencil_route():
+        try:
+            data = bottle.request.json or {}
+            st = str(data.get('stencil', 'crosshair')).lower()
+            if st in ('crosshair', 'dot', 'circle_pulse', 'diamond'):
+                manager.config.laser_stencil = st
+            manager.config.save_to_file()
+            return {"status": "ok", "laser_stencil": manager.config.laser_stencil}
         except Exception as e:
             bottle.response.status = 400
             return {"status": "error", "message": str(e)}

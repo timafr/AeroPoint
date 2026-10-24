@@ -1190,17 +1190,47 @@ class CyberHUD:
         cv2.line(frame, tip_pt, (tx, ty), (255, 255, 255), 1, cv2.LINE_AA)
         cv2.circle(frame, tip_pt, 3, (255, 255, 255), -1, cv2.LINE_AA)
 
-        # 3. Holographic Reticle at target
-        reticle_rad = 12 if not is_clicking else 7
-        cv2.circle(frame, (tx, ty), reticle_rad, beam_color, 1, cv2.LINE_AA)
-        cv2.circle(frame, (tx, ty), 3, (255, 255, 255), -1, cv2.LINE_AA)
+        # 3. Holographic Reticle at target based on laser_stencil
+        stencil = getattr(self.config, 'laser_stencil', 'crosshair').lower()
 
-        # Crosshairs
-        ch_len = 8
-        cv2.line(frame, (tx - ch_len - 4, ty), (tx - 4, ty), beam_color, 1, cv2.LINE_AA)
-        cv2.line(frame, (tx + 4, ty), (tx + ch_len + 4, ty), beam_color, 1, cv2.LINE_AA)
-        cv2.line(frame, (tx, ty - ch_len - 4), (tx, ty - 4), beam_color, 1, cv2.LINE_AA)
-        cv2.line(frame, (tx, ty + 4), (tx, ty + ch_len + 4), beam_color, 1, cv2.LINE_AA)
+        if stencil == "dot":
+            cv2.circle(frame, (tx, ty), 6, beam_color, 1, cv2.LINE_AA)
+            cv2.circle(frame, (tx, ty), 3, (255, 255, 255), -1, cv2.LINE_AA)
+        elif stencil == "circle_pulse":
+            pulse_r = int(10 + 6 * (0.5 + 0.5 * math.sin(now * 10.0)))
+            cv2.circle(frame, (tx, ty), pulse_r, beam_color, 1, cv2.LINE_AA)
+            cv2.circle(frame, (tx, ty), 6, beam_color, 1, cv2.LINE_AA)
+            cv2.circle(frame, (tx, ty), 2, (255, 255, 255), -1, cv2.LINE_AA)
+        elif stencil == "diamond":
+            d_size = 11 if not is_clicking else 6
+            diamond_pts = np.array([
+                [tx, ty - d_size],
+                [tx + d_size, ty],
+                [tx, ty + d_size],
+                [tx - d_size, ty]
+            ], np.int32)
+            cv2.polylines(frame, [diamond_pts], True, beam_color, 1, cv2.LINE_AA)
+            cv2.circle(frame, (tx, ty), 2, (255, 255, 255), -1, cv2.LINE_AA)
+        else:
+            # Default crosshair
+            reticle_rad = 12 if not is_clicking else 7
+            cv2.circle(frame, (tx, ty), reticle_rad, beam_color, 1, cv2.LINE_AA)
+            cv2.circle(frame, (tx, ty), 3, (255, 255, 255), -1, cv2.LINE_AA)
+            ch_len = 8
+            cv2.line(frame, (tx - ch_len - 4, ty), (tx - 4, ty), beam_color, 1, cv2.LINE_AA)
+            cv2.line(frame, (tx + 4, ty), (tx + ch_len + 4, ty), beam_color, 1, cv2.LINE_AA)
+            cv2.line(frame, (tx, ty - ch_len - 4), (tx, ty - 4), beam_color, 1, cv2.LINE_AA)
+            cv2.line(frame, (tx, ty + 4), (tx, ty + ch_len + 4), beam_color, 1, cv2.LINE_AA)
+
+        if is_clicking:
+            # Burst sparks
+            for ang in [45, 135, 225, 315]:
+                ar = math.radians(ang)
+                sx1 = int(tx + 8 * math.cos(ar))
+                sy1 = int(ty + 8 * math.sin(ar))
+                sx2 = int(tx + 14 * math.cos(ar))
+                sy2 = int(ty + 14 * math.sin(ar))
+                cv2.line(frame, (sx1, sy1), (sx2, sy2), (255, 255, 255), 1, cv2.LINE_AA)
 
         # Target Coordinates Tag
         tag = f"L-AIM [{tx},{ty}]"

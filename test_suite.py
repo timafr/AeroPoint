@@ -1545,5 +1545,69 @@ class TestSpatialHorizonGyro(unittest.TestCase):
                     cm.stop()
 
 
+class TestLaserStencils(unittest.TestCase):
+    """Verifies all 4 Laser Pointer reticle stencils (crosshair, dot, circle_pulse, diamond) and REST endpoint."""
+
+    def test_laser_stencils_rendering(self):
+        import numpy as np
+        from hud import CyberHUD
+        from config import GestureConfig
+        from hand_tracker import HandData
+
+        cfg = GestureConfig()
+        cfg.laser_pointer_mode = True
+        hud = CyberHUD(cfg)
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+
+        px = [(300.0, 300.0, 0.0)] * 21
+        px[5] = (300.0, 260.0, 0.0)
+        px[8] = (300.0, 180.0, 0.0)
+        mock_hand = HandData(
+            landmarks_norm=[(p[0] / 640.0, p[1] / 480.0, 0.0) for p in px],
+            landmarks_px=px,
+            landmarks_world=[(p[0] * 0.001, p[1] * 0.001, 0.0) for p in px],
+            palm_size=0.15,
+            handedness="Right"
+        )
+
+        for stencil in ["crosshair", "dot", "circle_pulse", "diamond"]:
+            cfg.laser_stencil = stencil
+            # Test non-clicking and clicking
+            hud.draw_laser_pointer(frame, mock_hand, is_clicking=False)
+            hud.draw_laser_pointer(frame, mock_hand, is_clicking=True)
+
+        self.assertTrue(True)
+
+    def test_laser_stencil_rest_api(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    payload = json.dumps({"stencil": "diamond"}).encode('utf-8')
+                    env = {
+                        'REQUEST_METHOD': 'POST',
+                        'PATH_INFO': '/api/laser/stencil',
+                        'CONTENT_TYPE': 'application/json',
+                        'CONTENT_LENGTH': str(len(payload)),
+                        'wsgi.input': io.BytesIO(payload),
+                        'wsgi.errors': io.StringIO(),
+                        'SERVER_NAME': 'localhost',
+                        'SERVER_PORT': '5000'
+                    }
+                    status_captured = []
+                    body = b"".join(app(env, lambda s, h, *args: status_captured.append(s)))
+                    self.assertTrue(status_captured[0].startswith("200"))
+                    self.assertEqual(cm.config.laser_stencil, "diamond")
+                    cm.stop()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -859,6 +859,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Laser Pointer Reticle Stencil Selection (Crosshair, Dot, Sonar, Diamond)
+  document.querySelectorAll('.laser-stencil-pill .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.laser-stencil-pill .seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const stencil = btn.getAttribute('data-laser-stencil');
+      soundSynth.playLaserFx();
+      fetch('/api/laser/stencil', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stencil })
+      }).catch(() => {});
+      flashActionCapsule('🎯', `Прицел: ${btn.textContent.trim()}`);
+    });
+  });
+
   // Precision Profile Presets (CAD / Desktop / Gaming)
   function updateProfileButtons(profile) {
     [btnProfCad, btnProfDesktop, btnProfGaming].forEach(btn => btn?.classList.remove('active'));
@@ -1454,6 +1470,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.laser_color) {
         document.querySelectorAll('.laser-color-pill .seg-btn').forEach(b => {
           b.classList.toggle('active', b.getAttribute('data-laser-color') === data.laser_color);
+        });
+      }
+      if (data.laser_stencil) {
+        document.querySelectorAll('.laser-stencil-pill .seg-btn').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-laser-stencil') === data.laser_stencil);
         });
       }
       if (switchClahe && typeof data.use_clahe === 'boolean') {
