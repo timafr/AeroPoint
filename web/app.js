@@ -1782,6 +1782,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Spatial Media Deck Controller
+  document.querySelectorAll('.media-ctrl-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const act = btn.getAttribute('data-media-act');
+      if (!act) return;
+      if (act.includes('vol') || act === 'mute') {
+        soundSynth.playLaserFx();
+      } else {
+        soundSynth.playRadialChime();
+      }
+      flashActionCapsule('🎵', `Медиа: ${btn.textContent.trim()}`);
+      fetch('/api/media/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: act })
+      }).catch(() => {});
+    });
+  });
+
   // Air-Typer Text Broadcaster
   const typerTextInput = document.getElementById('typer-text-input');
   const btnTyperSend = document.getElementById('btn-typer-send');

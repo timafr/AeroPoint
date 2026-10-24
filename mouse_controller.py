@@ -286,6 +286,24 @@ class MouseController:
         else:
             pyautogui.press('playpause')
 
+    def next_track(self):
+        """Skips to next media track."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_MEDIA_NEXT_TRACK, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_MEDIA_NEXT_TRACK, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.press('nexttrack')
+
+    def prev_track(self):
+        """Returns to previous media track."""
+        if IS_WINDOWS:
+            user32.keybd_event(VK_MEDIA_PREV_TRACK, 0, 0, 0)
+            time.sleep(0.02)
+            user32.keybd_event(VK_MEDIA_PREV_TRACK, 0, KEYEVENTF_KEYUP, 0)
+        else:
+            pyautogui.press('prevtrack')
+
     def lock_workstation(self):
         """Locks the Windows workstation instantly."""
         if IS_WINDOWS:

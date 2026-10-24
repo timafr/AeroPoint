@@ -67,6 +67,53 @@ class CyberHUD:
         # Camera Shutter Flash visual effect
         self.shutter_flash_time: float = 0.0
 
+        # Floating Media Capsule feedback
+        self.last_media_action_time: float = 0.0
+        self.media_action_icon: str = "PLAY"
+        self.media_action_label: str = ""
+
+    def trigger_media_feedback(self, action: str, label: str):
+        """Triggers the floating HUD media playback capsule."""
+        self.last_media_action_time = time.time()
+        self.media_action_icon = action.upper()
+        self.media_action_label = label
+
+    def draw_media_capsule(self, frame: np.ndarray):
+        """Renders an Apple visionOS styled floating media playback capsule with animated audio spectrum."""
+        now = time.time()
+        dt = now - self.last_media_action_time
+        if dt > 1.8:
+            return
+
+        h, w, _ = frame.shape
+        alpha = min(1.0, (1.8 - dt) / 0.3)
+        cw, ch = 240, 36
+        cx = w // 2
+        cy = 38
+
+        x1, y1 = cx - cw // 2, cy - ch // 2
+        x2, y2 = cx + cw // 2, cy + ch // 2
+
+        # Semi-transparent pill background
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (x1, y1), (x2, y2), (20, 18, 25), -1)
+        cv2.rectangle(overlay, (x1, y1), (x2, y2), (0, 242, 254), 1, cv2.LINE_AA)
+        cv2.addWeighted(overlay, 0.75 * alpha, frame, 1.0 - (0.75 * alpha), 0, frame)
+
+        # Equalizer spectrum animation (5 vertical bars)
+        bar_x = x1 + 18
+        for i in range(5):
+            bar_phase = now * 12.0 + i * 1.3
+            bar_height = int(6 + 8 * (0.5 + 0.5 * math.sin(bar_phase)))
+            bx = bar_x + i * 5
+            by1 = cy + ch // 4 - bar_height
+            by2 = cy + ch // 4
+            cv2.line(frame, (bx, by1), (bx, by2), (0, 242, 254), 2, cv2.LINE_AA)
+
+        # Media Text
+        text = f"{self.media_action_icon} : {self.media_action_label}"
+        cv2.putText(frame, text, (x1 + 52, cy + 5), self.font_mono, 0.85, (255, 255, 255), 1, cv2.LINE_AA)
+
     def trigger_shutter_flash(self):
         """Triggers a camera shutter white-flash bloom animation across the HUD frame."""
         self.shutter_flash_time = time.time()
@@ -1538,4 +1585,5 @@ class CyberHUD:
 
         self.draw_footer_bar(frame)
         self.draw_shutter_flash(frame)
+        self.draw_media_capsule(frame)
         return frame

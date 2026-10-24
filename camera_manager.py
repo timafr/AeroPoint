@@ -175,6 +175,32 @@ class CameraManager:
             "samples": list(self.telemetry_history)
         }
 
+    def handle_media_command(self, action: str) -> dict:
+        """Dispatches media keyboard event and triggers HUD animation."""
+        act = action.lower().strip()
+        if act in ("play", "pause", "play_pause"):
+            self.mouse.play_pause()
+            self.hud.trigger_media_feedback("play/pause", "PLAY / PAUSE")
+        elif act in ("next", "next_track"):
+            self.mouse.next_track()
+            self.hud.trigger_media_feedback("next", "NEXT TRACK")
+        elif act in ("prev", "prev_track"):
+            self.mouse.prev_track()
+            self.hud.trigger_media_feedback("prev", "PREV TRACK")
+        elif act in ("volume_up", "vol_up"):
+            self.mouse.volume_up()
+            self.hud.trigger_media_feedback("vol+", "VOLUME UP")
+        elif act in ("volume_down", "vol_down"):
+            self.mouse.volume_down()
+            self.hud.trigger_media_feedback("vol-", "VOLUME DOWN")
+        elif act in ("mute", "volume_mute"):
+            self.mouse.volume_mute()
+            self.hud.trigger_media_feedback("mute", "MUTE AUDIO")
+        else:
+            return {"status": "error", "message": f"Unknown media command: {action}"}
+
+        return {"status": "ok", "action": act}
+
     def _generate_placeholder(self, text: str) -> bytes:
         """Generates a stylish dark placeholder frame."""
         img = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -703,6 +729,7 @@ class CameraManager:
                             self.clear_air_canvas()
                         else:
                             self.mouse.play_pause()
+                            self.hud.trigger_media_feedback("play/pause", "PLAY / PAUSE")
 
                 # 3. Spatial Rotary Volume Dial (twist wrist while holding pinch or fist)
                 rotary_hand = action_hand if (action_hand and events.get("is_dual_hand")) else pointer_hand
@@ -723,10 +750,12 @@ class CameraManager:
                                 if d_roll > 0:
                                     self.mouse.volume_up()
                                     self.hud.trigger_rotary_feedback(wrist_pos, is_up=True, delta_deg=d_roll)
+                                    self.hud.trigger_media_feedback("vol+", "VOLUME UP")
                                     self.rotary_anchor_roll = curr_roll
                                 else:
                                     self.mouse.volume_down()
                                     self.hud.trigger_rotary_feedback(wrist_pos, is_up=False, delta_deg=d_roll)
+                                    self.hud.trigger_media_feedback("vol-", "VOLUME DOWN")
                                     self.rotary_anchor_roll = curr_roll
                 else:
                     self.rotary_anchor_roll = None

@@ -358,6 +358,19 @@ def create_app(manager: CameraManager) -> bottle.Bottle:
             bottle.response.status = 500
             return {"status": "error", "message": str(e)}
 
+    @app.route('/api/media/control', method='POST')
+    def media_control_route():
+        try:
+            data = bottle.request.json or {}
+            action = str(data.get('action', '')).lower()
+            res = manager.handle_media_command(action)
+            if res.get("status") == "error":
+                bottle.response.status = 400
+            return res
+        except Exception as e:
+            bottle.response.status = 500
+            return {"status": "error", "message": str(e)}
+
     @app.route('/api/radial/action', method='POST')
     def radial_action():
         try:

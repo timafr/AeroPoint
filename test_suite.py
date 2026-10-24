@@ -1121,5 +1121,78 @@ class TestAirSnapScreenshot(unittest.TestCase):
                     cm.stop()
 
 
+class TestSpatialMediaController(unittest.TestCase):
+    """Verifies Spatial Media Deck actions, HUD playback visualizer capsule, and REST API."""
+
+    def test_mouse_controller_track_navigation(self):
+        from unittest.mock import patch
+        from mouse_controller import MouseController
+        mc = MouseController()
+        with patch('mouse_controller.user32.keybd_event') as mock_keybd:
+            mc.next_track()
+            mc.prev_track()
+            # 2 calls (down + up) each = 4 calls total
+            self.assertEqual(mock_keybd.call_count, 4)
+
+    def test_hud_media_capsule_render(self):
+        import numpy as np
+        from hud import CyberHUD
+        from config import GestureConfig
+        cfg = GestureConfig()
+        hud = CyberHUD(cfg)
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+
+        hud.trigger_media_feedback("play_pause", "PLAY / PAUSE")
+        hud.draw_media_capsule(frame)
+        self.assertGreater(hud.last_media_action_time, 0.0)
+
+    def test_media_control_rest_api(self):
+        import io
+        import json
+        from server import create_app
+        from camera_manager import CameraManager
+        from unittest.mock import patch
+
+        with patch.object(CameraManager, 'discover_cameras', return_value=[]):
+            with patch('camera_manager.SpatialReceiver'):
+                with patch('camera_manager.HandTracker'):
+                    cm = CameraManager()
+                    app = create_app(cm)
+
+                    with patch.object(cm.mouse, 'play_pause') as mock_play:
+                        payload = json.dumps({"action": "play_pause"}).encode('utf-8')
+                        env = {
+                            'REQUEST_METHOD': 'POST',
+                            'PATH_INFO': '/api/media/control',
+                            'CONTENT_TYPE': 'application/json',
+                            'CONTENT_LENGTH': str(len(payload)),
+                            'wsgi.input': io.BytesIO(payload),
+                            'wsgi.errors': io.StringIO(),
+                            'SERVER_NAME': 'localhost',
+                            'SERVER_PORT': '5000'
+                        }
+                        status_captured = []
+                        body = b"".join(app(env, lambda s, h, *args: status_captured.append(s)))
+                        self.assertTrue(status_captured[0].startswith("200"))
+                        mock_play.assert_called_once()
+
+                    # Test invalid action gives 400
+                    payload_bad = json.dumps({"action": "invalid_xyz"}).encode('utf-8')
+                    env_bad = {
+                        'REQUEST_METHOD': 'POST',
+                        'PATH_INFO': '/api/media/control',
+                        'CONTENT_TYPE': 'application/json',
+                        'CONTENT_LENGTH': str(len(payload_bad)),
+                        'wsgi.input': io.BytesIO(payload_bad),
+                        'wsgi.errors': io.StringIO(),
+                        'SERVER_NAME': 'localhost',
+                        'SERVER_PORT': '5000'
+                    }
+                    status_bad = []
+                    app(env_bad, lambda s, h, *args: status_bad.append(s))
+                    self.assertTrue(status_bad[0].startswith("400"))
+                    cm.stop()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
